@@ -1,0 +1,16 @@
+<p style="margin:0 0 16px;font-size:16px;">Hello {{customerName}},</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.6;">Your JOYWAY booking has been created successfully.</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8faf9;border-radius:8px;padding:16px;margin-bottom:20px;">
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Booking Reference:</strong> {{bookingReference}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Package:</strong> {{packageTitle}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Destination:</strong> {{destination}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Travel Date:</strong> {{travelDate}} – {{endDate}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Travellers:</strong> {{travellerCount}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Amount:</strong> {{currency}} {{amount}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Payment Status:</strong> {{paymentStatusLabel}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Booking Status:</strong> {{bookingStatusLabel}}</td></tr>
+</table>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">{{paymentPendingNote}}</p>
+<p style="margin:0;">
+  <a href="{{continuePaymentUrl}}" style="display:inline-block;background:#1b4332;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">View Booking</a>
+</p>

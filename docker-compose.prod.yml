@@ -1,0 +1,104 @@
+# Production compose — supply secrets via environment or a secure secret manager.
+# Do NOT commit real values. Use platform-specific secret injection in Azure/VPS.
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
+      JWT_COOKIE_SECURE: "true"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      ADMIN_BOOTSTRAP_ENABLED: "false"
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SSL: ${SMTP_SSL:-true}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM:-hello@joyway.in}
+      MAIL_BOOKINGS_FROM: ${MAIL_BOOKINGS_FROM:-bookings@joyway.in}
+      MAIL_SUPPORT_FROM: ${MAIL_SUPPORT_FROM:-support@joyway.in}
+      MAIL_NOREPLY_FROM: ${MAIL_NOREPLY_FROM:-noreply@joyway.in}
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      APP_VERSION: ${APP_VERSION:-0.0.1-SNAPSHOT}
+      STORAGE_PROVIDER: azure
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
+      STORAGE_CONTAINER: ${STORAGE_CONTAINER:-joyway-documents}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-joyway-documents}
+      STORAGE_USE_MANAGED_IDENTITY: ${STORAGE_USE_MANAGED_IDENTITY:-true}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-}
+      STORAGE_SAS_EXPIRY_MINUTES: ${STORAGE_SAS_EXPIRY_MINUTES:-15}
+    # Azure Blob is the production store; local volume only needed for one-off migration runs.
+    # volumes:
+    #   - backend-storage:/app/storage
+    healthcheck:
+      # Readiness: reports unhealthy when the database is unreachable.
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    # Give in-flight requests time to drain (server.shutdown=graceful).
+    stop_grace_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+        NEXT_PUBLIC_RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    stop_grace_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+# volumes:
+#   backend-storage:

@@ -1,0 +1,191 @@
+"use client";
+
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { getBooking, getBookingReceipt, cancelBooking, type BookingDetail, type BookingReceipt } from "@/lib/api/bookingApi";
+import { formatDateRange, formatPrice } from "@/lib/format";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+
+async function fetchBookingAndReceipt(reference: string, email: string) {
+  const detail = await getBooking(reference.trim(), email.trim());
+  const receipt =
+    detail.paymentStatus === "PAID"
+      ? await getBookingReceipt(reference.trim(), email.trim())
+      : null;
+  return { detail, receipt };
+}
+
+function BookingLookupContent() {
+  const searchParams = useSearchParams();
+  const prefilledReference = searchParams.get("reference") || "";
+  const prefilledEmail = searchParams.get("email") || "";
+
+  const [reference, setReference] = useState(prefilledReference);
+  const [email, setEmail] = useState(prefilledEmail);
+  const [booking, setBooking] = useState<BookingDetail | null>(null);
+  const [receipt, setReceipt] = useState<BookingReceipt | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(Boolean(prefilledReference && prefilledEmail));
+  const [cancelling, setCancelling] = useState(false);
+
+  // Auto-run the lookup when the customer arrives from an emailed link.
+  useEffect(() => {
+    if (!prefilledReference || !prefilledEmail) return;
+
+    let cancelled = false;
+    fetchBookingAndReceipt(prefilledReference, prefilledEmail)
+      .then(({ detail, receipt: receiptData }) => {
+        if (cancelled) return;
+        setBooking(detail);
+        setReceipt(receiptData);
+        setError("");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Booking not found");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [prefilledReference, prefilledEmail]);
+
+  async function lookup(ref = reference, em = email) {
+    setError("");
+    setLoading(true);
+    setBooking(null);
+    setReceipt(null);
+    try {
+      const { detail, receipt: receiptData } = await fetchBookingAndReceipt(ref, em);
+      setBooking(detail);
+      setReceipt(receiptData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Booking not found");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCancel() {
+    if (!booking || !window.confirm("Are you sure you want to cancel this booking?")) {
+      return;
+    }
+    setCancelling(true);
+    setError("");
+    try {
+      const updated = await cancelBooking(booking.bookingReference, email.trim());
+      setBooking({ ...booking, status: updated.status, paymentStatus: updated.paymentStatus });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cancellation failed");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-xl">
+      <h1 className="font-display text-3xl font-semibold text-charcoal">Find Your Booking</h1>
+      <p className="mt-2 text-charcoal-muted">
+        Enter your booking reference and email to view status and receipt.
+      </p>
+
+      <form
+        className="mt-8 space-y-4 rounded-2xl border border-border bg-white p-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void lookup();
+        }}
+      >
+        <div>
+          <Label htmlFor="reference">Booking Reference</Label>
+          <Input
+            id="reference"
+            required
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            placeholder="JW-2026-00001"
+          />
+        </div>
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Searching..." : "View Booking"}
+        </Button>
+      </form>
+
+      {error && (
+        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+
+      {booking && (
+        <div className="mt-8 rounded-2xl border border-border bg-white p-6">
+          <p className="text-sm text-charcoal-muted">Booking Reference</p>
+          <p className="font-display text-2xl font-semibold text-forest">{booking.bookingReference}</p>
+          <div className="mt-4 space-y-2 text-sm">
+            <p><span className="text-charcoal-muted">Package:</span> {booking.packageTitle}</p>
+            <p><span className="text-charcoal-muted">Dates:</span> {formatDateRange(booking.startDate, booking.endDate)}</p>
+            <p><span className="text-charcoal-muted">Travellers:</span> {booking.numberOfTravellers}</p>
+            <p><span className="text-charcoal-muted">Total:</span> {formatPrice(booking.totalAmount)}</p>
+            <p><span className="text-charcoal-muted">Booking Status:</span> {booking.status.replaceAll("_", " ")}</p>
+            <p><span className="text-charcoal-muted">Payment Status:</span> {booking.paymentStatus}</p>
+          </div>
+
+          {receipt && (
+            <div className="mt-6 border-t border-border pt-6">
+              <h2 className="font-semibold text-charcoal">{receipt.title}</h2>
+              <p className="mt-2 text-sm text-charcoal-muted">{receipt.brandName}</p>
+              {receipt.razorpayPaymentId && (
+                <p className="mt-2 text-sm">
+                  <span className="text-charcoal-muted">Payment ID:</span> {receipt.razorpayPaymentId}
+                </p>
+              )}
+            </div>
+          )}
+
+          {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && (
+            <div className="mt-6 border-t border-border pt-6">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={cancelling}
+                onClick={() => void handleCancel()}
+                className="border-red-200 text-red-700 hover:bg-red-50"
+              >
+                {cancelling ? "Cancelling..." : "Cancel Booking"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-8">
+        <Link href="/trips" className="text-sm font-medium text-forest hover:underline">
+          Browse trips
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function BookingLookupPage() {
+  return (
+    <Suspense fallback={<p className="text-charcoal-muted">Loading...</p>}>
+      <BookingLookupContent />
+    </Suspense>
+  );
+}

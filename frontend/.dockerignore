@@ -1,0 +1,31 @@
+# Docker only reads the .dockerignore inside the build context directory.
+# The repository-root .dockerignore does NOT apply when building with context ./frontend.
+
+# Dependencies and build output (re-created inside the image)
+node_modules
+.next
+out
+build
+dist
+
+# Local environment files. These must never enter the image: Next.js would let
+# .env.local override the NEXT_PUBLIC_* build args and bake local values
+# (including the Razorpay key) into the production bundle.
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Tooling / VCS / OS
+.git
+.gitignore
+.vscode
+.idea
+*.log
+.DS_Store
+Thumbs.db
+
+# Test and coverage artefacts
+coverage
+.turbo
+*.tsbuildinfo

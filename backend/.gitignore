@@ -1,0 +1,16 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+storage/
+uploads/
+.env
+.env.*
+!.env.example
+!.env.template
+*.log
+*.class
+*.pem
+*.key
+*.p12
+*.jks
+credentials.json
+secrets.json

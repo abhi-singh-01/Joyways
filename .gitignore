@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/target/
+
+# Environment (never commit secrets)
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.production.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.template
+!backend/.env.production.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+!frontend/.env.template
+!frontend/.env.production.example
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Spring Boot / Java
+backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Secrets / credentials
+*.pem
+*.key
+*.p12
+*.jks
+*.pfx
+credentials.json
+secrets.json
+service-account*.json
+
+# Local storage / uploads
+backend/storage/
+storage/
+uploads/
+
+# Vercel / deployment artifacts
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+frontend/coverage/

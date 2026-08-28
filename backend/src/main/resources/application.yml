@@ -1,0 +1,119 @@
+spring:
+  application:
+    name: joyway-backend
+  config:
+    import: optional:file:.env[.properties]
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: ${SMTP_SSL:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:true}
+            required: ${SMTP_STARTTLS:true}
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Kolkata
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  # Let in-flight requests finish before the container exits during a rolling deploy.
+  shutdown: graceful
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+logging:
+  pattern:
+    # requestId comes from RequestCorrelationFilter via the MDC.
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%X{requestId:-no-request-id}] %logger{36} - %msg%n"
+
+joyway:
+  version: ${APP_VERSION:0.0.1-SNAPSHOT}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    login-requests-per-minute: ${RATE_LIMIT_LOGIN_PER_MINUTE:10}
+    booking-requests-per-minute: ${RATE_LIMIT_BOOKING_PER_MINUTE:20}
+    payment-requests-per-minute: ${RATE_LIMIT_PAYMENT_PER_MINUTE:30}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  public-api-base-url: ${PUBLIC_API_BASE_URL:http://localhost:8080}
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+    cookie-secure: ${JWT_COOKIE_SECURE:false}
+  admin:
+    bootstrap:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+      email: ${ADMIN_BOOTSTRAP_EMAIL:admin@joyway.in}
+      password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+      name: ${ADMIN_BOOTSTRAP_NAME:JOYWAY Admin}
+  mail:
+    from: ${MAIL_FROM:hello@joyway.in}
+    from-name: ${MAIL_FROM_NAME:JOYWAY}
+    reply-to: ${MAIL_REPLY_TO:hello@joyway.in}
+    general-from: ${MAIL_GENERAL_FROM:hello@joyway.in}
+    general-from-name: ${MAIL_GENERAL_FROM_NAME:JOYWAY}
+    general-reply-to: ${MAIL_GENERAL_REPLY_TO:hello@joyway.in}
+    bookings-from: ${MAIL_BOOKINGS_FROM:bookings@joyway.in}
+    bookings-from-name: ${MAIL_BOOKINGS_FROM_NAME:JOYWAY Bookings}
+    bookings-reply-to: ${MAIL_BOOKINGS_REPLY_TO:bookings@joyway.in}
+    support-from: ${MAIL_SUPPORT_FROM:support@joyway.in}
+    support-from-name: ${MAIL_SUPPORT_FROM_NAME:JOYWAY Support}
+    support-reply-to: ${MAIL_SUPPORT_REPLY_TO:support@joyway.in}
+    noreply-from: ${MAIL_NOREPLY_FROM:noreply@joyway.in}
+    noreply-from-name: ${MAIL_NOREPLY_FROM_NAME:JOYWAY}
+    noreply-reply-to: ${MAIL_NOREPLY_REPLY_TO:noreply@joyway.in}
+    admin-notification-email: ${ADMIN_NOTIFICATION_EMAIL:hello@joyway.in}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+    enabled: ${MAIL_ENABLED:true}
+    preview-enabled: ${MAIL_PREVIEW_ENABLED:false}
+    max-retry-attempts: ${MAIL_MAX_RETRY_ATTEMPTS:3}
+    retry-delay-ms: ${MAIL_RETRY_DELAY_MS:300000}
+  notifications:
+    trip-reminder-enabled: ${TRIP_REMINDER_ENABLED:true}
+    trip-reminder-days-before: 7
+    trip-reminder-day-before-enabled: true
+  monitoring:
+    reconciliation-cron: ${PAYMENT_RECONCILIATION_CRON:0 */15 * * * *}
+  operations:
+    expose-driver-contact-to-customers: ${EXPOSE_DRIVER_CONTACT_TO_CUSTOMERS:false}
+
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:}
+  key-secret: ${RAZORPAY_KEY_SECRET:}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+
+storage:
+  provider: ${STORAGE_PROVIDER:local}
+  endpoint: ${STORAGE_ENDPOINT:}
+  access-key: ${STORAGE_ACCESS_KEY:}
+  secret-key: ${STORAGE_SECRET_KEY:}
+  bucket: ${STORAGE_BUCKET:joyway-documents}
+  container: ${STORAGE_CONTAINER:${STORAGE_BUCKET:joyway-documents}}
+  local-path: ${STORAGE_LOCAL_PATH:./storage}
+  use-managed-identity: ${STORAGE_USE_MANAGED_IDENTITY:false}
+  sas-expiry-minutes: ${STORAGE_SAS_EXPIRY_MINUTES:15}

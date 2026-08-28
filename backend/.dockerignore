@@ -1,0 +1,24 @@
+# Docker only reads the .dockerignore inside the build context directory.
+# The repository-root .dockerignore does NOT apply when building with context ./backend.
+
+# Maven build output (the image rebuilds it)
+target
+
+# Local environment files holding real credentials
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Runtime upload storage (mounted as a volume in production)
+storage
+
+# Tooling / VCS / OS
+.git
+.gitignore
+.vscode
+.idea
+*.iml
+*.log
+.DS_Store
+Thumbs.db

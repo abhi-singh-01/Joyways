@@ -1,0 +1,60 @@
+package in.joyway.config;
+
+import in.joyway.domain.entity.Role;
+import in.joyway.domain.entity.User;
+import in.joyway.domain.repository.RoleRepository;
+import in.joyway.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Set;
+
+@Configuration
+@RequiredArgsConstructor
+@Slf4j
+public class AdminBootstrapConfig {
+
+    private final AdminBootstrapProperties bootstrapProperties;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Bean
+    public CommandLineRunner bootstrapAdmin() {
+        return args -> {
+            if (!bootstrapProperties.isEnabled()) {
+                log.info("Admin bootstrap disabled.");
+                return;
+            }
+
+            if (userRepository.existsByEmail(bootstrapProperties.getEmail())) {
+                log.info("Admin user already exists. Skipping bootstrap.");
+                return;
+            }
+
+            String password = bootstrapProperties.getPassword();
+            if (password == null || password.isBlank()) {
+                log.warn("Admin bootstrap enabled but ADMIN_BOOTSTRAP_PASSWORD is not set. Skipping admin creation.");
+                return;
+            }
+
+            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                    .orElseThrow(() -> new IllegalStateException("ROLE_ADMIN not found in database."));
+
+            User admin = User.builder()
+                    .name(bootstrapProperties.getName())
+                    .email(bootstrapProperties.getEmail())
+                    .passwordHash(passwordEncoder.encode(password))
+                    .enabled(true)
+                    .roles(Set.of(adminRole))
+                    .build();
+
+            userRepository.save(admin);
+            log.info("Bootstrap admin user created: {}", bootstrapProperties.getEmail());
+        };
+    }
+}

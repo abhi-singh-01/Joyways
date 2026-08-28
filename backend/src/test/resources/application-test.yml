@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:joyway_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    enabled: false
+  mail:
+    host: localhost
+    port: 25
+    username: test
+    password: test
+
+joyway:
+  jwt:
+    secret: test-secret-key-for-jwt-signing-minimum-256-bits-long-enough
+  admin:
+    bootstrap:
+      enabled: false
+  cors:
+    allowed-origins: http://localhost:3000
+  mail:
+    enabled: false
+    preview-enabled: false
+    admin-notification-email: hello@joyway.in
+    frontend-base-url: http://localhost:3000
+    general-from: hello@joyway.in
+    bookings-from: bookings@joyway.in
+    support-from: support@joyway.in
+    noreply-from: noreply@joyway.in
+  notifications:
+    trip-reminder-enabled: false
+
+razorpay:
+  key-id: rzp_test_placeholder
+  key-secret: test_razorpay_secret_placeholder_32chars
+  webhook-secret: test_webhook_secret_placeholder
+
+storage:
+  provider: local
+  local-path: ./target/test-storage

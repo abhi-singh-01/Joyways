@@ -1,0 +1,77 @@
+package in.joyway.controller.dev;
+
+import in.joyway.config.MailProperties;
+import in.joyway.dto.ApiResponse;
+import in.joyway.notification.EmailTemplateService;
+import in.joyway.notification.EmailTemplates;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/dev/email")
+@Profile("dev")
+@RequiredArgsConstructor
+public class EmailPreviewController {
+
+    private final EmailTemplateService emailTemplateService;
+    private final MailProperties mailProperties;
+
+    @GetMapping(value = "/preview/{template}", produces = "text/html")
+    public String previewTemplate(@PathVariable String template) {
+        if (!mailProperties.isPreviewEnabled()) {
+            return "<p>Email preview is disabled. Set MAIL_PREVIEW_ENABLED=true</p>";
+        }
+        return emailTemplateService.preview(template, sampleVariables(template));
+    }
+
+    @GetMapping("/templates")
+    public ApiResponse<Map<String, String>> listTemplates() {
+        Map<String, String> templates = new HashMap<>();
+        templates.put("welcome", EmailTemplates.WELCOME);
+        templates.put("booking-created", EmailTemplates.BOOKING_CREATED);
+        templates.put("payment-success", EmailTemplates.PAYMENT_SUCCESS);
+        templates.put("payment-failed", EmailTemplates.PAYMENT_FAILED);
+        templates.put("booking-confirmed", EmailTemplates.BOOKING_CONFIRMED);
+        templates.put("booking-cancelled", EmailTemplates.BOOKING_CANCELLED);
+        templates.put("trip-reminder-7", EmailTemplates.TRIP_REMINDER_7);
+        templates.put("trip-reminder-1", EmailTemplates.TRIP_REMINDER_1);
+        return ApiResponse.success(templates);
+    }
+
+    private Map<String, String> sampleVariables(String template) {
+        Map<String, String> vars = new HashMap<>();
+        vars.put("customerName", "Priya Sharma");
+        vars.put("customerEmail", "priya@example.com");
+        vars.put("loginUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
+        vars.put("bookingReference", "JW-2026-00018");
+        vars.put("packageTitle", "Nainital Weekend Escape");
+        vars.put("destination", "Nainital");
+        vars.put("travelDate", "15 Sep 2026");
+        vars.put("endDate", "17 Sep 2026");
+        vars.put("travellerCount", "2");
+        vars.put("amount", "12000.00");
+        vars.put("amountPaid", "12000.00");
+        vars.put("currency", "INR");
+        vars.put("paymentStatusLabel", "PAID");
+        vars.put("bookingStatusLabel", "CONFIRMED");
+        vars.put("paymentPendingNote", "Payment is pending. Please complete payment to confirm your seats.");
+        vars.put("continuePaymentUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
+        vars.put("paymentId", "pay_sample123");
+        vars.put("paymentDate", "27 Aug 2026");
+        vars.put("duration", "2 Nights / 3 Days");
+        vars.put("pickup", "Kashmere Gate, Delhi");
+        vars.put("bookingUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
+        vars.put("cancellationDate", "27 Aug 2026");
+        vars.put("refundNote", "If a refund applies, our team will process it separately and confirm by email.");
+        vars.put("reminderMessage", "Your JOYWAY trip is coming up in 7 days.");
+        vars.put("daysBefore", "7");
+        vars.put("receiptTitle", "Travel Booking Receipt");
+        vars.put("frontendUrl", mailProperties.getFrontendBaseUrl());
+        vars.put("supportEmail", mailProperties.getFrom());
+        return vars;
+    }
+}

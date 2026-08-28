@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  /* JOYWAY Design Tokens */
+  --color-off-white: #faf9f7;
+  --color-white: #ffffff;
+  --color-charcoal: #1a1a1a;
+  --color-charcoal-muted: #4a4a4a;
+  --color-forest: #1b4332;
+  --color-forest-light: #2d6a4f;
+  --color-forest-dark: #081c15;
+  --color-accent: #d4a574;
+  --color-accent-light: #e8c9a8;
+  --color-border: #e8e6e3;
+  --color-surface: #f5f4f2;
+
+  --background: var(--color-off-white);
+  --foreground: var(--color-charcoal);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-off-white: var(--color-off-white);
+  --color-charcoal: var(--color-charcoal);
+  --color-charcoal-muted: var(--color-charcoal-muted);
+  --color-forest: var(--color-forest);
+  --color-forest-light: var(--color-forest-light);
+  --color-forest-dark: var(--color-forest-dark);
+  --color-accent: var(--color-accent);
+  --color-accent-light: var(--color-accent-light);
+  --color-border: var(--color-border);
+  --color-surface: var(--color-surface);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-playfair);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-playfair), Georgia, serif;
+}

@@ -1,0 +1,128 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { getAdminBooking, cancelAdminBooking, type AdminBookingDetail } from "@/lib/api/adminBookingsApi";
+import { formatDateRange, formatPrice } from "@/lib/format";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Button } from "@/components/ui/Button";
+
+export default function AdminBookingDetailPage() {
+  const params = useParams<{ id: string }>();
+  const bookingId = Number(params.id);
+  const hasValidId = Number.isInteger(bookingId) && bookingId > 0;
+
+  const [booking, setBooking] = useState<AdminBookingDetail | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(hasValidId);
+  const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    if (!hasValidId) return;
+
+    let cancelled = false;
+    getAdminBooking(bookingId)
+      .then((detail) => {
+        if (!cancelled) setBooking(detail);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load booking");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingId, hasValidId]);
+
+  if (!hasValidId) {
+    return <ErrorState message="Invalid booking ID" fullPage />;
+  }
+
+  async function handleCancel() {
+    if (!booking || !window.confirm("Cancel this booking? Seats will be restored.")) {
+      return;
+    }
+    setCancelling(true);
+    try {
+      await cancelAdminBooking(booking.bookingId);
+      setBooking({ ...booking, bookingStatus: "CANCELLED" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cancellation failed");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  if (loading) return <p className="text-charcoal-muted">Loading booking...</p>;
+  if (error || !booking) {
+    return <ErrorState title="Booking not found" message={error || "Unable to load booking"} />;
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <Link href="/admin/bookings" className="text-sm font-medium text-forest hover:underline">
+        ← Back to bookings
+      </Link>
+      <h1 className="mt-4 font-display text-3xl font-semibold text-charcoal">
+        {booking.bookingReference}
+      </h1>
+      <p className="mt-1 text-charcoal-muted">{booking.packageTitle}</p>
+
+      <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-white p-5">
+          <h2 className="font-semibold text-charcoal">Customer</h2>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div><dt className="text-charcoal-muted">Name</dt><dd>{booking.customerName}</dd></div>
+            <div><dt className="text-charcoal-muted">Email</dt><dd>{booking.customerEmail}</dd></div>
+            <div><dt className="text-charcoal-muted">Mobile</dt><dd>{booking.customerMobile}</dd></div>
+          </dl>
+        </div>
+        <div className="rounded-2xl border border-border bg-white p-5">
+          <h2 className="font-semibold text-charcoal">Payment</h2>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div><dt className="text-charcoal-muted">Amount</dt><dd>{formatPrice(booking.totalAmount)}</dd></div>
+            <div><dt className="text-charcoal-muted">Booking Status</dt><dd>{booking.bookingStatus}</dd></div>
+            <div><dt className="text-charcoal-muted">Payment Status</dt><dd>{booking.paymentStatus}</dd></div>
+            <div><dt className="text-charcoal-muted">Order ID</dt><dd>{booking.razorpayOrderId || "—"}</dd></div>
+            <div><dt className="text-charcoal-muted">Payment ID</dt><dd>{booking.razorpayPaymentId || "—"}</dd></div>
+            <div><dt className="text-charcoal-muted">Signature Verified</dt><dd>{booking.signatureVerified ? "Yes" : "No"}</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-border bg-white p-5">
+        <h2 className="font-semibold text-charcoal">Trip</h2>
+        <p className="mt-2 text-sm">{formatDateRange(booking.startDate, booking.endDate)}</p>
+        <p className="text-sm text-charcoal-muted">{booking.numberOfTravellers} travellers</p>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-border bg-white p-5">
+        <h2 className="font-semibold text-charcoal">Travellers</h2>
+        <ul className="mt-3 space-y-2 text-sm">
+          {booking.travellers.map((t, i) => (
+            <li key={i}>{t.fullName} · {t.idDocumentType}</li>
+          ))}
+        </ul>
+      </div>
+
+      {booking.bookingStatus !== "CANCELLED" && booking.bookingStatus !== "COMPLETED" && (
+        <div className="mt-8">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={cancelling}
+            onClick={() => void handleCancel()}
+            className="border-red-200 text-red-700 hover:bg-red-50"
+          >
+            {cancelling ? "Cancelling..." : "Cancel Booking"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

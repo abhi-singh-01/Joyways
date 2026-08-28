@@ -1,0 +1,85 @@
+name: Deploy Production
+
+# Runs only when you manually trigger it after CI is green.
+# Configure GitHub repository secrets before first use (Settings → Secrets and variables → Actions).
+#
+# Required secrets (Azure Container Apps / App Service example):
+#   AZURE_CLIENT_ID
+#   AZURE_TENANT_ID
+#   AZURE_SUBSCRIPTION_ID
+#   ACR_LOGIN_SERVER          e.g. joywayprod.azurecr.io
+#   ACR_USERNAME
+#   ACR_PASSWORD
+#
+# Do NOT store DATABASE_PASSWORD, JWT_SECRET, RAZORPAY_* etc. in this workflow file.
+# Inject them via Azure App Service / Container Apps environment configuration.
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Docker image tag (e.g. sha or v1.0.0)
+        required: true
+        default: latest
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and push images (Azure deploy stub)
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Azure secrets are configured
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+        run: |
+          if [ -z "$AZURE_CLIENT_ID" ] || [ -z "$ACR_LOGIN_SERVER" ]; then
+            echo "Missing Azure deployment secrets."
+            echo "Add AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,"
+            echo "ACR_LOGIN_SERVER, ACR_USERNAME, and ACR_PASSWORD in GitHub Actions secrets."
+            exit 1
+          fi
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push backend
+        run: |
+          IMAGE="${{ secrets.ACR_LOGIN_SERVER }}/joyway-backend:${{ inputs.image_tag }}"
+          docker build -t "$IMAGE" ./backend
+          docker push "$IMAGE"
+
+      - name: Build and push frontend
+        env:
+          PUBLIC_API_BASE_URL: https://api.joyway.in
+        run: |
+          IMAGE="${{ secrets.ACR_LOGIN_SERVER }}/joyway-frontend:${{ inputs.image_tag }}"
+          docker build -t "$IMAGE" \
+            --build-arg NEXT_PUBLIC_API_BASE_URL="$PUBLIC_API_BASE_URL" \
+            --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${{ secrets.RAZORPAY_KEY_ID_PUBLIC }}" \
+            ./frontend
+          docker push "$IMAGE"
+
+      - name: Deploy note
+        run: |
+          echo "Images pushed. Update Azure Container Apps / App Service to pull:"
+          echo "  joyway-backend:${{ inputs.image_tag }}"
+          echo "  joyway-frontend:${{ inputs.image_tag }}"
+          echo "Wire runtime env vars (DATABASE_*, JWT_*, RAZORPAY_*, STORAGE_*) in Azure — not in GitHub."
