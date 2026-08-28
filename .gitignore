@@ -59,9 +59,8 @@ credentials.json
 secrets.json
 service-account*.json
 
-# Local storage / uploads
+# Local storage / uploads (runtime files only — not Java source packages)
 backend/storage/
-storage/
 uploads/
 
 # Vercel / deployment artifacts
