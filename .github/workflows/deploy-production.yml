@@ -13,7 +13,8 @@ name: Deploy Production
 #   AZURE_TENANT_ID
 #   AZURE_SUBSCRIPTION_ID
 #   ACR_LOGIN_SERVER          e.g. joywayprodacr.azurecr.io
-#   RAZORPAY_KEY_ID_PUBLIC      public checkout key only (rzp_live_* / rzp_test_*)
+#   NEXT_PUBLIC_API_BASE_URL  e.g. https://joyway-backend-prod....azurecontainerapps.io
+#   RAZORPAY_KEY_ID_PUBLIC    public checkout key only (rzp_live_* / rzp_test_*)
 #
 # Do NOT store DATABASE_*, JWT_*, RAZORPAY_KEY_SECRET, SMTP_*, STORAGE_* or other
 # runtime private secrets in GitHub Actions. Inject them in Azure at runtime only.
@@ -45,9 +46,10 @@ jobs:
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
           ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
         run: |
           missing=0
-          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID ACR_LOGIN_SERVER; do
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID ACR_LOGIN_SERVER NEXT_PUBLIC_API_BASE_URL; do
             value="${!name}"
             if [ -z "$value" ]; then
               echo "Missing GitHub variable: $name"
@@ -56,7 +58,7 @@ jobs:
           done
           if [ "$missing" -ne 0 ]; then
             echo "Configure AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,"
-            echo "and ACR_LOGIN_SERVER as GitHub Actions variables (production environment)."
+            echo "ACR_LOGIN_SERVER, and NEXT_PUBLIC_API_BASE_URL as GitHub Actions variables."
             exit 1
           fi
 
@@ -77,12 +79,10 @@ jobs:
           docker push "$IMAGE"
 
       - name: Build and push frontend
-        env:
-          PUBLIC_API_BASE_URL: https://api.joyway.in
         run: |
           IMAGE="${{ vars.ACR_LOGIN_SERVER }}/joyway-frontend:${{ inputs.image_tag }}"
           docker build -t "$IMAGE" \
-            --build-arg NEXT_PUBLIC_API_BASE_URL="$PUBLIC_API_BASE_URL" \
+            --build-arg NEXT_PUBLIC_API_BASE_URL="${{ vars.NEXT_PUBLIC_API_BASE_URL }}" \
             --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${{ vars.RAZORPAY_KEY_ID_PUBLIC }}" \
             ./frontend
           docker push "$IMAGE"
