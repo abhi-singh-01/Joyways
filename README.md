@@ -34,7 +34,7 @@ The frontend and backend are **logically independent**. All business logic lives
 
 | Tool | Version |
 |------|---------|
-| Node.js | 20+ (tested with 22) |
+| Node.js | 24 LTS |
 | Java | 21+ |
 | Maven | 3.9+ |
 | PostgreSQL | 15+ |
