@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Set;
@@ -22,10 +23,19 @@ public class AdminBootstrapConfig {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
 
     @Bean
     public CommandLineRunner bootstrapAdmin() {
         return args -> {
+            log.info("Admin bootstrap diagnostic: properties.enabled={}, env.ADMIN_BOOTSTRAP_ENABLED={}, "
+                    + "spring.ADMIN_BOOTSTRAP_ENABLED={}, spring.joyway.admin.bootstrap.enabled={}, email={}",
+                    bootstrapProperties.isEnabled(),
+                    System.getenv("ADMIN_BOOTSTRAP_ENABLED"),
+                    environment.getProperty("ADMIN_BOOTSTRAP_ENABLED"),
+                    environment.getProperty("joyway.admin.bootstrap.enabled"),
+                    bootstrapProperties.getEmail());
+
             if (!bootstrapProperties.isEnabled()) {
                 log.info("Admin bootstrap disabled.");
                 return;

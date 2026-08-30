@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -31,6 +32,9 @@ class AdminBootstrapConfigTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private Environment environment;
+
     private AdminBootstrapProperties bootstrapProperties;
     private AdminBootstrapConfig config;
 
@@ -41,7 +45,8 @@ class AdminBootstrapConfigTest {
                 bootstrapProperties,
                 userRepository,
                 roleRepository,
-                passwordEncoder
+                passwordEncoder,
+                environment
         );
     }
 
