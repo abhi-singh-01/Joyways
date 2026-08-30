@@ -26,4 +26,4 @@ joyway:
     cookie-secure: true
   admin:
     bootstrap:
-      enabled: false
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
