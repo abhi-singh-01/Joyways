@@ -31,15 +31,16 @@ public class AdminBootstrapConfig {
                 return;
             }
 
-            if (userRepository.existsByEmail(bootstrapProperties.getEmail())) {
-                log.info("Admin user already exists. Skipping bootstrap.");
+            String email = bootstrapProperties.getEmail();
+            if (userRepository.existsByEmail(email)) {
+                log.info("Admin user already exists ({}). Skipping bootstrap.", email);
                 return;
             }
 
             String password = bootstrapProperties.getPassword();
             if (password == null || password.isBlank()) {
-                log.warn("Admin bootstrap enabled but ADMIN_BOOTSTRAP_PASSWORD is not set. Skipping admin creation.");
-                return;
+                throw new IllegalStateException(
+                        "ADMIN_BOOTSTRAP_PASSWORD is required when ADMIN_BOOTSTRAP_ENABLED=true.");
             }
 
             Role adminRole = roleRepository.findByName("ROLE_ADMIN")
@@ -47,14 +48,14 @@ public class AdminBootstrapConfig {
 
             User admin = User.builder()
                     .name(bootstrapProperties.getName())
-                    .email(bootstrapProperties.getEmail())
+                    .email(email)
                     .passwordHash(passwordEncoder.encode(password))
                     .enabled(true)
                     .roles(Set.of(adminRole))
                     .build();
 
             userRepository.save(admin);
-            log.info("Bootstrap admin user created: {}", bootstrapProperties.getEmail());
+            log.info("Bootstrap admin user created: {}", email);
         };
     }
 }

@@ -1,0 +1,33 @@
+[35mREADME.md[m[36m:[m[32m66[m[36m:[m$env:[1;31mADMIN_BOOTSTRAP[m_PASSWORD="your-secure-admin-password"
+[35mREADME.md[m[36m:[m[32m107[m[36m:[m| `[1;31mADMIN_BOOTSTRAP[m_ENABLED` | Create first admin on startup |
+[35mREADME.md[m[36m:[m[32m108[m[36m:[m| `[1;31mADMIN_BOOTSTRAP[m_EMAIL` | [1;31mBootstrap admin[m email |
+[35mREADME.md[m[36m:[m[32m109[m[36m:[m| `[1;31mADMIN_BOOTSTRAP[m_PASSWORD` | [1;31mBootstrap admin[m password |
+[35mREADME.md[m[36m:[m[32m124[m[36m:[m1. Set `[1;31mADMIN_BOOTSTRAP[m_ENABLED=true`
+[35mREADME.md[m[36m:[m[32m125[m[36m:[m2. Set `[1;31mADMIN_BOOTSTRAP[m_EMAIL` and `[1;31mADMIN_BOOTSTRAP[m_PASSWORD`
+[35mREADME.md[m[36m:[m[32m127[m[36m:[m4. Set `[1;31mADMIN_BOOTSTRAP[m_ENABLED=false` after first login
+[35mREADME.md[m[36m:[m[32m267[m[36m:[m- Set `[1;31mADMIN_BOOTSTRAP[m_PASSWORD` to a non-empty value
+[35mbackend/src/main/java/in/joyway/JoywayApplication.java[m[36m:[m[32m3[m[36m:[mimport in.joyway.config.[1;31mAdminBootstrap[mProperties;
+[35mbackend/src/main/java/in/joyway/JoywayApplication.java[m[36m:[m[32m24[m[36m:[m        [1;31mAdminBootstrap[mProperties.class,
+[35mbackend/src/main/java/in/joyway/config/AdminBootstrapConfig.java[m[36m:[m[32m19[m[36m:[mpublic class [1;31mAdminBootstrap[mConfig {
+[35mbackend/src/main/java/in/joyway/config/AdminBootstrapConfig.java[m[36m:[m[32m21[m[36m:[m    private final [1;31mAdminBootstrap[mProperties bootstrapProperties;
+[35mbackend/src/main/java/in/joyway/config/AdminBootstrapConfig.java[m[36m:[m[32m27[m[36m:[m    public CommandLineRunner [1;31mbootstrapAdmin[m() {
+[35mbackend/src/main/java/in/joyway/config/AdminBootstrapConfig.java[m[36m:[m[32m41[m[36m:[m                log.warn("Admin [1;31mbootstrap enabled but ADMIN_BOOTSTRAP_PASSWORD is not set. Skipping admin[m creation.");
+[35mbackend/src/main/java/in/joyway/config/AdminBootstrapConfig.java[m[36m:[m[32m45[m[36m:[m            Role [1;31madminRole = roleRepository[m.findByName("ROLE_ADMIN")
+[35mbackend/src/main/java/in/joyway/config/AdminBootstrapConfig.java[m[36m:[m[32m57[m[36m:[m            log.info("[1;31mBootstrap admin[m user created: {}", bootstrapProperties.getEmail());
+[35mbackend/src/main/java/in/joyway/config/AdminBootstrapProperties.java[m[36m:[m[32m10[m[36m:[mpublic class [1;31mAdminBootstrap[mProperties {
+[35mbackend/src/main/java/in/joyway/config/ProductionSecurityValidator.java[m[36m:[m[32m43[m[36m:[m    private final [1;31mAdminBootstrap[mProperties [1;31madminBootstrap[mProperties;
+[35mbackend/src/main/java/in/joyway/config/ProductionSecurityValidator.java[m[36m:[m[32m54[m[36m:[m        validate[1;31mAdminBootstrap[mDisabled();
+[35mbackend/src/main/java/in/joyway/config/ProductionSecurityValidator.java[m[36m:[m[32m106[m[36m:[m    private void validate[1;31mAdminBootstrap[mDisabled() {
+[35mbackend/src/main/java/in/joyway/config/ProductionSecurityValidator.java[m[36m:[m[32m107[m[36m:[m        if ([1;31madminBootstrap[mProperties.isEnabled()) {
+[35mbackend/src/main/java/in/joyway/config/ProductionSecurityValidator.java[m[36m:[m[32m109[m[36m:[m                    "[1;31mADMIN_BOOTSTRAP[m_ENABLED must be false in production after initial admin setup.");
+[35mbackend/src/main/java/in/joyway/notification/NotificationService.java[m[36m:[m[32m36[m[36m:[m        List<User> [1;31madmins = userRepository[m.findActiveAdmins();
+[35mbackend/src/main/resources/application.yml[m[36m:[m[32m70[m[36m:[m      enabled: ${[1;31mADMIN_BOOTSTRAP[m_ENABLED:false}
+[35mbackend/src/main/resources/application.yml[m[36m:[m[32m71[m[36m:[m      email: ${[1;31mADMIN_BOOTSTRAP[m_EMAIL:admin@joyway.in}
+[35mbackend/src/main/resources/application.yml[m[36m:[m[32m72[m[36m:[m      password: ${[1;31mADMIN_BOOTSTRAP[m_PASSWORD:}
+[35mbackend/src/main/resources/application.yml[m[36m:[m[32m73[m[36m:[m      name: ${[1;31mADMIN_BOOTSTRAP[m_NAME:JOYWAY Admin}
+[35mbackend/src/test/java/in/joyway/config/ProductionSecurityValidatorStorageTest.java[m[36m:[m[32m31[m[36m:[m    private [1;31mAdminBootstrap[mProperties [1;31madminBootstrap[mProperties;
+[35mbackend/src/test/java/in/joyway/config/ProductionSecurityValidatorStorageTest.java[m[36m:[m[32m46[m[36m:[m                [1;31madminBootstrap[mProperties,
+[35mdocker-compose.prod.yml[m[36m:[m[32m22[m[36m:[m      [1;31mADMIN_BOOTSTRAP[m_ENABLED: "false"
+[35mdocs/DISASTER_RECOVERY.md[m[36m:[m[32m108[m[36m:[m  (weak `JWT_SECRET`, wildcard CORS, `[1;31mADMIN_BOOTSTRAP[m_ENABLED=true`, missing
+[35mdocs/PRODUCTION_CHECKLIST.md[m[36m:[m[32m34[m[36m:[m- [ ] `[1;31mADMIN_BOOTSTRAP[m_ENABLED=false` in production
+[35mdocs/PRODUCTION_RUNBOOK.md[m[36m:[m[32m57[m[36m:[m`[1;31mADMIN_BOOTSTRAP[m_ENABLED`, `RAZORPAY_WEBHOOK_SECRET` or the database URL is that guard doing

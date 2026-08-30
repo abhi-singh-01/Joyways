@@ -51,7 +51,7 @@ public class ProductionSecurityValidator {
         validateJwtSecret();
         validateJwtCookieSecure();
         validateCors();
-        validateAdminBootstrapDisabled();
+        validateAdminBootstrap();
         validateDatabaseUrl();
         validateRazorpaySecrets();
         validateStorageConfiguration();
@@ -103,10 +103,39 @@ public class ProductionSecurityValidator {
                 });
     }
 
-    private void validateAdminBootstrapDisabled() {
-        if (adminBootstrapProperties.isEnabled()) {
+    private static final int MIN_BOOTSTRAP_PASSWORD_LENGTH = 12;
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
+
+    private void validateAdminBootstrap() {
+        if (!adminBootstrapProperties.isEnabled()) {
+            return;
+        }
+
+        log.warn("ADMIN_BOOTSTRAP_ENABLED=true in production. "
+                + "This should only be used for initial admin setup. "
+                + "Disable immediately after creating the first admin.");
+
+        String email = adminBootstrapProperties.getEmail();
+        if (!StringUtils.hasText(email)) {
             throw new IllegalStateException(
-                    "ADMIN_BOOTSTRAP_ENABLED must be false in production after initial admin setup.");
+                    "ADMIN_BOOTSTRAP_EMAIL must be set when bootstrap is enabled.");
+        }
+        if (!EMAIL_PATTERN.matcher(email.trim()).matches()) {
+            throw new IllegalStateException(
+                    "ADMIN_BOOTSTRAP_EMAIL must be a valid email address.");
+        }
+
+        String password = adminBootstrapProperties.getPassword();
+        if (!StringUtils.hasText(password)) {
+            throw new IllegalStateException(
+                    "ADMIN_BOOTSTRAP_PASSWORD must be set when bootstrap is enabled.");
+        }
+        if (password.length() < MIN_BOOTSTRAP_PASSWORD_LENGTH) {
+            throw new IllegalStateException(
+                    "ADMIN_BOOTSTRAP_PASSWORD must be at least " + MIN_BOOTSTRAP_PASSWORD_LENGTH
+                            + " characters for production security.");
         }
     }
 

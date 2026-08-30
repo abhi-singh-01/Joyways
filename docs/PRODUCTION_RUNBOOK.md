@@ -57,6 +57,97 @@ The backend refuses to start in the `prod` profile when security configuration i
 `ADMIN_BOOTSTRAP_ENABLED`, `RAZORPAY_WEBHOOK_SECRET` or the database URL is that guard doing
 its job — fix the setting rather than bypassing the check.
 
+---
+
+## FIRST ADMIN SETUP
+
+The first admin user must be created through a one-time bootstrap process. This is a
+controlled operation that should only be performed once when the system is first deployed.
+
+### Prerequisites
+
+- Backend is deployed and can connect to the database
+- ROLE_ADMIN exists in the database (created by Flyway migration)
+
+### Steps
+
+1. **Set bootstrap environment variables** on the backend Container App:
+
+   ```
+   ADMIN_BOOTSTRAP_ENABLED=true
+   ADMIN_BOOTSTRAP_EMAIL=admin@joyway.in
+   ADMIN_BOOTSTRAP_PASSWORD=<secure-password-at-least-12-chars>
+   ADMIN_BOOTSTRAP_NAME=JOYWAY Admin
+   ```
+
+   > **Security requirements:**
+   > - Password must be at least 12 characters
+   > - Email must be a valid email address
+   > - Never commit these values to Git
+
+2. **Restart the backend** to trigger the bootstrap:
+
+   ```bash
+   az containerapp revision restart -g $RG -n $APP
+   ```
+
+3. **Verify the admin was created:**
+
+   ```bash
+   az containerapp logs show -g $RG -n $APP --tail 100 | grep -i bootstrap
+   ```
+
+   Look for: `Bootstrap admin user created: admin@joyway.in`
+
+   Or verify in the database:
+
+   ```sql
+   SELECT u.email, u.name, u.enabled, r.name AS role
+   FROM users u
+   JOIN user_roles ur ON ur.user_id = u.id
+   JOIN roles r ON r.id = ur.role_id
+   WHERE u.email = 'admin@joyway.in';
+   ```
+
+4. **Immediately disable bootstrap:**
+
+   ```
+   ADMIN_BOOTSTRAP_ENABLED=false
+   ```
+
+   Then restart the backend again. The application will refuse to start in production if
+   bootstrap remains enabled after the admin exists — this is intentional to prevent
+   accidental credential exposure.
+
+5. **Test admin login:**
+
+   Navigate to `https://joyway.in/admin/login` and sign in with the bootstrap credentials.
+
+6. **Change the password** through the admin interface (if available) or by updating the
+   user directly, then securely delete the bootstrap password from any notes or password
+   managers used during setup.
+
+### Troubleshooting
+
+| Error | Cause | Fix |
+|---|---|---|
+| `ADMIN_BOOTSTRAP_EMAIL must be set` | Email is empty | Set a valid email |
+| `ADMIN_BOOTSTRAP_EMAIL must be a valid email address` | Invalid format | Fix the email format |
+| `ADMIN_BOOTSTRAP_PASSWORD must be set` | Password is empty | Set a password |
+| `ADMIN_BOOTSTRAP_PASSWORD must be at least 12 characters` | Weak password | Use a stronger password |
+| `ROLE_ADMIN not found in database` | Migration not run | Check Flyway migrations |
+| `Admin user already exists` | Already bootstrapped | No action needed — proceed to step 4 |
+
+### Security notes
+
+- Bootstrap credentials are **never logged** by the application
+- The bootstrap password is only used once — it is hashed with BCrypt before storage
+- After bootstrap, the admin authenticates using JWT cookies, not the bootstrap env vars
+- Do not store `ADMIN_BOOTSTRAP_PASSWORD` in GitHub Actions or any committed file
+- Consider rotating the admin password after initial login
+
+---
+
 ### Verify health
 
 ```bash
