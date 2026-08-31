@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import { Trash2, Upload, Link as LinkIcon } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import {
-  addPackageImageUrl,
   deletePackageImage,
   uploadPackageImage,
 } from "@/lib/api/adminPackagesApi";
 import type { PackageImage } from "@/lib/api/packagesApi";
+
+const MAX_PACKAGE_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PACKAGE_IMAGE_TYPES = new Set(["image/jpeg", "image/webp"]);
 
 type PackageImageManagerProps = {
   packageId: number;
@@ -19,36 +20,40 @@ type PackageImageManagerProps = {
   onImagesChange: (images: PackageImage[]) => void;
 };
 
+function isAllowedPackageImage(file: File): string | null {
+  const name = file.name.toLowerCase();
+  const typeOk =
+    ALLOWED_PACKAGE_IMAGE_TYPES.has(file.type) ||
+    name.endsWith(".jpg") ||
+    name.endsWith(".jpeg") ||
+    name.endsWith(".webp");
+  if (!typeOk) {
+    return "Only JPEG, JPG, or WebP images are allowed.";
+  }
+  if (file.size > MAX_PACKAGE_IMAGE_BYTES) {
+    return "Each image must be 5MB or smaller.";
+  }
+  return null;
+}
+
 export function PackageImageManager({
   packageId,
   images,
   onImagesChange,
 }: PackageImageManagerProps) {
-  const [imageUrl, setImageUrl] = useState("");
   const [altText, setAltText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleAddUrl(e: React.FormEvent) {
-    e.preventDefault();
-    if (!imageUrl.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const added = await addPackageImageUrl(packageId, imageUrl.trim(), altText || undefined);
-      onImagesChange([...images, added]);
-      setImageUrl("");
-      setAltText("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add image");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    const validationError = isAllowedPackageImage(file);
+    if (validationError) {
+      setError(validationError);
+      e.target.value = "";
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -79,31 +84,32 @@ export function PackageImageManager({
   return (
     <section className="rounded-2xl border border-border bg-white p-6">
       <h2 className="font-display text-lg font-semibold text-charcoal">
-        Package Images
+        Package photos
       </h2>
       <p className="mt-1 text-sm text-charcoal-muted">
-        Add images by URL or upload from your device
+        Upload JPEG, JPG, or WebP files only (max 5MB each). The first photo is
+        shown as the main image on the website. Image URLs are not accepted.
       </p>
 
       {images.length > 0 && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {images.map((img) => (
+          {images.map((img, index) => (
             <div
               key={img.id}
               className="group relative overflow-hidden rounded-xl border border-border"
             >
-              <div className="relative aspect-video">
-                <Image
+              <div className="relative aspect-video bg-surface">
+                {/* Native img avoids Next.js remote-host restrictions for uploaded files. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={img.imageUrl}
                   alt={img.altText || "Package image"}
-                  fill
-                  className="object-cover"
-                  sizes="200px"
+                  className="h-full w-full object-cover"
                 />
               </div>
               <div className="flex items-center justify-between p-2">
                 <span className="truncate text-xs text-charcoal-muted">
-                  {img.altText || "No alt text"}
+                  {index === 0 ? "Main photo" : img.altText || `Photo ${index + 1}`}
                 </span>
                 <button
                   type="button"
@@ -120,42 +126,27 @@ export function PackageImageManager({
       )}
 
       <div className="mt-6 space-y-4 border-t border-border pt-6">
-        <form onSubmit={handleAddUrl} className="space-y-3">
-          <div>
-            <Label htmlFor="imageUrl">Add by URL</Label>
-            <div className="flex gap-2">
-              <Input
-                id="imageUrl"
-                type="url"
-                placeholder="https://images.unsplash.com/..."
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-              />
-              <Button type="submit" variant="outline" disabled={loading}>
-                <LinkIcon size={16} />
-              </Button>
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="altText">Alt Text (optional)</Label>
-            <Input
-              id="altText"
-              value={altText}
-              onChange={(e) => setAltText(e.target.value)}
-              placeholder="Describe the image"
-            />
-          </div>
-        </form>
-
         <div>
-          <Label htmlFor="fileUpload">Upload Image</Label>
+          <Label htmlFor="altText">Photo caption (optional)</Label>
+          <Input
+            id="altText"
+            value={altText}
+            onChange={(e) => setAltText(e.target.value)}
+            placeholder="e.g. Nainital lake at sunrise"
+          />
+          <p className="mt-1 text-xs text-charcoal-muted">
+            Short text describing the photo for accessibility.
+          </p>
+        </div>
+        <div>
+          <Label htmlFor="fileUpload">Upload photo</Label>
           <label className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border px-4 py-6 text-sm text-charcoal-muted hover:border-forest hover:text-forest">
             <Upload size={18} />
-            {loading ? "Processing..." : "Choose JPEG, PNG or WebP (max 5MB)"}
+            {loading ? "Uploading..." : "Choose JPEG, JPG or WebP (max 5MB)"}
             <input
               id="fileUpload"
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/webp,.jpg,.jpeg,.webp"
               className="hidden"
               onChange={handleUpload}
               disabled={loading}
@@ -164,9 +155,7 @@ export function PackageImageManager({
         </div>
       </div>
 
-      {error && (
-        <p className="mt-3 text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
     </section>
   );
 }

@@ -66,7 +66,7 @@ public class AdminTripService {
             int size
     ) {
         Page<Trip> result = tripRepository.search(
-                blankToNull(query),
+                blankToEmpty(query),
                 parseTripStatus(status),
                 travelDate,
                 vehicleId,
@@ -596,8 +596,8 @@ public class AdminTripService {
         }
     }
 
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+    private static String blankToEmpty(String value) {
+        return value == null || value.isBlank() ? "" : value.trim();
     }
 
     private static String trimToNull(String value) {

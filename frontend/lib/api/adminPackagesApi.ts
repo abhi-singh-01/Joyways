@@ -129,22 +129,6 @@ export async function deleteAdminPackage(id: number): Promise<void> {
   await adminFetch<void>(`/api/admin/packages/${id}`, { method: "DELETE" });
 }
 
-export async function addPackageImageUrl(
-  packageId: number,
-  imageUrl: string,
-  altText?: string
-): Promise<PackageImage> {
-  const response = await adminFetch<PackageImage>(
-    `/api/admin/packages/${packageId}/images/url`,
-    {
-      method: "POST",
-      body: JSON.stringify({ imageUrl, altText }),
-    }
-  );
-  if (!response.data) throw new Error("Failed to add image");
-  return response.data;
-}
-
 export async function uploadPackageImage(
   packageId: number,
   file: File,

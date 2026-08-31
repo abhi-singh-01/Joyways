@@ -208,6 +208,18 @@ class AdminOperationsServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void listEndpoints_acceptEmptySearchWithoutError() {
+        createVehicle("DL05JK7890", 12);
+        createDriver("Neha", LocalDate.now(IST).plusYears(1));
+        createTrip();
+
+        assertThat(vehicleService.listVehicles(null, null, null, null, 0, 20).content()).isNotEmpty();
+        assertThat(driverService.listDrivers("", null, null, 0, 20).content()).isNotEmpty();
+        assertThat(tripService.listTrips(null, null, null, null, null, 0, 20).content()).isNotEmpty();
+        assertThat(vehicleService.listVehicles("DL05", null, null, null, 0, 20).content()).isNotEmpty();
+    }
+
     private TripDetailDto createTrip() {
         return createTripAt(LocalDate.now(IST).plusDays(15), 8, 20);
     }

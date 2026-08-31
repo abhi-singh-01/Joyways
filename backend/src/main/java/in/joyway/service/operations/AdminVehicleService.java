@@ -39,10 +39,10 @@ public class AdminVehicleService {
             int size
     ) {
         Page<Vehicle> result = vehicleRepository.search(
-                blankToNull(query),
+                blankToEmpty(query),
                 parseStatus(status),
                 parseOwnership(ownershipType),
-                blankToNull(vehicleType),
+                blankToEmpty(vehicleType),
                 pageable(page, size)
         );
         return PageResponse.of(result.map(this::toSummary));
@@ -163,8 +163,8 @@ public class AdminVehicleService {
         return registration.trim().toUpperCase();
     }
 
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+    private static String blankToEmpty(String value) {
+        return value == null || value.isBlank() ? "" : value.trim();
     }
 
     private static String trimToNull(String value) {

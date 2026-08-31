@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { Plus, Pencil } from "lucide-react";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -53,12 +52,12 @@ export function PackageTable({ packages }: PackageTableProps) {
                   <div className="flex items-center gap-3">
                     <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface">
                       {pkg.heroImageUrl ? (
-                        <Image
+                        // Native img so uploaded files on api.joyway.in always render.
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
                           src={pkg.heroImageUrl}
                           alt={pkg.destination}
-                          fill
-                          className="object-cover"
-                          sizes="56px"
+                          className="h-full w-full object-cover"
                         />
                       ) : null}
                     </div>

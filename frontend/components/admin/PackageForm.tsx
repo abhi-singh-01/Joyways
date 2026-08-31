@@ -43,6 +43,19 @@ const emptyForm: CreatePackagePayload = {
   cancellationPolicy: "",
 };
 
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function FieldHint({ children }: { children: React.ReactNode }) {
+  return <p className="mt-1 text-xs leading-relaxed text-charcoal-muted">{children}</p>;
+}
+
 export function PackageForm({ initial, mode }: PackageFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<CreatePackagePayload>(() =>
@@ -70,6 +83,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
         }
       : emptyForm
   );
+  const [slugManual, setSlugManual] = useState(mode === "edit");
   const [status, setStatus] = useState<PackageStatus>(initial?.status ?? "DRAFT");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,6 +94,14 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
     value: CreatePackagePayload[K]
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleTitleChange(title: string) {
+    setForm((prev) => ({
+      ...prev,
+      title,
+      slug: slugManual ? prev.slug : toSlug(title),
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -118,6 +140,8 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
       setLoading(false);
     }
   }
+
+  const slugPreview = form.slug || toSlug(form.title) || "your-package-name";
 
   return (
     <div className="space-y-8">
@@ -163,20 +187,32 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
         </div>
       )}
 
+      {mode === "create" && (
+        <p className="text-sm text-charcoal-muted">
+          Fill the required fields marked with *, save the package, then add photos
+          on the next screen.
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <section className="rounded-2xl border border-border bg-white p-6">
           <h2 className="font-display text-lg font-semibold text-charcoal">
-            Basic Information
+            Package name
           </h2>
+          <p className="mt-1 text-sm text-charcoal-muted">
+            This is how the trip appears in the admin list and on the website.
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="title">Package Name *</Label>
+              <Label htmlFor="title">Package title *</Label>
               <Input
                 id="title"
                 required
                 value={form.title}
-                onChange={(e) => updateField("title", e.target.value)}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="e.g. Nainital Weekend Escape"
               />
+              <FieldHint>Use a short, clear name travellers will recognise.</FieldHint>
             </div>
             <div>
               <Label htmlFor="destination">Destination *</Label>
@@ -185,50 +221,81 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
                 required
                 value={form.destination}
                 onChange={(e) => updateField("destination", e.target.value)}
+                placeholder="e.g. Nainital"
               />
+              <FieldHint>City or region the group is travelling to.</FieldHint>
             </div>
             <div>
-              <Label htmlFor="slug">Slug (optional)</Label>
+              <Label htmlFor="slug">Website page address</Label>
               <Input
                 id="slug"
                 value={form.slug ?? ""}
-                onChange={(e) => updateField("slug", e.target.value)}
-                placeholder="auto-generated from title"
+                onChange={(e) => {
+                  setSlugManual(true);
+                  updateField("slug", e.target.value);
+                }}
+                placeholder="auto-generated from the title"
               />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="shortDescription">Short Description</Label>
-              <Textarea
-                id="shortDescription"
-                value={form.shortDescription}
-                onChange={(e) => updateField("shortDescription", e.target.value)}
-                rows={2}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="fullDescription">Full Description</Label>
-              <Textarea
-                id="fullDescription"
-                value={form.fullDescription}
-                onChange={(e) => updateField("fullDescription", e.target.value)}
-              />
+              <FieldHint>
+                Optional. Shown in the URL as joyway.in/trips/{slugPreview}. Leave
+                blank to generate it from the title.
+              </FieldHint>
             </div>
           </div>
         </section>
 
         <section className="rounded-2xl border border-border bg-white p-6">
           <h2 className="font-display text-lg font-semibold text-charcoal">
-            Trip Details
+            Descriptions
+          </h2>
+          <p className="mt-1 text-sm text-charcoal-muted">
+            Short text is for cards and lists. Full details appear on the trip page.
+          </p>
+          <div className="mt-4 space-y-4">
+            <div>
+              <Label htmlFor="shortDescription">Short summary</Label>
+              <Textarea
+                id="shortDescription"
+                value={form.shortDescription}
+                onChange={(e) => updateField("shortDescription", e.target.value)}
+                rows={2}
+                placeholder="e.g. A 3-day group trip from Delhi to the lakes and hills of Nainital."
+              />
+              <FieldHint>
+                1–2 sentences. Shown on trip cards. Keep it under about 160 characters.
+              </FieldHint>
+            </div>
+            <div>
+              <Label htmlFor="fullDescription">Full trip description</Label>
+              <Textarea
+                id="fullDescription"
+                value={form.fullDescription}
+                onChange={(e) => updateField("fullDescription", e.target.value)}
+                rows={6}
+                placeholder="Describe the experience, who it is for, and what makes this trip special."
+              />
+              <FieldHint>
+                Shown on the public trip page. Write a few paragraphs travellers can
+                read before booking.
+              </FieldHint>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-border bg-white p-6">
+          <h2 className="font-display text-lg font-semibold text-charcoal">
+            Dates, price and seats
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="departureCity">Departure City *</Label>
+              <Label htmlFor="departureCity">Departure city *</Label>
               <Input
                 id="departureCity"
                 required
                 value={form.departureCity}
                 onChange={(e) => updateField("departureCity", e.target.value)}
               />
+              <FieldHint>Where the group starts from, usually Delhi.</FieldHint>
             </div>
             <div>
               <Label htmlFor="duration">Duration *</Label>
@@ -239,9 +306,10 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
                 value={form.duration}
                 onChange={(e) => updateField("duration", e.target.value)}
               />
+              <FieldHint>Write it as travellers should see it, e.g. 3 Days / 2 Nights.</FieldHint>
             </div>
             <div>
-              <Label htmlFor="startDate">Start Date *</Label>
+              <Label htmlFor="startDate">Start date *</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -251,7 +319,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="endDate">End Date *</Label>
+              <Label htmlFor="endDate">End date *</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -261,7 +329,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="pricePerPerson">Price Per Person (₹) *</Label>
+              <Label htmlFor="pricePerPerson">Price per person (₹) *</Label>
               <Input
                 id="pricePerPerson"
                 type="number"
@@ -274,7 +342,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="totalSeats">Total Seats *</Label>
+              <Label htmlFor="totalSeats">Total seats *</Label>
               <Input
                 id="totalSeats"
                 type="number"
@@ -283,34 +351,37 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
                 value={form.totalSeats || ""}
                 onChange={(e) => updateField("totalSeats", Number(e.target.value))}
               />
+              <FieldHint>Maximum travellers this package can take.</FieldHint>
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="pickupPoints">Pickup Points</Label>
+              <Label htmlFor="pickupPoints">Pickup points</Label>
               <Input
                 id="pickupPoints"
                 placeholder="Connaught Place, Karol Bagh"
                 value={form.pickupPoints}
                 onChange={(e) => updateField("pickupPoints", e.target.value)}
               />
+              <FieldHint>Comma-separated locations where travellers can board.</FieldHint>
             </div>
           </div>
         </section>
 
         <section className="rounded-2xl border border-border bg-white p-6">
           <h2 className="font-display text-lg font-semibold text-charcoal">
-            Stay & Transport
+            Stay and transport
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="hotelName">Hotel Name</Label>
+              <Label htmlFor="hotelName">Hotel name</Label>
               <Input
                 id="hotelName"
                 value={form.hotelName}
                 onChange={(e) => updateField("hotelName", e.target.value)}
+                placeholder="e.g. The Naini Retreat"
               />
             </div>
             <div>
-              <Label htmlFor="vehicleType">Vehicle Type</Label>
+              <Label htmlFor="vehicleType">Vehicle type</Label>
               <Input
                 id="vehicleType"
                 value={form.vehicleType}
@@ -318,12 +389,13 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
               />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="hotelDetails">Hotel Details</Label>
+              <Label htmlFor="hotelDetails">Hotel details</Label>
               <Textarea
                 id="hotelDetails"
                 value={form.hotelDetails}
                 onChange={(e) => updateField("hotelDetails", e.target.value)}
                 rows={2}
+                placeholder="Room type, meals included, location notes"
               />
             </div>
           </div>
@@ -331,43 +403,58 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
 
         <section className="rounded-2xl border border-border bg-white p-6">
           <h2 className="font-display text-lg font-semibold text-charcoal">
-            Itinerary & Policies
+            What is included
           </h2>
+          <p className="mt-1 text-sm text-charcoal-muted">
+            Put each item on its own line. These lists are shown as bullets on the
+            trip page.
+          </p>
           <div className="mt-4 space-y-4">
             <div>
-              <Label htmlFor="itinerary">Itinerary (one day per line)</Label>
+              <Label htmlFor="itinerary">Day-by-day itinerary</Label>
               <Textarea
                 id="itinerary"
                 value={form.itinerary}
                 onChange={(e) => updateField("itinerary", e.target.value)}
                 rows={5}
+                placeholder={"Day 1: Depart Delhi, arrive Nainital\nDay 2: Lake tour and local sightseeing\nDay 3: Return to Delhi"}
               />
+              <FieldHint>One day per line, starting with Day 1, Day 2, and so on.</FieldHint>
             </div>
             <div>
-              <Label htmlFor="inclusions">Inclusions (one per line)</Label>
+              <Label htmlFor="inclusions">What is included</Label>
               <Textarea
                 id="inclusions"
                 value={form.inclusions}
                 onChange={(e) => updateField("inclusions", e.target.value)}
                 rows={4}
+                placeholder={"AC Tempo Traveller from Delhi\nHotel stay with breakfast\nLocal sightseeing"}
               />
+              <FieldHint>
+                One item per line. Example: transport, hotel, meals, sightseeing.
+              </FieldHint>
             </div>
             <div>
-              <Label htmlFor="exclusions">Exclusions (one per line)</Label>
+              <Label htmlFor="exclusions">What is not included</Label>
               <Textarea
                 id="exclusions"
                 value={form.exclusions}
                 onChange={(e) => updateField("exclusions", e.target.value)}
                 rows={4}
+                placeholder={"Personal expenses\nLunch and dinner\nEntry tickets not listed above"}
               />
+              <FieldHint>
+                One item per line. Things travellers must pay extra for.
+              </FieldHint>
             </div>
             <div>
-              <Label htmlFor="cancellationPolicy">Cancellation Policy</Label>
+              <Label htmlFor="cancellationPolicy">Cancellation policy</Label>
               <Textarea
                 id="cancellationPolicy"
                 value={form.cancellationPolicy}
                 onChange={(e) => updateField("cancellationPolicy", e.target.value)}
                 rows={3}
+                placeholder="Full refund if cancelled 7 days before departure. 50% refund within 7 days."
               />
             </div>
           </div>
@@ -379,7 +466,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
 
         <div className="flex gap-3">
           <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : mode === "create" ? "Create Package" : "Save Changes"}
+            {loading ? "Saving..." : mode === "create" ? "Save and add photos" : "Save changes"}
           </Button>
           <Button
             type="button"

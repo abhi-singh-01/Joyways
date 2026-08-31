@@ -24,9 +24,9 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
             SELECT d FROM Driver d
             WHERE (:status IS NULL OR d.status = :status)
             AND (:expiringBefore IS NULL OR d.licenseExpiryDate <= :expiringBefore)
-            AND (:query IS NULL OR LOWER(d.name) LIKE LOWER(CONCAT('%', :query, '%'))
-                 OR d.phone LIKE CONCAT('%', :query, '%')
-                 OR LOWER(d.licenseNumber) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:query = '' OR LOWER(d.name) LIKE CONCAT('%', LOWER(CAST(:query AS string)), '%')
+                 OR d.phone LIKE CONCAT('%', CAST(:query AS string), '%')
+                 OR LOWER(d.licenseNumber) LIKE CONCAT('%', LOWER(CAST(:query AS string)), '%'))
             """)
     Page<Driver> search(
             String query,

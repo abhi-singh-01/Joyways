@@ -17,6 +17,9 @@ public final class StorageUploadValidator {
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "application/pdf"
     );
+    private static final Set<String> PACKAGE_IMAGE_CONTENT_TYPES = Set.of(
+            "image/jpeg", "image/webp"
+    );
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
             ".jpg", ".jpeg", ".png", ".webp", ".pdf"
     );
@@ -43,6 +46,19 @@ public final class StorageUploadValidator {
             throw new IllegalArgumentException("File type not allowed. Use JPEG, PNG, WebP, or PDF.");
         }
         validateMagicBytes(file, contentType);
+    }
+
+    /**
+     * Package photos are public marketing assets. Only JPEG/JPG/WebP under 5MB are accepted;
+     * remote URL attachments are rejected separately in the admin service.
+     */
+    public static void validatePackageImage(MultipartFile file) {
+        validate(file);
+        String contentType = file.getContentType();
+        if (contentType == null || !PACKAGE_IMAGE_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+            throw new IllegalArgumentException(
+                    "Package images must be JPEG, JPG, or WebP and under 5MB.");
+        }
     }
 
     public static String resolveSafeExtension(MultipartFile file) {

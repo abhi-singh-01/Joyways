@@ -2,7 +2,6 @@ package in.joyway.service;
 
 import in.joyway.domain.entity.PackageImage;
 import in.joyway.domain.entity.TravelPackage;
-import in.joyway.domain.enums.PackageStatus;
 import in.joyway.domain.repository.PackageImageRepository;
 import in.joyway.domain.repository.TravelPackageRepository;
 import in.joyway.dto.admin.AddPackageImageUrlRequest;
@@ -11,6 +10,7 @@ import in.joyway.dto.package_.PackageImageDto;
 import in.joyway.exception.ResourceNotFoundException;
 import in.joyway.mapper.AdminMapper;
 import in.joyway.service.storage.DocumentStorageService;
+import in.joyway.service.storage.StorageUploadValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -45,27 +45,19 @@ public class AdminPackageImageService {
 
     @Transactional
     public PackageImageDto addImageByUrl(Long packageId, AddPackageImageUrlRequest request) {
-        TravelPackage pkg = findPackageOrThrow(packageId);
-        int sortOrder = request.getSortOrder() != null
-                ? request.getSortOrder()
-                : nextSortOrder(packageId);
-
-        PackageImage image = PackageImage.builder()
-                .travelPackage(pkg)
-                .imageUrl(request.getImageUrl())
-                .altText(request.getAltText())
-                .sortOrder(sortOrder)
-                .build();
-
-        image = imageRepository.save(image);
-        return adminMapper.toImageDtos(List.of(image)).getFirst();
+        throw new IllegalArgumentException(
+                "Package images must be uploaded as JPEG, JPG, or WebP files under 5MB. Image URLs are not allowed.");
     }
 
     @Transactional
     public PackageImageDto uploadImage(Long packageId, MultipartFile file, String altText) throws IOException {
         TravelPackage pkg = findPackageOrThrow(packageId);
+        StorageUploadValidator.validatePackageImage(file);
         String storageKey = documentStorageService.store(file, PACKAGE_IMAGE_CATEGORY);
-        String imageUrl = publicApiBaseUrl + "/api/files/" + storageKey;
+        String baseUrl = publicApiBaseUrl.endsWith("/")
+                ? publicApiBaseUrl.substring(0, publicApiBaseUrl.length() - 1)
+                : publicApiBaseUrl;
+        String imageUrl = baseUrl + "/api/files/" + storageKey;
 
         PackageImage image = PackageImage.builder()
                 .travelPackage(pkg)

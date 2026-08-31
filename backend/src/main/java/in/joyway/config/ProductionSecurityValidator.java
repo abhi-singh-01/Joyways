@@ -53,6 +53,7 @@ public class ProductionSecurityValidator {
         validateCors();
         validateAdminBootstrap();
         validateDatabaseUrl();
+        validatePublicApiBaseUrl();
         validateRazorpaySecrets();
         validateStorageConfiguration();
 
@@ -146,6 +147,25 @@ public class ProductionSecurityValidator {
         }
         if (LOCALHOST_PATTERN.matcher(databaseUrl).find()) {
             throw new IllegalStateException("DATABASE_URL must not point to localhost in production.");
+        }
+    }
+
+    /**
+     * Uploaded file URLs are persisted into package_images.image_url with this value as the prefix,
+     * so a wrong base URL corrupts stored data rather than just breaking the current request.
+     */
+    private void validatePublicApiBaseUrl() {
+        String baseUrl = environment.getProperty("joyway.public-api-base-url");
+        if (!StringUtils.hasText(baseUrl)) {
+            throw new IllegalStateException("PUBLIC_API_BASE_URL must be set in production.");
+        }
+        if (LOCALHOST_PATTERN.matcher(baseUrl).find()) {
+            throw new IllegalStateException(
+                    "PUBLIC_API_BASE_URL must not point to localhost in production: " + baseUrl);
+        }
+        if (!baseUrl.startsWith("https://")) {
+            throw new IllegalStateException(
+                    "PUBLIC_API_BASE_URL must use HTTPS in production: " + baseUrl);
         }
     }
 

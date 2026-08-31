@@ -25,9 +25,9 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
             SELECT v FROM Vehicle v
             WHERE (:status IS NULL OR v.status = :status)
             AND (:ownershipType IS NULL OR v.ownershipType = :ownershipType)
-            AND (:vehicleType IS NULL OR LOWER(v.vehicleType) LIKE LOWER(CONCAT('%', :vehicleType, '%')))
-            AND (:query IS NULL OR LOWER(v.registrationNumber) LIKE LOWER(CONCAT('%', :query, '%'))
-                 OR LOWER(v.vehicleType) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:vehicleType = '' OR LOWER(v.vehicleType) LIKE CONCAT('%', LOWER(CAST(:vehicleType AS string)), '%'))
+            AND (:query = '' OR LOWER(v.registrationNumber) LIKE CONCAT('%', LOWER(CAST(:query AS string)), '%')
+                 OR LOWER(v.vehicleType) LIKE CONCAT('%', LOWER(CAST(:query AS string)), '%'))
             """)
     Page<Vehicle> search(
             String query,

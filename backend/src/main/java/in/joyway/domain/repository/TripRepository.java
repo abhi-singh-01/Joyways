@@ -45,8 +45,8 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
             AND (:vehicleId IS NULL OR EXISTS (
                 SELECT 1 FROM TripVehicle tv WHERE tv.trip = t AND tv.vehicle.id = :vehicleId))
             AND (:driverId IS NULL OR d.id = :driverId)
-            AND (:query IS NULL OR LOWER(t.tripReference) LIKE LOWER(CONCAT('%', :query, '%'))
-                 OR LOWER(t.destination) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:query = '' OR LOWER(t.tripReference) LIKE CONCAT('%', LOWER(CAST(:query AS string)), '%')
+                 OR LOWER(t.destination) LIKE CONCAT('%', LOWER(CAST(:query AS string)), '%'))
             """)
     Page<Trip> search(
             String query,

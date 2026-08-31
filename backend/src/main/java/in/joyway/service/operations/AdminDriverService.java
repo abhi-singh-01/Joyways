@@ -40,7 +40,7 @@ public class AdminDriverService {
             int size
     ) {
         Page<Driver> result = driverRepository.search(
-                blankToNull(query),
+                blankToEmpty(query),
                 parseStatus(status),
                 resolveExpiringBefore(licenseFilter),
                 pageable(page, size)
@@ -182,8 +182,8 @@ public class AdminDriverService {
         return licenseNumber.trim().toUpperCase(Locale.ROOT);
     }
 
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+    private static String blankToEmpty(String value) {
+        return value == null || value.isBlank() ? "" : value.trim();
     }
 
     private static String trimToNull(String value) {
