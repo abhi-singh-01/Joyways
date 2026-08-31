@@ -7,6 +7,7 @@ import { adminLogin } from "@/lib/api/authApi";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { JoywayLogo } from "@/components/layout/JoywayLogo";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -38,9 +39,9 @@ export function AdminLoginForm() {
       transition={{ duration: 0.4 }}
       className="w-full max-w-md rounded-2xl border border-border bg-white p-8 shadow-lg"
     >
-      <div className="mb-8 text-center">
-        <h1 className="font-display text-3xl font-semibold text-forest">JOYWAY</h1>
-        <p className="mt-1 text-sm text-charcoal-muted">Admin sign in</p>
+      <div className="mb-8 flex flex-col items-center text-center">
+        <JoywayLogo href={null} height={48} />
+        <p className="mt-3 text-sm text-charcoal-muted">Admin sign in</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

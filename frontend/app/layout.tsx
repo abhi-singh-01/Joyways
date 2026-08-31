@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   description:
     "Discover beautiful destinations, join unforgettable group trips from Delhi, and let us take care of the journey.",
   metadataBase: new URL("https://joyway.in"),
+  icons: {
+    icon: "/web-log.png",
+    shortcut: "/web-log.png",
+    apple: "/web-log.png",
+  },
   openGraph: {
     title: "JOYWAY | Find Joy in Every Journey",
     description:
@@ -27,12 +32,19 @@ export const metadata: Metadata = {
     siteName: "JOYWAY",
     locale: "en_IN",
     type: "website",
+    images: [
+      {
+        url: "/web-log.png",
+        alt: "JOYWAY",
+      },
+    ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "JOYWAY | Find Joy in Every Journey",
     description:
       "Discover beautiful destinations, join unforgettable group trips from Delhi.",
+    images: ["/web-log.png"],
   },
   alternates: {
     canonical: "https://joyway.in",

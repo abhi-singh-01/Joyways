@@ -12,6 +12,7 @@ import {
   UserCircle,
   Route,
 } from "lucide-react";
+import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { cn } from "@/lib/utils";
 import { adminLogout } from "@/lib/api/authApi";
 import { useRouter } from "next/navigation";
@@ -41,9 +42,7 @@ export function AdminSidebar() {
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-charcoal text-white">
       <div className="border-b border-white/10 px-6 py-5">
-        <Link href="/admin" className="font-display text-xl font-semibold">
-          JOYWAY
-        </Link>
+        <JoywayLogo href="/admin" height={32} />
         <p className="mt-0.5 text-xs text-white/50">Admin Panel</p>
       </div>
 

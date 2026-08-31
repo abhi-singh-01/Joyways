@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -17,9 +18,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-off-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="font-display text-2xl font-semibold tracking-tight text-forest">
-          JOYWAY
-        </Link>
+        <JoywayLogo height={36} priority />
 
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (

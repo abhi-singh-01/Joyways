@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { JoywayLogo } from "@/components/layout/JoywayLogo";
 
 export function BrandSection() {
   return (
@@ -20,11 +21,9 @@ export function BrandSection() {
             It&apos;s about the people you meet, the roads you take and the
             memories you bring back.
           </p>
-          <div className="mt-12">
-            <p className="font-display text-4xl font-semibold text-forest sm:text-5xl">
-              JOYWAY
-            </p>
-            <p className="mt-2 text-lg text-accent">Find Joy in Every Journey.</p>
+          <div className="mt-12 flex flex-col items-center">
+            <JoywayLogo href={null} height={56} />
+            <p className="mt-3 text-lg text-accent">Find Joy in Every Journey.</p>
           </div>
         </motion.div>
       </div>

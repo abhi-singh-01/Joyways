@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mail, MapPin } from "lucide-react";
+import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { PUBLIC_EMAILS } from "@/lib/publicEmails";
 
 const footerLinks = {
@@ -21,7 +22,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
-            <p className="font-display text-3xl font-semibold">JOYWAY</p>
+            <JoywayLogo height={44} href={null} />
             <p className="mt-2 text-accent-light">Find Joy in Every Journey.</p>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70">
               Group travel packages from Delhi to India&apos;s most beautiful

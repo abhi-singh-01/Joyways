@@ -10,6 +10,7 @@ import { DestinationSection } from "@/components/home/DestinationSection";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { WhyJoyway } from "@/components/home/WhyJoyway";
 import { BrandSection } from "@/components/home/BrandSection";
+import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import type { PackageSummary } from "@/lib/api/packagesApi";
 
 const HeroMountains = dynamic(
@@ -53,9 +54,9 @@ export function HomePage({ packages }: HomePageProps) {
             <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-forest">
               Group Travel from Delhi
             </p>
-            <h1 className="font-display text-5xl font-semibold leading-tight tracking-tight text-charcoal sm:text-6xl lg:text-7xl">
-              JOYWAY
-            </h1>
+            <div className="flex justify-center">
+              <JoywayLogo href={null} height={80} priority />
+            </div>
             <p className="mt-4 font-display text-xl text-forest sm:text-2xl">
               Find Joy in Every Journey.
             </p>
