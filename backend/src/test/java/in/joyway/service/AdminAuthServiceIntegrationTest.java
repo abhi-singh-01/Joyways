@@ -110,6 +110,21 @@ class AdminAuthServiceIntegrationTest {
     }
 
     @Test
+    void adminAuthService_login_failsWithWrongPassword() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail(ADMIN_EMAIL);
+        request.setPassword("wrong-password");
+
+        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
+
+        BadCredentialsException ex = assertThrows(
+                BadCredentialsException.class,
+                () -> adminAuthService.login(request, response)
+        );
+        assertEquals("Invalid email or password.", ex.getMessage());
+    }
+
+    @Test
     void adminAuthService_login_failsWhenAdminRoleMissing() {
         User user = userRepository.findByEmail(ADMIN_EMAIL).orElseThrow();
         user.setRoles(new HashSet<>());
