@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { cn } from "@/lib/utils";
 
@@ -14,9 +15,27 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (value) => {
+    setScrolled(value > 24);
+  });
+
+  useEffect(() => {
+    setScrolled(window.scrollY > 24);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-off-white/90 backdrop-blur-md">
+    <motion.header
+      initial={false}
+      animate={{
+        backgroundColor: scrolled ? "rgba(250, 249, 247, 0.92)" : "rgba(250, 249, 247, 0.72)",
+        boxShadow: scrolled ? "0 1px 0 rgba(27, 67, 50, 0.08)" : "0 0 0 rgba(0,0,0,0)",
+      }}
+      transition={{ duration: 0.25 }}
+      className="sticky top-0 z-50 border-b border-border/60 backdrop-blur-md"
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <JoywayLogo height={36} priority />
 
@@ -25,16 +44,20 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-charcoal-muted transition-colors hover:text-forest"
+              className="relative text-sm font-medium text-charcoal-muted transition-colors hover:text-forest"
             >
               {link.label}
+              <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-forest transition-all duration-300 group-hover:w-full" />
             </Link>
           ))}
-          <Link
-            href="/trips"
-            className="rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-forest-light"
-          >
-            Explore Trips
+          <Link href="/trips">
+            <motion.span
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-block rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-forest-light"
+            >
+              Explore Trips
+            </motion.span>
           </Link>
         </nav>
 
@@ -74,6 +97,6 @@ export function Navbar() {
           </Link>
         </nav>
       </div>
-    </header>
+    </motion.header>
   );
 }

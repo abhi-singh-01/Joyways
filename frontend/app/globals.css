@@ -55,3 +55,88 @@ body {
 .font-display {
   font-family: var(--font-playfair), Georgia, serif;
 }
+
+/* Aurora drift */
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, 2%) scale(1.05);
+  }
+}
+
+.aurora-blob-1 {
+  animation: aurora-drift 14s ease-in-out infinite;
+}
+
+.aurora-blob-2 {
+  animation: aurora-drift 18s ease-in-out infinite reverse;
+}
+
+.aurora-blob-3 {
+  animation: aurora-drift 22s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+/* Sparkle twinkle */
+@keyframes sparkle-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.4);
+  }
+}
+
+.sparkle-particle {
+  animation: sparkle-twinkle 3s ease-in-out infinite;
+}
+
+/* Moving gradient border (Aceternity-style) */
+@keyframes moving-border-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.moving-border-gradient {
+  background: conic-gradient(
+    from 0deg,
+    var(--color-forest),
+    var(--color-accent),
+    var(--color-forest-light),
+    var(--color-accent-light),
+    var(--color-forest)
+  );
+  animation: moving-border-spin 4s linear infinite;
+}
+
+/* Destination infinite marquee */
+@keyframes destination-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.destination-marquee {
+  animation: destination-marquee 28s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob-1,
+  .aurora-blob-2,
+  .aurora-blob-3,
+  .sparkle-particle,
+  .moving-border-gradient,
+  .destination-marquee {
+    animation: none !important;
+  }
+}

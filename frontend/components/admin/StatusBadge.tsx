@@ -14,8 +14,6 @@ const statusStyles: Record<string, string> = {
   PLANNED: "bg-slate-100 text-slate-700",
   READY: "bg-teal-100 text-teal-800",
   IN_PROGRESS: "bg-orange-100 text-orange-800",
-  COMPLETED: "bg-emerald-100 text-emerald-800",
-  CANCELLED: "bg-red-100 text-red-800",
   "LICENSE EXPIRED": "bg-red-100 text-red-800",
   "LICENSE EXPIRING SOON": "bg-amber-100 text-amber-800",
   VALID: "bg-emerald-100 text-emerald-800",
