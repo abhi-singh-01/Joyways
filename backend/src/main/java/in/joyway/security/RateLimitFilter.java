@@ -10,10 +10,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -43,11 +46,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitProperties properties;
     private final ObjectMapper objectMapper;
+    private final CorsConfigurationSource corsConfigurationSource;
     private final RateLimiter rateLimiter = new RateLimiter(Duration.ofMinutes(1));
 
-    public RateLimitFilter(RateLimitProperties properties, ObjectMapper objectMapper) {
+    public RateLimitFilter(RateLimitProperties properties,
+                           ObjectMapper objectMapper,
+                           CorsConfigurationSource corsConfigurationSource) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Override
@@ -69,7 +76,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (!rateLimiter.tryAcquire(key, limit, Instant.now())) {
             log.warn("event=security.rate_limit_exceeded path={} client={}",
                     request.getRequestURI(), maskClient(clientKey(request)));
-            writeTooManyRequests(response);
+            writeTooManyRequests(request, response);
             return;
         }
 
@@ -123,7 +130,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return lastSeparator > 0 ? client.substring(0, lastSeparator) + ".x" : "unknown";
     }
 
-    private void writeTooManyRequests(HttpServletResponse response) throws IOException {
+    private void writeTooManyRequests(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        applyCorsHeaders(request, response);
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setHeader("Retry-After", "60");
@@ -131,6 +140,35 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 response.getOutputStream(),
                 ApiResponse.error("Too many requests. Please try again in a minute.", "RATE_LIMITED")
         );
+    }
+
+    /**
+     * This filter short-circuits ahead of Spring Security's CORS filter, so a throttled
+     * browser request would otherwise receive a response without CORS headers. The browser
+     * then discards it as a CORS failure and the caller sees a generic network error instead
+     * of the rate-limit message.
+     */
+    private void applyCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
+        String origin = request.getHeader(HttpHeaders.ORIGIN);
+        if (origin == null || origin.isBlank()) {
+            return;
+        }
+
+        CorsConfiguration configuration = corsConfigurationSource.getCorsConfiguration(request);
+        if (configuration == null) {
+            return;
+        }
+
+        String allowedOrigin = configuration.checkOrigin(origin);
+        if (allowedOrigin == null) {
+            return;
+        }
+
+        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin);
+        if (Boolean.TRUE.equals(configuration.getAllowCredentials())) {
+            response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+        }
+        response.addHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
     }
 
     @Scheduled(fixedDelay = 300_000)
