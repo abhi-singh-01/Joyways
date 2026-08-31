@@ -2,6 +2,7 @@ package in.joyway.security;
 
 import in.joyway.domain.entity.User;
 import in.joyway.domain.repository.UserRepository;
+import in.joyway.util.EmailUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -16,7 +17,7 @@ public class JoywayUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(EmailUtils.normalize(email))
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials."));
         return new JoywayUserDetails(user);
     }

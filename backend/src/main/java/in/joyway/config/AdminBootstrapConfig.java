@@ -4,6 +4,7 @@ import in.joyway.domain.entity.Role;
 import in.joyway.domain.entity.User;
 import in.joyway.domain.repository.RoleRepository;
 import in.joyway.domain.repository.UserRepository;
+import in.joyway.util.EmailUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -41,7 +42,7 @@ public class AdminBootstrapConfig {
                 return;
             }
 
-            String email = bootstrapProperties.getEmail();
+            String email = EmailUtils.normalize(bootstrapProperties.getEmail());
             if (userRepository.existsByEmail(email)) {
                 log.info("Admin user already exists ({}). Skipping bootstrap.", email);
                 return;

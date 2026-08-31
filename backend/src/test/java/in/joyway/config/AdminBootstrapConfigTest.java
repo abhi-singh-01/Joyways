@@ -140,6 +140,29 @@ class AdminBootstrapConfigTest {
     }
 
     @Test
+    void bootstrapAdmin_normalizesEmailBeforeLookupAndSave() throws Exception {
+        bootstrapProperties.setEnabled(true);
+        bootstrapProperties.setEmail(" Admin@Joyway.in ");
+        bootstrapProperties.setPassword("SecurePassword123!");
+        bootstrapProperties.setName("Test Admin");
+
+        Role adminRole = new Role();
+        adminRole.setId(1L);
+        adminRole.setName("ROLE_ADMIN");
+
+        when(userRepository.existsByEmail("admin@joyway.in")).thenReturn(false);
+        when(roleRepository.findByName("ROLE_ADMIN")).thenReturn(Optional.of(adminRole));
+        when(passwordEncoder.encode("SecurePassword123!")).thenReturn("encoded-hash");
+
+        CommandLineRunner runner = config.bootstrapAdmin();
+        runner.run();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertEquals("admin@joyway.in", userCaptor.getValue().getEmail());
+    }
+
+    @Test
     void bootstrapAdmin_usesDefaultNameWhenNotProvided() throws Exception {
         bootstrapProperties.setEnabled(true);
         bootstrapProperties.setEmail("admin@joyway.in");

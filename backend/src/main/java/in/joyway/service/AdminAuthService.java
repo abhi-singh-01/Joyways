@@ -9,9 +9,10 @@ import in.joyway.mapper.AdminMapper;
 import in.joyway.security.JwtAuthenticationFilter;
 import in.joyway.security.JwtTokenProvider;
 import in.joyway.security.JoywayUserDetails;
-import jakarta.servlet.http.Cookie;
+import in.joyway.util.EmailUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +28,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminAuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -37,36 +39,42 @@ public class AdminAuthService {
 
     @Transactional(readOnly = true)
     public AdminProfileDto login(LoginRequest request, HttpServletResponse response) {
+        String normalizedEmail = EmailUtils.normalize(request.getEmail());
+
+        Authentication authentication;
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(normalizedEmail, request.getPassword())
             );
-
-            JoywayUserDetails userDetails = (JoywayUserDetails) authentication.getPrincipal();
-            User user = userDetails.getUser();
-
-            boolean isAdmin = user.getRoles().stream()
-                    .anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
-            if (!isAdmin) {
-                throw new BadCredentialsException("Invalid credentials.");
-            }
-
-            List<String> roles = user.getRoles().stream().map(r -> r.getName()).toList();
-            String token = jwtTokenProvider.generateToken(user.getEmail(), roles);
-
-            ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.JWT_COOKIE_NAME, token)
-                    .httpOnly(true)
-                    .secure(jwtProperties.isCookieSecure())
-                    .path("/")
-                    .sameSite("Lax")
-                    .maxAge(Duration.ofMillis(jwtProperties.getExpirationMs()))
-                    .build();
-            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-            return adminMapper.toProfileDto(user);
         } catch (BadCredentialsException ex) {
+            log.warn("event=auth.login.failed email={} stage=authenticate", normalizedEmail);
             throw new BadCredentialsException("Invalid email or password.");
         }
+
+        JoywayUserDetails userDetails = (JoywayUserDetails) authentication.getPrincipal();
+        User user = userDetails.getUser();
+
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+        if (!isAdmin) {
+            log.warn("event=auth.login.failed email={} stage=role_check enabled={} authorityCount={}",
+                    normalizedEmail, user.getEnabled(), user.getRoles().size());
+            throw new BadCredentialsException("Invalid email or password.");
+        }
+
+        List<String> roles = user.getRoles().stream().map(r -> r.getName()).toList();
+        String token = jwtTokenProvider.generateToken(user.getEmail(), roles);
+
+        ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.JWT_COOKIE_NAME, token)
+                .httpOnly(true)
+                .secure(jwtProperties.isCookieSecure())
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofMillis(jwtProperties.getExpirationMs()))
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return adminMapper.toProfileDto(user);
     }
 
     public void logout(HttpServletResponse response) {
@@ -84,7 +92,7 @@ public class AdminAuthService {
     @Transactional(readOnly = true)
     public AdminProfileDto getCurrentAdmin() {
         String email = getAuthenticatedEmail();
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(EmailUtils.normalize(email))
                 .orElseThrow(() -> new BadCredentialsException("Session expired."));
         return adminMapper.toProfileDto(user);
     }
