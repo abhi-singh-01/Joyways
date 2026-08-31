@@ -9,9 +9,11 @@ import in.joyway.security.JoywayUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +27,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -107,6 +110,21 @@ class AdminAuthServiceIntegrationTest {
         request.setPassword(ADMIN_PASSWORD);
 
         assertDoesNotThrow(() -> adminAuthService.login(request, response));
+    }
+
+    @Test
+    void adminAuthService_login_omitsCookieDomainWhenUnset() {
+        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail(ADMIN_EMAIL);
+        request.setPassword(ADMIN_PASSWORD);
+
+        adminAuthService.login(request, response);
+
+        ArgumentCaptor<String> value = ArgumentCaptor.forClass(String.class);
+        Mockito.verify(response).addHeader(Mockito.eq(HttpHeaders.SET_COOKIE), value.capture());
+        assertFalse(value.getValue().contains("Domain="), value.getValue());
     }
 
     @Test

@@ -65,6 +65,7 @@ joyway:
     secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000}
     cookie-secure: ${JWT_COOKIE_SECURE:false}
+    cookie-domain: ${JWT_COOKIE_DOMAIN:}
   admin:
     bootstrap:
       enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}

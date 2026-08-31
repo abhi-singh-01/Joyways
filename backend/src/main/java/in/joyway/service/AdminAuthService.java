@@ -20,7 +20,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,46 +36,10 @@ public class AdminAuthService {
     private final JwtProperties jwtProperties;
     private final UserRepository userRepository;
     private final AdminMapper adminMapper;
-    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public AdminProfileDto login(LoginRequest request, HttpServletResponse response) {
         String normalizedEmail = EmailUtils.normalize(request.getEmail());
-        var userLookup = userRepository.findByEmail(normalizedEmail);
-        boolean userFound = userLookup.isPresent();
-        int hashLength = userLookup
-                .map(User::getPasswordHash)
-                .map(hash -> hash != null ? hash.length() : 0)
-                .orElse(0);
-        boolean hashPresent = userLookup
-                .map(User::getPasswordHash)
-                .map(hash -> hash != null && !hash.isBlank())
-                .orElse(false);
-        int passwordLength = request.getPassword() != null ? request.getPassword().length() : 0;
-        boolean encoderMatches = userLookup
-                .filter(user -> user.getPasswordHash() != null && request.getPassword() != null)
-                .map(user -> passwordEncoder.matches(request.getPassword(), user.getPasswordHash()))
-                .orElse(false);
-        int authorityCount = userLookup
-                .map(user -> user.getRoles() != null ? user.getRoles().size() : 0)
-                .orElse(0);
-        Boolean enabled = userLookup.map(User::getEnabled).orElse(null);
-
-        log.info(
-                "event=auth.login.diagnostic email={} userFound={} enabled={} authorityCount={} "
-                        + "hashPresent={} hashLength={} passwordLength={} encoderMatches={} "
-                        + "authManagerClass={} passwordEncoderClass={}",
-                normalizedEmail,
-                userFound,
-                enabled,
-                authorityCount,
-                hashPresent,
-                hashLength,
-                passwordLength,
-                encoderMatches,
-                authenticationManager.getClass().getName(),
-                passwordEncoder.getClass().getName()
-        );
 
         Authentication authentication;
         try {
@@ -84,18 +47,7 @@ public class AdminAuthService {
                     new UsernamePasswordAuthenticationToken(normalizedEmail, request.getPassword())
             );
         } catch (BadCredentialsException ex) {
-            String causeClass = ex.getCause() != null ? ex.getCause().getClass().getName() : "none";
-            log.warn(
-                    "event=auth.login.failed email={} stage=authenticate exceptionClass={} causeClass={} "
-                            + "userFound={} encoderMatches={} hashLength={} passwordLength={}",
-                    normalizedEmail,
-                    ex.getClass().getName(),
-                    causeClass,
-                    userFound,
-                    encoderMatches,
-                    hashLength,
-                    passwordLength
-            );
+            log.warn("event=auth.login.failed email={} stage=authenticate", normalizedEmail);
             throw new BadCredentialsException("Invalid email or password.");
         }
 
@@ -105,44 +57,35 @@ public class AdminAuthService {
         boolean isAdmin = user.getRoles().stream()
                 .anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
         if (!isAdmin) {
-            List<String> authorityNames = user.getRoles().stream()
-                    .map(role -> role.getName())
-                    .toList();
-            log.warn(
-                    "event=auth.login.failed email={} stage=role_check enabled={} authorityCount={} authorityNames={}",
-                    normalizedEmail,
-                    user.getEnabled(),
-                    user.getRoles().size(),
-                    authorityNames
-            );
+            log.warn("event=auth.login.failed email={} stage=role_check", normalizedEmail);
             throw new BadCredentialsException("Invalid email or password.");
         }
 
         List<String> roles = user.getRoles().stream().map(r -> r.getName()).toList();
         String token = jwtTokenProvider.generateToken(user.getEmail(), roles);
 
-        ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.JWT_COOKIE_NAME, token)
-                .httpOnly(true)
-                .secure(jwtProperties.isCookieSecure())
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(Duration.ofMillis(jwtProperties.getExpirationMs()))
-                .build();
+        ResponseCookie cookie = buildTokenCookie(token, Duration.ofMillis(jwtProperties.getExpirationMs()));
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return adminMapper.toProfileDto(user);
     }
 
     public void logout(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.JWT_COOKIE_NAME, "")
-                .httpOnly(true)
-                .secure(jwtProperties.isCookieSecure())
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(0)
-                .build();
+        ResponseCookie cookie = buildTokenCookie("", Duration.ZERO);
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         SecurityContextHolder.clearContext();
+    }
+
+    private ResponseCookie buildTokenCookie(String token, Duration maxAge) {
+        String domain = jwtProperties.getCookieDomain();
+        return ResponseCookie.from(JwtAuthenticationFilter.JWT_COOKIE_NAME, token)
+                .httpOnly(true)
+                .secure(jwtProperties.isCookieSecure())
+                .domain(domain != null && !domain.isBlank() ? domain : null)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(maxAge)
+                .build();
     }
 
     @Transactional(readOnly = true)
