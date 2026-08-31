@@ -143,51 +143,60 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
   return (
     <div className="space-y-8">
       {mode === "edit" && initial && (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-white p-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-charcoal-muted">Status:</span>
-            <StatusBadge status={status} />
+        <div className="rounded-2xl border border-border bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-charcoal-muted">Status:</span>
+              <StatusBadge status={status} />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {status === "DRAFT" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => handleStatusChange("PUBLISHED")}
+                  disabled={loading}
+                >
+                  Publish to website
+                </Button>
+              )}
+              {status === "PUBLISHED" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStatusChange("PAUSED")}
+                  disabled={loading}
+                >
+                  Pause
+                </Button>
+              )}
+              {status === "PAUSED" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => handleStatusChange("PUBLISHED")}
+                  disabled={loading}
+                >
+                  Re-publish
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {status === "DRAFT" && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => handleStatusChange("PUBLISHED")}
-                disabled={loading}
-              >
-                Publish
-              </Button>
-            )}
-            {status === "PUBLISHED" && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleStatusChange("PAUSED")}
-                disabled={loading}
-              >
-                Pause
-              </Button>
-            )}
-            {status === "PAUSED" && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => handleStatusChange("PUBLISHED")}
-                disabled={loading}
-              >
-                Re-publish
-              </Button>
-            )}
-          </div>
+          {status === "DRAFT" && (
+            <p className="mt-3 text-sm text-charcoal-muted">
+              This package is coming soon and hidden on the public website until you
+              publish it.
+            </p>
+          )}
         </div>
       )}
 
       {mode === "create" && (
         <p className="text-sm text-charcoal-muted">
-          Fill the required fields marked with *, save the package, then add photos
-          on the next screen.
+          New packages start as Coming Soon. Fill the required fields marked with *,
+          save the package, add photos, then publish when you are ready for it to
+          appear on the website.
         </p>
       )}
 

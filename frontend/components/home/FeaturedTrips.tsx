@@ -21,7 +21,7 @@ export function FeaturedTrips({ packages }: FeaturedTripsProps) {
           </h2>
           <EmptyState
             title="Trips coming soon"
-            message="Connect the backend to see available journeys from Delhi."
+            message="We're preparing new group journeys from Delhi. Check back shortly or contact us for early enquiries."
             actionLabel="Contact us"
             actionHref="/contact"
           />

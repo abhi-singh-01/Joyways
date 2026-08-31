@@ -45,12 +45,6 @@ export default async function TripsPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {packages.length === 0 ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Unable to load trips from the server. Start the backend or try again
-            shortly.
-          </div>
-        ) : null}
         <TripsPageContent packages={packages} />
       </section>
     </>
