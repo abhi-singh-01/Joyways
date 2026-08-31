@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Users, ArrowRight } from "lucide-react";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { PackageSummary } from "@/lib/api/packagesApi";
 import { cn } from "@/lib/utils";
+import { PackagePhoto } from "@/components/packages/PackagePhoto";
 
 type PackageCardProps = {
   pkg: PackageSummary;
@@ -37,11 +37,10 @@ export function PackageCard({
       <Link href={`/trips/${pkg.slug}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden">
           {pkg.heroImageUrl ? (
-            <Image
+            <PackagePhoto
               src={pkg.heroImageUrl}
               alt={pkg.heroImageAlt || `${pkg.destination} trip`}
-              fill
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              className="transition-transform duration-700 ease-out group-hover:scale-105"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (

@@ -21,11 +21,15 @@ function newRequestId(): string {
 
 function errorMessage(json: ApiResponse<unknown>, status: number, fallback: string): string {
   const base = json.message || fallback;
+  const fieldErrors = json.errors
+    ? Object.values(json.errors).filter((value) => typeof value === "string" && value.trim())
+    : [];
+  const withFields = fieldErrors.length > 0 ? `${base} ${fieldErrors.join(" ")}` : base;
   const requestId = json.requestId;
   if (requestId && status >= 500) {
-    return `${base} (ref ${requestId})`;
+    return `${withFields} (ref ${requestId})`;
   }
-  return base;
+  return withFields;
 }
 
 /**

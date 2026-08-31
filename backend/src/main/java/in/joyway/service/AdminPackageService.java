@@ -116,18 +116,15 @@ public class AdminPackageService {
         if (request.getPricePerPerson() != null) {
             pkg.setPricePerPerson(request.getPricePerPerson());
         }
+        int booked = Math.max(0, pkg.getTotalSeats() - pkg.getAvailableSeats());
         if (request.getTotalSeats() != null) {
-            int booked = pkg.getTotalSeats() - pkg.getAvailableSeats();
             if (request.getTotalSeats() < booked) {
                 throw new IllegalArgumentException(
                         "Total seats cannot be less than already booked seats (" + booked + ").");
             }
             pkg.setTotalSeats(request.getTotalSeats());
-            if (request.getAvailableSeats() == null) {
-                pkg.setAvailableSeats(request.getTotalSeats() - booked);
-            }
-        }
-        if (request.getAvailableSeats() != null) {
+            pkg.setAvailableSeats(request.getTotalSeats() - booked);
+        } else if (request.getAvailableSeats() != null) {
             if (request.getAvailableSeats() > pkg.getTotalSeats()) {
                 throw new IllegalArgumentException("Available seats cannot exceed total seats.");
             }

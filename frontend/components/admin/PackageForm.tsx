@@ -114,10 +114,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
         const created = await createAdminPackage(form);
         router.push(`/admin/packages/${created.id}/edit`);
       } else if (initial) {
-        await updateAdminPackage(initial.id, {
-          ...form,
-          availableSeats: initial.availableSeats,
-        });
+        await updateAdminPackage(initial.id, form);
         router.refresh();
       }
     } catch (err) {

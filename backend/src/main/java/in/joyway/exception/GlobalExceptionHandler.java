@@ -23,7 +23,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -99,9 +98,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
-        String message = isProductionProfile()
-                ? "Invalid request."
-                : ex.getMessage();
+        String raw = ex.getMessage();
+        String message = (raw != null && !raw.isBlank() && raw.length() <= 300)
+                ? raw
+                : "Invalid request.";
+        log.warn("event=request.invalid_argument reason={}", ex.getClass().getSimpleName());
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error(message, "INVALID_REQUEST"));
     }
@@ -187,11 +188,5 @@ public class GlobalExceptionHandler {
                 "Something went wrong. Please try again.", "INTERNAL_ERROR");
         body.setRequestId(RequestContext.currentRequestId());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
-    }
-
-    private boolean isProductionProfile() {
-        return Arrays.stream(environment.getActiveProfiles())
-                .anyMatch(profile -> profile.equalsIgnoreCase("prod")
-                        || profile.equalsIgnoreCase("production"));
     }
 }

@@ -55,6 +55,13 @@ class StorageUploadValidatorTest {
     }
 
     @Test
+    void validatePackageImage_acceptsImageJpgContentType() {
+        byte[] jpeg = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00};
+        StorageUploadValidator.validatePackageImage(new MockMultipartFile(
+                "file", "hero.jpg", "image/jpg", jpeg));
+    }
+
+    @Test
     void validatePackageImage_rejectsPngAndPdf() {
         byte[] png = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
         assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validatePackageImage(

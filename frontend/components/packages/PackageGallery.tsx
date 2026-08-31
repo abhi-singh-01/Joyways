@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { PackageImage } from "@/lib/api/packagesApi";
 import { cn } from "@/lib/utils";
+import { PackagePhoto } from "@/components/packages/PackagePhoto";
 
 type PackageGalleryProps = {
   images: PackageImage[];
@@ -49,12 +49,10 @@ export function PackageGallery({ images, destination, className }: PackageGaller
             className="relative h-full w-full cursor-zoom-in"
             onClick={() => setLightboxOpen(true)}
           >
-            <Image
+            <PackagePhoto
               src={active.imageUrl}
               alt={active.altText || destination}
-              fill
               priority
-              className="object-cover"
               sizes="(max-width: 1024px) 100vw, 70vw"
             />
           </motion.div>
@@ -97,11 +95,9 @@ export function PackageGallery({ images, destination, className }: PackageGaller
                 aria-label={`View image ${idx + 1}`}
                 aria-current={idx === activeIndex}
               >
-                <Image
+                <PackagePhoto
                   src={img.imageUrl}
                   alt={img.altText || ""}
-                  fill
-                  className="object-cover"
                   sizes="96px"
                 />
               </button>
@@ -131,10 +127,9 @@ export function PackageGallery({ images, destination, className }: PackageGaller
               className="relative h-[70vh] w-full max-w-5xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <Image
+              <PackagePhoto
                 src={active.imageUrl}
                 alt={active.altText || destination}
-                fill
                 className="object-contain"
                 sizes="100vw"
               />

@@ -41,8 +41,8 @@ public final class StorageUploadValidator {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException("File size exceeds maximum allowed (5MB).");
         }
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+        String contentType = normalizeContentType(file.getContentType());
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
             throw new IllegalArgumentException("File type not allowed. Use JPEG, PNG, WebP, or PDF.");
         }
         validateMagicBytes(file, contentType);
@@ -54,8 +54,8 @@ public final class StorageUploadValidator {
      */
     public static void validatePackageImage(MultipartFile file) {
         validate(file);
-        String contentType = file.getContentType();
-        if (contentType == null || !PACKAGE_IMAGE_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+        String contentType = normalizeContentType(file.getContentType());
+        if (contentType == null || !PACKAGE_IMAGE_CONTENT_TYPES.contains(contentType)) {
             throw new IllegalArgumentException(
                     "Package images must be JPEG, JPG, or WebP and under 5MB.");
         }
@@ -66,9 +66,9 @@ public final class StorageUploadValidator {
         if (fromName != null && ALLOWED_EXTENSIONS.contains(fromName)) {
             return fromName;
         }
-        String contentType = file.getContentType();
+        String contentType = normalizeContentType(file.getContentType());
         if (contentType != null) {
-            return CONTENT_TYPE_TO_EXTENSION.getOrDefault(contentType.toLowerCase(Locale.ROOT), ".bin");
+            return CONTENT_TYPE_TO_EXTENSION.getOrDefault(contentType, ".bin");
         }
         throw new IllegalArgumentException("File extension not allowed.");
     }
@@ -123,5 +123,16 @@ public final class StorageUploadValidator {
             return null;
         }
         return sanitized.substring(dotIndex).toLowerCase(Locale.ROOT);
+    }
+
+    private static String normalizeContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return null;
+        }
+        String lower = contentType.toLowerCase(Locale.ROOT);
+        if ("image/jpg".equals(lower) || "image/pjpeg".equals(lower)) {
+            return "image/jpeg";
+        }
+        return lower;
     }
 }
