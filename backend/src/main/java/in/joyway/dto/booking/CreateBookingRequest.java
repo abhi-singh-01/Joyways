@@ -25,4 +25,7 @@ public class CreateBookingRequest {
     @Size(min = 1, message = "At least one traveller is required")
     @Valid
     private List<TravellerRequest> travellers;
+
+    /** Required when creating a booking; not required for preview. */
+    private boolean consentAccepted;
 }

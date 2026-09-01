@@ -54,7 +54,7 @@ public class AzureBlobStorageService implements DocumentStorageService {
     @Override
     public String store(MultipartFile file, String category) throws IOException {
         StorageKeyValidator.validateCategory(category);
-        StorageUploadValidator.validate(file);
+        StorageUploadValidator.validateForCategory(file, category);
 
         String extension = StorageUploadValidator.resolveSafeExtension(file);
         String blobName = category + "/" + UUID.randomUUID() + extension;

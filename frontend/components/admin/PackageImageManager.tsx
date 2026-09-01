@@ -11,7 +11,7 @@ import {
 } from "@/lib/api/adminPackagesApi";
 import type { PackageImage } from "@/lib/api/packagesApi";
 
-const MAX_PACKAGE_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_PACKAGE_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_PACKAGE_IMAGE_TYPES = new Set(["image/jpeg", "image/webp"]);
 
 type PackageImageManagerProps = {
@@ -31,7 +31,7 @@ function isAllowedPackageImage(file: File): string | null {
     return "Only JPEG, JPG, or WebP images are allowed.";
   }
   if (file.size > MAX_PACKAGE_IMAGE_BYTES) {
-    return "Each image must be 5MB or smaller.";
+    return "Each image must be 2MB or smaller.";
   }
   return null;
 }
@@ -87,7 +87,7 @@ export function PackageImageManager({
         Package photos
       </h2>
       <p className="mt-1 text-sm text-charcoal-muted">
-        Upload JPEG, JPG, or WebP files only (max 5MB each). The first photo is
+        Upload JPEG, JPG, or WebP files only (max 2MB each). The first photo is
         shown as the main image on the website. Image URLs are not accepted.
       </p>
 
@@ -142,7 +142,7 @@ export function PackageImageManager({
           <Label htmlFor="fileUpload">Upload photo</Label>
           <label className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border px-4 py-6 text-sm text-charcoal-muted hover:border-forest hover:text-forest">
             <Upload size={18} />
-            {loading ? "Uploading..." : "Choose JPEG, JPG or WebP (max 5MB)"}
+            {loading ? "Uploading..." : "Choose JPEG, JPG or WebP (max 2MB)"}
             <input
               id="fileUpload"
               type="file"

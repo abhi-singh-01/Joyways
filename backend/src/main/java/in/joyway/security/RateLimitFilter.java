@@ -39,6 +39,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String LOGIN_PATH = "/api/admin/auth/login";
     private static final String BOOKINGS_PATH = "/api/bookings";
+    private static final String BOOKINGS_PREFIX = "/api/bookings/";
     private static final String PAYMENT_ORDERS_PATH = "/api/payments/orders";
     private static final String PAYMENT_VERIFY_PATH = "/api/payments/verify";
     private static final String PAYMENT_ALIAS_ORDER_PATH = "/api/create-order";
@@ -97,6 +98,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if ("POST".equals(method) && BOOKINGS_PATH.equals(path)) {
             return properties.getBookingRequestsPerMinute();
         }
+        if (path.startsWith(BOOKINGS_PREFIX)) {
+            return properties.getBookingLookupRequestsPerMinute();
+        }
         if ("POST".equals(method) && (PAYMENT_ORDERS_PATH.equals(path)
                 || PAYMENT_VERIFY_PATH.equals(path)
                 || PAYMENT_ALIAS_ORDER_PATH.equals(path)
@@ -107,17 +111,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Uses the left-most X-Forwarded-For entry when present, since Azure terminates TLS
-     * upstream and the socket address would otherwise be the load balancer for everyone.
+     * Uses the right-most X-Forwarded-For hop. Ingress proxies append the connecting client,
+     * so the last value is the one added by Azure — not a spoofed left-most address.
      */
     private static String clientKey(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            int comma = forwarded.indexOf(',');
-            String first = comma > 0 ? forwarded.substring(0, comma) : forwarded;
-            String trimmed = first.trim();
-            if (!trimmed.isEmpty()) {
-                return trimmed;
+            String[] hops = forwarded.split(",");
+            for (int i = hops.length - 1; i >= 0; i--) {
+                String hop = hops[i].trim();
+                if (!hop.isEmpty()) {
+                    return hop;
+                }
             }
         }
         String remote = request.getRemoteAddr();

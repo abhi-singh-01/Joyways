@@ -27,7 +27,7 @@ public class LocalDocumentStorageService implements DocumentStorageService {
     @Override
     public String store(MultipartFile file, String category) throws IOException {
         StorageKeyValidator.validateCategory(category);
-        StorageUploadValidator.validate(file);
+        StorageUploadValidator.validateForCategory(file, category);
 
         Path basePath = Path.of(storageProperties.getLocalPath(), category).normalize().toAbsolutePath();
         Path storageRoot = Path.of(storageProperties.getLocalPath()).normalize().toAbsolutePath();

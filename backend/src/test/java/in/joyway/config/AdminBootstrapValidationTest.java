@@ -1,5 +1,6 @@
 package in.joyway.config;
 
+import in.joyway.config.RateLimitProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,8 +11,9 @@ import org.springframework.core.env.Environment;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.lenient;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class AdminBootstrapValidationTest {
@@ -29,20 +31,22 @@ class AdminBootstrapValidationTest {
     private RazorpayProperties razorpayProperties;
 
     private AdminBootstrapProperties adminBootstrapProperties;
-    private StorageProperties storageProperties;
+    private MailProperties mailProperties;
     private ProductionSecurityValidator validator;
 
     @BeforeEach
     void setUp() {
         adminBootstrapProperties = new AdminBootstrapProperties();
-        storageProperties = new StorageProperties();
+        mailProperties = new MailProperties();
         validator = new ProductionSecurityValidator(
                 environment,
                 jwtProperties,
                 corsProperties,
                 adminBootstrapProperties,
                 razorpayProperties,
-                storageProperties
+                new StorageProperties(),
+                new RateLimitProperties(),
+                mailProperties
         );
     }
 
@@ -54,83 +58,14 @@ class AdminBootstrapValidationTest {
     }
 
     @Test
-    void validateAdminBootstrap_passesWithValidConfiguration() {
+    void validateAdminBootstrap_rejectsEnabledInProduction() {
         adminBootstrapProperties.setEnabled(true);
-        adminBootstrapProperties.setEmail("admin@joyway.in");
-        adminBootstrapProperties.setPassword("SecurePassword123!");
-        adminBootstrapProperties.setName("Test Admin");
-
-        assertDoesNotThrow(this::invokeBootstrapValidation);
-    }
-
-    @Test
-    void validateAdminBootstrap_rejectsEmptyEmail() {
-        adminBootstrapProperties.setEnabled(true);
-        adminBootstrapProperties.setEmail("");
-        adminBootstrapProperties.setPassword("SecurePassword123!");
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
                 this::invokeBootstrapValidation
         );
-        assertTrue(ex.getMessage().contains("ADMIN_BOOTSTRAP_EMAIL must be set"));
-    }
-
-    @Test
-    void validateAdminBootstrap_rejectsInvalidEmailFormat() {
-        adminBootstrapProperties.setEnabled(true);
-        adminBootstrapProperties.setEmail("not-an-email");
-        adminBootstrapProperties.setPassword("SecurePassword123!");
-
-        IllegalStateException ex = assertThrows(
-                IllegalStateException.class,
-                this::invokeBootstrapValidation
-        );
-        assertTrue(ex.getMessage().contains("valid email address"));
-    }
-
-    @Test
-    void validateAdminBootstrap_rejectsEmptyPassword() {
-        adminBootstrapProperties.setEnabled(true);
-        adminBootstrapProperties.setEmail("admin@joyway.in");
-        adminBootstrapProperties.setPassword("");
-
-        IllegalStateException ex = assertThrows(
-                IllegalStateException.class,
-                this::invokeBootstrapValidation
-        );
-        assertTrue(ex.getMessage().contains("ADMIN_BOOTSTRAP_PASSWORD must be set"));
-    }
-
-    @Test
-    void validateAdminBootstrap_rejectsWeakPassword() {
-        adminBootstrapProperties.setEnabled(true);
-        adminBootstrapProperties.setEmail("admin@joyway.in");
-        adminBootstrapProperties.setPassword("short");
-
-        IllegalStateException ex = assertThrows(
-                IllegalStateException.class,
-                this::invokeBootstrapValidation
-        );
-        assertTrue(ex.getMessage().contains("at least 12 characters"));
-    }
-
-    @Test
-    void validateAdminBootstrap_acceptsExactlyMinimumPasswordLength() {
-        adminBootstrapProperties.setEnabled(true);
-        adminBootstrapProperties.setEmail("admin@joyway.in");
-        adminBootstrapProperties.setPassword("123456789012");
-
-        assertDoesNotThrow(this::invokeBootstrapValidation);
-    }
-
-    @Test
-    void validateAdminBootstrap_acceptsEmailWithSubdomain() {
-        adminBootstrapProperties.setEnabled(true);
-        adminBootstrapProperties.setEmail("admin@mail.joyway.in");
-        adminBootstrapProperties.setPassword("SecurePassword123!");
-
-        assertDoesNotThrow(this::invokeBootstrapValidation);
+        assertTrue(ex.getMessage().contains("ADMIN_BOOTSTRAP_ENABLED must be false"));
     }
 
     private void invokeBootstrapValidation() {

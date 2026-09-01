@@ -7,12 +7,17 @@ import in.joyway.dto.admin.AdminPackageDetailDto;
 import in.joyway.dto.admin.AdminPackageSummaryDto;
 import in.joyway.dto.admin.AdminProfileDto;
 import in.joyway.dto.package_.PackageImageDto;
+import in.joyway.service.PackageImageUrlService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class AdminMapper {
+
+    private final PackageImageUrlService packageImageUrlService;
 
     public AdminProfileDto toProfileDto(User user) {
         return AdminProfileDto.builder()
@@ -37,7 +42,7 @@ public class AdminMapper {
                 .totalSeats(pkg.getTotalSeats())
                 .availableSeats(pkg.getAvailableSeats())
                 .status(pkg.getStatus().name())
-                .heroImageUrl(hero != null ? hero.getImageUrl() : null)
+                .heroImageUrl(hero != null ? packageImageUrlService.resolvePublicUrl(hero) : null)
                 .imageCount(pkg.getImages() != null ? pkg.getImages().size() : 0)
                 .build();
     }
@@ -77,7 +82,7 @@ public class AdminMapper {
         return images.stream()
                 .map(img -> PackageImageDto.builder()
                         .id(img.getId())
-                        .imageUrl(img.getImageUrl())
+                        .imageUrl(packageImageUrlService.resolvePublicUrl(img))
                         .altText(img.getAltText())
                         .sortOrder(img.getSortOrder())
                         .build())

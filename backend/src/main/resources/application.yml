@@ -57,6 +57,7 @@ joyway:
     enabled: ${RATE_LIMIT_ENABLED:true}
     login-requests-per-minute: ${RATE_LIMIT_LOGIN_PER_MINUTE:10}
     booking-requests-per-minute: ${RATE_LIMIT_BOOKING_PER_MINUTE:20}
+    booking-lookup-requests-per-minute: ${RATE_LIMIT_BOOKING_LOOKUP_PER_MINUTE:10}
     payment-requests-per-minute: ${RATE_LIMIT_PAYMENT_PER_MINUTE:30}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
@@ -100,6 +101,9 @@ joyway:
     trip-reminder-day-before-enabled: true
   monitoring:
     reconciliation-cron: ${PAYMENT_RECONCILIATION_CRON:0 */15 * * * *}
+  booking:
+    payment-window-minutes: ${BOOKING_PAYMENT_WINDOW_MINUTES:30}
+    payment-expiry-cron: ${BOOKING_PAYMENT_EXPIRY_CRON:0 * * * * *}
   operations:
     expose-driver-contact-to-customers: ${EXPOSE_DRIVER_CONTACT_TO_CUSTOMERS:false}
 

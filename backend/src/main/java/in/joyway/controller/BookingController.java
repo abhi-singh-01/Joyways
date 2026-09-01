@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.joyway.dto.ApiResponse;
 import in.joyway.dto.booking.BookingResponse;
 import in.joyway.dto.booking.BookingReviewDto;
+import in.joyway.dto.booking.BookingAccessRequest;
 import in.joyway.dto.booking.CreateBookingRequest;
 import in.joyway.exception.RequestValidationException;
 import in.joyway.service.BookingQueryService;
@@ -50,6 +51,34 @@ public class BookingController {
         return ApiResponse.success(response, "Booking created. Proceed to payment.");
     }
 
+    @PostMapping("/lookup")
+    public ApiResponse<in.joyway.dto.booking.BookingDetailResponse> lookupBooking(
+            @RequestBody BookingAccessRequest request
+    ) {
+        validateAccessRequest(request);
+        return ApiResponse.success(
+                bookingQueryService.getBookingForCustomer(request.getReference(), request.getEmail()));
+    }
+
+    @PostMapping("/receipt")
+    public ApiResponse<in.joyway.dto.booking.BookingReceiptDto> lookupReceipt(
+            @RequestBody BookingAccessRequest request
+    ) {
+        validateAccessRequest(request);
+        return ApiResponse.success(
+                bookingQueryService.getReceiptForCustomer(request.getReference(), request.getEmail()));
+    }
+
+    @PostMapping("/cancel")
+    public ApiResponse<BookingResponse> cancelBookingPost(
+            @RequestBody BookingAccessRequest request
+    ) {
+        validateAccessRequest(request);
+        BookingResponse response = bookingService.cancelBookingByCustomer(
+                request.getReference(), request.getEmail());
+        return ApiResponse.success(response, "Booking cancelled.");
+    }
+
     @GetMapping("/{reference}")
     public ApiResponse<in.joyway.dto.booking.BookingDetailResponse> getBooking(
             @PathVariable String reference,
@@ -80,6 +109,17 @@ public class BookingController {
         if (!violations.isEmpty()) {
             Map<String, String> errors = new HashMap<>();
             for (ConstraintViolation<CreateBookingRequest> v : violations) {
+                errors.put(v.getPropertyPath().toString(), v.getMessage());
+            }
+            throw new RequestValidationException(errors);
+        }
+    }
+
+    private void validateAccessRequest(BookingAccessRequest request) {
+        Set<ConstraintViolation<BookingAccessRequest>> violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            Map<String, String> errors = new HashMap<>();
+            for (ConstraintViolation<BookingAccessRequest> v : violations) {
                 errors.put(v.getPropertyPath().toString(), v.getMessage());
             }
             throw new RequestValidationException(errors);

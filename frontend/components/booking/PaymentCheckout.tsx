@@ -120,7 +120,7 @@ export function PaymentCheckout({ booking, customer, onReset }: PaymentCheckoutP
           </div>
         </div>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link href={`/bookings/lookup?reference=${encodeURIComponent(booking.bookingReference)}&email=${encodeURIComponent(customer.email)}`}>
+          <Link href={`/bookings/lookup?reference=${encodeURIComponent(booking.bookingReference)}`}>
             <Button variant="outline">View Booking</Button>
           </Link>
           <Link href="/trips">
@@ -179,7 +179,8 @@ export function PaymentCheckout({ booking, customer, onReset }: PaymentCheckoutP
         )}
       </div>
       <p className="mt-4 text-xs text-charcoal-muted">
-        Secure test-mode payment powered by Razorpay. Use Razorpay test cards/UPI in sandbox.
+        Secure payment powered by Razorpay. Your card and UPI details are handled on Razorpay&apos;s
+        checkout — JOYWAY never stores them.
       </p>
     </div>
   );

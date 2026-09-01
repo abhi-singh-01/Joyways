@@ -22,8 +22,8 @@ export function BrandSection() {
             memories you bring back.
           </p>
           <div className="mt-12 flex flex-col items-center">
-            <JoywayLogo href={null} height={56} />
-            <p className="mt-3 text-lg text-accent">Find Joy in Every Journey.</p>
+            <JoywayLogo href={null} height={72} layout="compact" showTagline />
+            <p className="mt-4 text-lg text-accent">Find Joy in Every Journey.</p>
           </div>
         </motion.div>
       </div>

@@ -1,7 +1,12 @@
 package in.joyway.service;
 
+import in.joyway.config.BookingProperties;
+import in.joyway.domain.entity.Booking;
+import in.joyway.domain.entity.Customer;
 import in.joyway.domain.entity.TravelPackage;
+import in.joyway.domain.enums.BookingStatus;
 import in.joyway.domain.enums.PackageStatus;
+import in.joyway.domain.enums.PaymentStatus;
 import in.joyway.domain.repository.BookingRepository;
 import in.joyway.domain.repository.CustomerRepository;
 import in.joyway.domain.repository.TravellerRepository;
@@ -11,6 +16,7 @@ import in.joyway.dto.booking.CustomerRequest;
 import in.joyway.dto.booking.TravellerRequest;
 import in.joyway.exception.InsufficientSeatsException;
 import in.joyway.mapper.BookingMapper;
+import in.joyway.notification.BookingNotificationService;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.util.BookingReferenceGenerator;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +45,8 @@ class BookingServiceTest {
     @Mock private BookingReferenceGenerator referenceGenerator;
     @Mock private BookingMapper bookingMapper;
     @Mock private DocumentStorageService documentStorageService;
+    @Mock private BookingNotificationService bookingNotificationService;
+    @Mock private BookingProperties bookingProperties;
 
     @InjectMocks
     private BookingService bookingService;
@@ -81,6 +90,9 @@ class BookingServiceTest {
         request.setNumberOfTravellers(1);
         request.setCustomer(customer);
         request.setTravellers(List.of(traveller));
+        request.setConsentAccepted(true);
+
+        lenient().when(bookingProperties.getPaymentWindowMinutes()).thenReturn(30);
     }
 
     @Test
@@ -96,7 +108,7 @@ class BookingServiceTest {
             t.setEmail("t" + i + "@example.com");
             t.setEmergencyContact("9999999999");
             t.setIdDocumentType("AADHAAR");
-            t.setIdDocumentReference("XXXX" + i);
+            t.setIdDocumentReference("1234");
             five.add(t);
         }
         request.setTravellers(five);
@@ -105,5 +117,32 @@ class BookingServiceTest {
 
         assertThatThrownBy(() -> bookingService.previewBooking(request))
                 .isInstanceOf(InsufficientSeatsException.class);
+    }
+
+    @Test
+    void cancelBookingByCustomer_rejectsPaidBooking() {
+        Customer customer = Customer.builder()
+                .id(1L)
+                .fullName("John Doe")
+                .email("john@example.com")
+                .mobile("9876543210")
+                .build();
+        Booking booking = Booking.builder()
+                .id(50L)
+                .bookingReference("JW-2026-00050")
+                .customer(customer)
+                .travelPackage(pkg)
+                .numberOfTravellers(1)
+                .status(BookingStatus.CONFIRMED)
+                .paymentStatus(PaymentStatus.PAID)
+                .build();
+
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00050"))
+                .thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() ->
+                bookingService.cancelBookingByCustomer("JW-2026-00050", "john@example.com"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Paid bookings cannot be cancelled");
     }
 }

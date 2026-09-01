@@ -6,13 +6,18 @@ import in.joyway.domain.enums.PackageStatus;
 import in.joyway.dto.package_.PackageDetailDto;
 import in.joyway.dto.package_.PackageImageDto;
 import in.joyway.dto.package_.PackageSummaryDto;
+import in.joyway.service.PackageImageUrlService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class PackageMapper {
+
+    private final PackageImageUrlService packageImageUrlService;
 
     public PackageSummaryDto toSummaryDto(TravelPackage pkg) {
         PackageImage hero = getHeroImage(pkg);
@@ -28,7 +33,7 @@ public class PackageMapper {
                 .endDate(pkg.getEndDate())
                 .pricePerPerson(pkg.getPricePerPerson())
                 .availableSeats(pkg.getAvailableSeats())
-                .heroImageUrl(hero != null ? hero.getImageUrl() : null)
+                .heroImageUrl(hero != null ? packageImageUrlService.resolvePublicUrl(hero) : null)
                 .heroImageAlt(hero != null ? hero.getAltText() : pkg.getDestination())
                 .build();
     }
@@ -69,7 +74,7 @@ public class PackageMapper {
         return images.stream()
                 .map(img -> PackageImageDto.builder()
                         .id(img.getId())
-                        .imageUrl(img.getImageUrl())
+                        .imageUrl(packageImageUrlService.resolvePublicUrl(img))
                         .altText(img.getAltText())
                         .sortOrder(img.getSortOrder())
                         .build())

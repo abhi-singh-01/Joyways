@@ -8,5 +8,7 @@ import java.util.Optional;
 public interface PaymentWebhookEventRepository extends JpaRepository<PaymentWebhookEvent, Long> {
     boolean existsByEventId(String eventId);
 
+    boolean existsByPayloadHash(String payloadHash);
+
     Optional<PaymentWebhookEvent> findByEventId(String eventId);
 }

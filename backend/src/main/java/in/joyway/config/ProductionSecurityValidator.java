@@ -43,6 +43,8 @@ public class ProductionSecurityValidator {
     private final AdminBootstrapProperties adminBootstrapProperties;
     private final RazorpayProperties razorpayProperties;
     private final StorageProperties storageProperties;
+    private final RateLimitProperties rateLimitProperties;
+    private final MailProperties mailProperties;
 
     @PostConstruct
     void validateProductionSecurity() {
@@ -54,8 +56,12 @@ public class ProductionSecurityValidator {
         validateAdminBootstrap();
         validateDatabaseUrl();
         validatePublicApiBaseUrl();
+        validateFrontendBaseUrl();
         validateRazorpaySecrets();
         validateStorageConfiguration();
+        validateRateLimitsEnabled();
+        validateJwtCookieDomain();
+        validateMailPreviewDisabled();
 
         log.info("Production security validation passed.");
     }
@@ -104,40 +110,13 @@ public class ProductionSecurityValidator {
                 });
     }
 
-    private static final int MIN_BOOTSTRAP_PASSWORD_LENGTH = 12;
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(
-            "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-    );
-
     private void validateAdminBootstrap() {
         if (!adminBootstrapProperties.isEnabled()) {
             return;
         }
 
-        log.warn("ADMIN_BOOTSTRAP_ENABLED=true in production. "
-                + "This should only be used for initial admin setup. "
-                + "Disable immediately after creating the first admin.");
-
-        String email = adminBootstrapProperties.getEmail();
-        if (!StringUtils.hasText(email)) {
-            throw new IllegalStateException(
-                    "ADMIN_BOOTSTRAP_EMAIL must be set when bootstrap is enabled.");
-        }
-        if (!EMAIL_PATTERN.matcher(email.trim()).matches()) {
-            throw new IllegalStateException(
-                    "ADMIN_BOOTSTRAP_EMAIL must be a valid email address.");
-        }
-
-        String password = adminBootstrapProperties.getPassword();
-        if (!StringUtils.hasText(password)) {
-            throw new IllegalStateException(
-                    "ADMIN_BOOTSTRAP_PASSWORD must be set when bootstrap is enabled.");
-        }
-        if (password.length() < MIN_BOOTSTRAP_PASSWORD_LENGTH) {
-            throw new IllegalStateException(
-                    "ADMIN_BOOTSTRAP_PASSWORD must be at least " + MIN_BOOTSTRAP_PASSWORD_LENGTH
-                            + " characters for production security.");
-        }
+        throw new IllegalStateException(
+                "ADMIN_BOOTSTRAP_ENABLED must be false in production after the first admin is created.");
     }
 
     private void validateDatabaseUrl() {
@@ -151,8 +130,8 @@ public class ProductionSecurityValidator {
     }
 
     /**
-     * Uploaded file URLs are persisted into package_images.image_url with this value as the prefix,
-     * so a wrong base URL corrupts stored data rather than just breaking the current request.
+     * PUBLIC_API_BASE_URL is used to build public package image URLs at read time from Azure
+     * blob storage keys — URLs are not persisted in the database.
      */
     private void validatePublicApiBaseUrl() {
         String baseUrl = environment.getProperty("joyway.public-api-base-url");
@@ -173,9 +152,56 @@ public class ProductionSecurityValidator {
         if (!StringUtils.hasText(razorpayProperties.getKeySecret())) {
             throw new IllegalStateException("RAZORPAY_KEY_SECRET must be set in production.");
         }
+        if (!StringUtils.hasText(razorpayProperties.getKeyId())) {
+            throw new IllegalStateException("RAZORPAY_KEY_ID must be set in production.");
+        }
         if (!StringUtils.hasText(razorpayProperties.getWebhookSecret())) {
             throw new IllegalStateException(
                     "RAZORPAY_WEBHOOK_SECRET must be set in production for webhook verification.");
+        }
+        if (razorpayProperties.getWebhookSecret().length() < 32) {
+            throw new IllegalStateException(
+                    "RAZORPAY_WEBHOOK_SECRET must be at least 32 characters in production.");
+        }
+        String keyId = razorpayProperties.getKeyId();
+        if (StringUtils.hasText(keyId) && keyId.toLowerCase(Locale.ROOT).startsWith("rzp_test_")) {
+            throw new IllegalStateException(
+                    "RAZORPAY_KEY_ID must be a live key (rzp_live_...) in production.");
+        }
+    }
+
+    private void validateFrontendBaseUrl() {
+        String baseUrl = mailProperties.getFrontendBaseUrl();
+        if (!StringUtils.hasText(baseUrl)) {
+            throw new IllegalStateException("FRONTEND_BASE_URL must be set in production.");
+        }
+        if (LOCALHOST_PATTERN.matcher(baseUrl).find()) {
+            throw new IllegalStateException(
+                    "FRONTEND_BASE_URL must not point to localhost in production: " + baseUrl);
+        }
+        if (!baseUrl.startsWith("https://")) {
+            throw new IllegalStateException(
+                    "FRONTEND_BASE_URL must use HTTPS in production: " + baseUrl);
+        }
+    }
+
+    private void validateMailPreviewDisabled() {
+        if (mailProperties.isPreviewEnabled()) {
+            throw new IllegalStateException("MAIL_PREVIEW_ENABLED must be false in production.");
+        }
+    }
+
+    private void validateRateLimitsEnabled() {
+        if (!rateLimitProperties.isEnabled()) {
+            throw new IllegalStateException("RATE_LIMIT_ENABLED must be true in production.");
+        }
+    }
+
+    private void validateJwtCookieDomain() {
+        String domain = jwtProperties.getCookieDomain();
+        if (!StringUtils.hasText(domain)) {
+            throw new IllegalStateException(
+                    "JWT_COOKIE_DOMAIN must be set in production (e.g. .joyway.in) so the admin cookie is shared between joyway.in and api.joyway.in.");
         }
     }
 

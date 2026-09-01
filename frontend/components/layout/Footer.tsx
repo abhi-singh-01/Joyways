@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { PUBLIC_EMAILS } from "@/lib/publicEmails";
+import {
+  PUBLIC_CALL_NUMBER,
+  formatPhoneDisplay,
+  telUrl,
+} from "@/lib/publicContact";
 
 const footerLinks = {
   explore: [
@@ -22,12 +27,14 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
-            <JoywayLogo height={44} href={null} variant="onDark" />
+            <JoywayLogo
+              height={44}
+              href={null}
+              variant="onDark"
+              layout="compact"
+              showTagline
+            />
             <p className="mt-2 text-accent-light">Find Joy in Every Journey.</p>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70">
-              Group travel packages from Delhi to India&apos;s most beautiful
-              destinations. Transport, stay, and memories — all in one package.
-            </p>
             <div className="mt-6 space-y-3 text-sm text-white/70">
               <p className="flex items-start gap-2">
                 <Mail size={16} className="mt-0.5 shrink-0 text-accent" />
@@ -39,20 +46,11 @@ export function Footer() {
                 </span>
               </p>
               <p className="flex items-start gap-2">
-                <Mail size={16} className="mt-0.5 shrink-0 text-accent" />
+                <Phone size={16} className="mt-0.5 shrink-0 text-accent" />
                 <span>
-                  <span className="block text-white/50">Booking Assistance</span>
-                  <a href={`mailto:${PUBLIC_EMAILS.bookings}`} className="hover:text-white">
-                    {PUBLIC_EMAILS.bookings}
-                  </a>
-                </span>
-              </p>
-              <p className="flex items-start gap-2">
-                <Mail size={16} className="mt-0.5 shrink-0 text-accent" />
-                <span>
-                  <span className="block text-white/50">General Contact</span>
-                  <a href={`mailto:${PUBLIC_EMAILS.general}`} className="hover:text-white">
-                    {PUBLIC_EMAILS.general}
+                  <span className="block text-white/50">Call us</span>
+                  <a href={telUrl(PUBLIC_CALL_NUMBER)} className="hover:text-white">
+                    {formatPhoneDisplay(PUBLIC_CALL_NUMBER)}
                   </a>
                 </span>
               </p>
@@ -100,14 +98,12 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
+        <div className="mt-12 border-t border-white/10 pt-8 text-center">
           <p className="text-sm text-white/50">
             &copy; {new Date().getFullYear()} JOYWAY. All rights reserved.
           </p>
-          <p className="text-sm text-white/50">
-            <a href="https://joyway.in" className="hover:text-white">
-              joyway.in
-            </a>
+          <p className="mt-2 text-sm text-white/40">
+            Developed and managed by AJS Technologies Pvt Ltd.
           </p>
         </div>
       </div>

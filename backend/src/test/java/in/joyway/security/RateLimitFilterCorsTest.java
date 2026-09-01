@@ -87,4 +87,22 @@ class RateLimitFilterCorsTest {
 
         assertEquals(200, response.getStatus());
     }
+
+    @Test
+    void rateLimit_usesRightMostForwardedForHop() throws Exception {
+        MockHttpServletRequest first = new MockHttpServletRequest("POST", LOGIN_PATH);
+        first.setRequestURI(LOGIN_PATH);
+        first.setRemoteAddr("10.0.0.8");
+        first.addHeader("X-Forwarded-For", "1.1.1.1, 10.0.0.9");
+        filter.doFilter(first, new MockHttpServletResponse(), new MockFilterChain());
+
+        MockHttpServletRequest spoofed = new MockHttpServletRequest("POST", LOGIN_PATH);
+        spoofed.setRequestURI(LOGIN_PATH);
+        spoofed.setRemoteAddr("10.0.0.8");
+        spoofed.addHeader("X-Forwarded-For", "8.8.8.8, 10.0.0.9");
+        MockHttpServletResponse throttled = new MockHttpServletResponse();
+        filter.doFilter(spoofed, throttled, new MockFilterChain());
+
+        assertEquals(429, throttled.getStatus());
+    }
 }

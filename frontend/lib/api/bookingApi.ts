@@ -23,6 +23,12 @@ export type CreateBookingPayload = {
   numberOfTravellers: number;
   customer: CustomerInput;
   travellers: TravellerInput[];
+  consentAccepted: boolean;
+};
+
+export type BookingAccessInput = {
+  reference: string;
+  email: string;
 };
 
 export type BookingReview = {
@@ -133,11 +139,11 @@ export async function getBooking(
   bookingReference: string,
   email: string
 ): Promise<BookingDetail> {
-  const params = new URLSearchParams({ email });
-  const response = await apiFetch<BookingDetail>(
-    `/api/bookings/${encodeURIComponent(bookingReference)}?${params.toString()}`,
-    { cache: "no-store" }
-  );
+  const response = await apiFetch<BookingDetail>("/api/bookings/lookup", {
+    method: "POST",
+    body: JSON.stringify({ reference: bookingReference, email }),
+    cache: "no-store",
+  });
   if (!response.data) throw new Error("Booking not found");
   return response.data;
 }
@@ -146,11 +152,11 @@ export async function getBookingReceipt(
   bookingReference: string,
   email: string
 ): Promise<BookingReceipt> {
-  const params = new URLSearchParams({ email });
-  const response = await apiFetch<BookingReceipt>(
-    `/api/bookings/${encodeURIComponent(bookingReference)}/receipt?${params.toString()}`,
-    { cache: "no-store" }
-  );
+  const response = await apiFetch<BookingReceipt>("/api/bookings/receipt", {
+    method: "POST",
+    body: JSON.stringify({ reference: bookingReference, email }),
+    cache: "no-store",
+  });
   if (!response.data) throw new Error("Receipt not found");
   return response.data;
 }
@@ -159,11 +165,11 @@ export async function cancelBooking(
   bookingReference: string,
   email: string
 ): Promise<BookingResult> {
-  const params = new URLSearchParams({ email });
-  const response = await apiFetch<BookingResult>(
-    `/api/bookings/${encodeURIComponent(bookingReference)}/cancel?${params.toString()}`,
-    { method: "POST", cache: "no-store" }
-  );
+  const response = await apiFetch<BookingResult>("/api/bookings/cancel", {
+    method: "POST",
+    body: JSON.stringify({ reference: bookingReference, email }),
+    cache: "no-store",
+  });
   if (!response.data) throw new Error("Cancellation failed");
   return response.data;
 }

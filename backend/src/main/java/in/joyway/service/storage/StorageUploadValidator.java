@@ -14,6 +14,9 @@ import java.util.Set;
  */
 public final class StorageUploadValidator {
 
+    public static final String PACKAGE_IMAGES_CATEGORY = "package-images";
+    public static final String TRAVELLER_DOCUMENTS_CATEGORY = "traveller-documents";
+
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "application/pdf"
     );
@@ -29,35 +32,39 @@ public final class StorageUploadValidator {
             "image/webp", ".webp",
             "application/pdf", ".pdf"
     );
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+    private static final long MAX_TRAVELLER_DOCUMENT_BYTES = 2 * 1024 * 1024;
+    private static final long MAX_PACKAGE_IMAGE_BYTES = 2 * 1024 * 1024;
 
     private StorageUploadValidator() {
     }
 
+    /** Validates traveller ID documents (2MB max per file). */
     public static void validate(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File is required.");
-        }
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("File size exceeds maximum allowed (5MB).");
-        }
-        String contentType = normalizeContentType(file.getContentType());
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("File type not allowed. Use JPEG, PNG, WebP, or PDF.");
-        }
-        validateMagicBytes(file, contentType);
+        validateTravellerDocument(file);
+    }
+
+    public static void validateTravellerDocument(MultipartFile file) {
+        validateFile(file, MAX_TRAVELLER_DOCUMENT_BYTES, "2MB", ALLOWED_CONTENT_TYPES);
     }
 
     /**
-     * Package photos are public marketing assets. Only JPEG/JPG/WebP under 5MB are accepted;
+     * Package photos are public marketing assets. Only JPEG/JPG/WebP under 2MB are accepted;
      * remote URL attachments are rejected separately in the admin service.
      */
     public static void validatePackageImage(MultipartFile file) {
-        validate(file);
+        validateFile(file, MAX_PACKAGE_IMAGE_BYTES, "2MB", ALLOWED_CONTENT_TYPES);
         String contentType = normalizeContentType(file.getContentType());
         if (contentType == null || !PACKAGE_IMAGE_CONTENT_TYPES.contains(contentType)) {
             throw new IllegalArgumentException(
-                    "Package images must be JPEG, JPG, or WebP and under 5MB.");
+                    "Package images must be JPEG, JPG, or WebP and under 2MB.");
+        }
+    }
+
+    public static void validateForCategory(MultipartFile file, String category) {
+        if (PACKAGE_IMAGES_CATEGORY.equals(category)) {
+            validatePackageImage(file);
+        } else {
+            validateTravellerDocument(file);
         }
     }
 
@@ -71,6 +78,25 @@ public final class StorageUploadValidator {
             return CONTENT_TYPE_TO_EXTENSION.getOrDefault(contentType, ".bin");
         }
         throw new IllegalArgumentException("File extension not allowed.");
+    }
+
+    private static void validateFile(
+            MultipartFile file,
+            long maxBytes,
+            String maxLabel,
+            Set<String> allowedContentTypes
+    ) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File is required.");
+        }
+        if (file.getSize() > maxBytes) {
+            throw new IllegalArgumentException("File size exceeds maximum allowed (" + maxLabel + ").");
+        }
+        String contentType = normalizeContentType(file.getContentType());
+        if (contentType == null || !allowedContentTypes.contains(contentType)) {
+            throw new IllegalArgumentException("File type not allowed. Use JPEG, PNG, WebP, or PDF.");
+        }
+        validateMagicBytes(file, contentType);
     }
 
     private static void validateMagicBytes(MultipartFile file, String contentType) {

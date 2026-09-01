@@ -93,7 +93,7 @@ public class RazorpayGatewayImpl implements RazorpayGateway {
         }
     }
 
-    static int toPaise(BigDecimal amountInr) {
+    public static int toPaise(BigDecimal amountInr) {
         return amountInr.multiply(BigDecimal.valueOf(100))
                 .setScale(0, RoundingMode.HALF_UP)
                 .intValueExact();

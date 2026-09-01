@@ -169,43 +169,5 @@ Travel insurance',
     'PUBLISHED'
 );
 
--- Package images (using Unsplash placeholder URLs for demo)
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1595810657044-9b0500a55108?w=800&q=80', 'Nainital lake and hills', 0
-FROM packages WHERE slug = 'nainital-weekend-escape-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1595810657044-9b0500a55108?w=800&q=80', 'Nainital Mall Road', 1
-FROM packages WHERE slug = 'nainital-weekend-escape-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80', 'Mussoorie hills and valleys', 0
-FROM packages WHERE slug = 'mussoorie-hill-retreat-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80', 'Mussoorie Kempty Falls', 1
-FROM packages WHERE slug = 'mussoorie-hill-retreat-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', 'Rishikesh Ganga river', 0
-FROM packages WHERE slug = 'rishikesh-adventure-yoga-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', 'Rishikesh rafting', 1
-FROM packages WHERE slug = 'rishikesh-adventure-yoga-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1582515073490-39981397c445?w=800&q=80', 'Haridwar Ganga Aarti', 0
-FROM packages WHERE slug = 'haridwar-spiritual-journey-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1582515073490-39981397c445?w=800&q=80', 'Har Ki Pauri', 1
-FROM packages WHERE slug = 'haridwar-spiritual-journey-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1614608682850-e0d6ed316d79?w=800&q=80', 'Dalhousie snow mountains', 0
-FROM packages WHERE slug = 'dalhousie-snow-escape-demo';
-
-INSERT INTO package_images (package_id, image_url, alt_text, sort_order)
-SELECT id, 'https://images.unsplash.com/photo-1614608682850-e0d6ed316d79?w=800&q=80', 'Khajjiar Dalhousie', 1
-FROM packages WHERE slug = 'dalhousie-snow-escape-demo';
+-- Package photos are uploaded via admin to Azure Blob Storage (private_storage_key only).
+-- Upload images in admin after seeding demo packages.

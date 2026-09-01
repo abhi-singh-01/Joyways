@@ -12,7 +12,6 @@ import in.joyway.mapper.AdminMapper;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.service.storage.StorageUploadValidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,9 +30,6 @@ public class AdminPackageImageService {
     private final DocumentStorageService documentStorageService;
     private final AdminMapper adminMapper;
 
-    @Value("${joyway.public-api-base-url:http://localhost:8080}")
-    private String publicApiBaseUrl;
-
     @Transactional(readOnly = true)
     public List<PackageImageDto> listImages(Long packageId) {
         findPackageOrThrow(packageId);
@@ -46,7 +42,7 @@ public class AdminPackageImageService {
     @Transactional
     public PackageImageDto addImageByUrl(Long packageId, AddPackageImageUrlRequest request) {
         throw new IllegalArgumentException(
-                "Package images must be uploaded as JPEG, JPG, or WebP files under 5MB. Image URLs are not allowed.");
+                "Package images must be uploaded as JPEG, JPG, or WebP files under 2MB. Image URLs are not allowed.");
     }
 
     @Transactional
@@ -54,14 +50,9 @@ public class AdminPackageImageService {
         TravelPackage pkg = findPackageOrThrow(packageId);
         StorageUploadValidator.validatePackageImage(file);
         String storageKey = documentStorageService.store(file, PACKAGE_IMAGE_CATEGORY);
-        String baseUrl = publicApiBaseUrl.endsWith("/")
-                ? publicApiBaseUrl.substring(0, publicApiBaseUrl.length() - 1)
-                : publicApiBaseUrl;
-        String imageUrl = baseUrl + "/api/files/" + storageKey;
 
         PackageImage image = PackageImage.builder()
                 .travelPackage(pkg)
-                .imageUrl(imageUrl)
                 .privateStorageKey(storageKey)
                 .altText(altText)
                 .sortOrder(nextSortOrder(packageId))

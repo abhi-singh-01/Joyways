@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -89,4 +90,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             AND b.paymentStatus <> in.joyway.domain.enums.PaymentStatus.PAID
             """)
     long countConfirmedButNotPaid();
+
+    @Query("""
+            SELECT b FROM Booking b
+            WHERE b.status = in.joyway.domain.enums.BookingStatus.PENDING_PAYMENT
+            AND b.paymentStatus = in.joyway.domain.enums.PaymentStatus.PENDING
+            AND b.createdAt < :cutoff
+            ORDER BY b.createdAt ASC
+            """)
+    List<Booking> findStalePendingPaymentBookings(Instant cutoff);
 }

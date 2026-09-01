@@ -17,6 +17,9 @@ public class RateLimitProperties {
     /** Booking creation attempts allowed per client per minute. */
     private int bookingRequestsPerMinute = 20;
 
+    /** Lookup, receipt, preview, and cancel attempts allowed per client per minute. */
+    private int bookingLookupRequestsPerMinute = 10;
+
     /** Payment order/verify attempts allowed per client per minute. */
     private int paymentRequestsPerMinute = 30;
 }

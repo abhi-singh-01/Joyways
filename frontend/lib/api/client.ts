@@ -3,6 +3,12 @@ import { getApiBaseUrl } from "./config";
 /** Default timeout for public API requests (ms). */
 const DEFAULT_API_FETCH_TIMEOUT_MS = 10_000;
 
+function readCsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export type ApiResponse<T> = {
   success: boolean;
   data?: T;
@@ -132,6 +138,7 @@ export async function adminFetch<T>(
 ): Promise<ApiResponse<T>> {
   const url = `${getApiBaseUrl()}${path}`;
   const requestId = newRequestId();
+  const csrfToken = readCsrfToken();
   let response: Response;
   try {
     response = await fetch(url, {
@@ -140,6 +147,7 @@ export async function adminFetch<T>(
       cache: "no-store",
       headers: {
         "X-Request-ID": requestId,
+        ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
         ...(options?.body instanceof FormData
           ? {}
           : { "Content-Type": "application/json" }),

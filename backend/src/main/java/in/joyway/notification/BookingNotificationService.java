@@ -344,8 +344,6 @@ public class BookingNotificationService {
     private String lookupUrl(Booking booking) {
         return mailProperties.getFrontendBaseUrl()
                 + "/bookings/lookup?reference="
-                + booking.getBookingReference()
-                + "&email="
-                + booking.getCustomer().getEmail();
+                + booking.getBookingReference();
     }
 }

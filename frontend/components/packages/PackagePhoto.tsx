@@ -10,21 +10,22 @@ type PackagePhotoProps = {
 };
 
 /**
- * Unsplash URLs go through the Next.js optimizer. Uploaded files are served from
- * api.joyway.in and must use a plain img so a missing remotePattern cannot hide them.
+ * Local assets under /public use the Next.js optimizer. Package photos from Azure
+ * (via api.joyway.in/api/files/...) are also optimized when remotePatterns allow.
  */
 export function PackagePhoto({ src, alt, className, sizes, priority }: PackagePhotoProps) {
-  const optimized = src.includes("images.unsplash.com");
+  const isLocalAsset = src.startsWith("/");
 
-  if (optimized) {
+  if (isLocalAsset || src.startsWith("http")) {
     return (
       <Image
         src={src}
         alt={alt}
         fill
         priority={priority}
+        loading={priority ? undefined : "lazy"}
         className={cn("object-cover", className)}
-        sizes={sizes}
+        sizes={sizes ?? "(max-width: 768px) 100vw, 33vw"}
       />
     );
   }

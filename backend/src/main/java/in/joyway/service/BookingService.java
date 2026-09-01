@@ -1,5 +1,6 @@
 package in.joyway.service;
 
+import in.joyway.config.BookingProperties;
 import in.joyway.domain.entity.*;
 import in.joyway.domain.enums.BookingStatus;
 import in.joyway.domain.enums.PackageStatus;
@@ -16,6 +17,7 @@ import in.joyway.mapper.BookingMapper;
 import in.joyway.notification.BookingNotificationService;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.util.BookingReferenceGenerator;
+import in.joyway.util.IdDocumentReferenceValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -48,6 +52,7 @@ public class BookingService {
     private final BookingMapper bookingMapper;
     private final DocumentStorageService documentStorageService;
     private final BookingNotificationService bookingNotificationService;
+    private final BookingProperties bookingProperties;
 
     @Transactional(readOnly = true)
     public BookingReviewDto previewBooking(CreateBookingRequest request) {
@@ -79,6 +84,10 @@ public class BookingService {
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest request, List<MultipartFile> documents)
             throws IOException {
+        if (!request.isConsentAccepted()) {
+            throw new IllegalArgumentException(
+                    "You must accept the terms, privacy policy, and ID document processing notice.");
+        }
         validateBookingRequest(request);
         validateDocuments(request, documents);
 
@@ -154,6 +163,52 @@ public class BookingService {
         return bookingMapper.toResponse(booking, savedTravellers);
     }
 
+    /**
+     * Expires unpaid bookings past the payment window and releases reserved seats.
+     */
+    @Transactional
+    public int expireStalePendingPaymentBookings() {
+        Instant cutoff = Instant.now().minus(
+                bookingProperties.getPaymentWindowMinutes(),
+                ChronoUnit.MINUTES);
+        List<Booking> stale = bookingRepository.findStalePendingPaymentBookings(cutoff);
+        int expired = 0;
+        for (Booking candidate : stale) {
+            try {
+                if (expireBookingInternal(candidate.getBookingReference())) {
+                    expired++;
+                }
+            } catch (Exception ex) {
+                log.warn("Payment expiry failed for reference={}: {}",
+                        candidate.getBookingReference(), ex.getClass().getSimpleName());
+            }
+        }
+        return expired;
+    }
+
+    private boolean expireBookingInternal(String bookingReference) {
+        Booking booking = bookingRepository.findByBookingReferenceForUpdate(bookingReference)
+                .orElse(null);
+        if (booking == null) {
+            return false;
+        }
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT
+                || booking.getPaymentStatus() != PaymentStatus.PENDING) {
+            return false;
+        }
+
+        TravelPackage pkg = packageRepository.findByIdForUpdate(booking.getTravelPackage().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found."));
+        pkg.setAvailableSeats(pkg.getAvailableSeats() + booking.getNumberOfTravellers());
+        packageRepository.save(pkg);
+
+        booking.setStatus(BookingStatus.EXPIRED);
+        bookingRepository.save(booking);
+
+        log.info("event=booking.expired bookingReference={}", booking.getBookingReference());
+        return true;
+    }
+
     @Transactional
     public BookingResponse cancelBookingByCustomer(String bookingReference, String customerEmail) {
         Booking booking = bookingRepository.findByBookingReferenceForUpdate(bookingReference)
@@ -184,8 +239,16 @@ public class BookingService {
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new IllegalArgumentException("This booking is already cancelled.");
         }
+        if (booking.getStatus() == BookingStatus.EXPIRED) {
+            throw new IllegalArgumentException("This booking has expired.");
+        }
         if (booking.getStatus() == BookingStatus.COMPLETED) {
             throw new IllegalArgumentException("Completed bookings cannot be cancelled.");
+        }
+        if (booking.getPaymentStatus() == PaymentStatus.PAID
+                || booking.getStatus() == BookingStatus.CONFIRMED) {
+            throw new IllegalArgumentException(
+                    "Paid bookings cannot be cancelled here. Contact support for a refund.");
         }
 
         TravelPackage pkg = packageRepository.findByIdForUpdate(booking.getTravelPackage().getId())
@@ -217,6 +280,9 @@ public class BookingService {
             if (!ALLOWED_DOCUMENT_TYPES.contains(traveller.getIdDocumentType().toUpperCase())) {
                 throw new IllegalArgumentException("Invalid ID document type: " + traveller.getIdDocumentType());
             }
+            IdDocumentReferenceValidator.validate(
+                    traveller.getIdDocumentType(),
+                    traveller.getIdDocumentReference());
         }
     }
 

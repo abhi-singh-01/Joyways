@@ -40,7 +40,7 @@ export function AdminLoginForm() {
       className="w-full max-w-md rounded-2xl border border-border bg-white p-8 shadow-lg"
     >
       <div className="mb-8 flex flex-col items-center text-center">
-        <JoywayLogo href={null} height={48} />
+        <JoywayLogo href={null} height={44} layout="compact" showTagline />
         <p className="mt-3 text-sm text-charcoal-muted">Admin sign in</p>
       </div>
 

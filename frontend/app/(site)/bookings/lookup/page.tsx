@@ -8,6 +8,11 @@ import { formatDateRange, formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import {
+  bookingLookupSchema,
+  fieldErrorsFromZod,
+  type FieldErrors,
+} from "@/lib/formValidation";
 
 async function fetchBookingAndReceipt(reference: string, email: string) {
   const detail = await getBooking(reference.trim(), email.trim());
@@ -21,41 +26,37 @@ async function fetchBookingAndReceipt(reference: string, email: string) {
 function BookingLookupContent() {
   const searchParams = useSearchParams();
   const prefilledReference = searchParams.get("reference") || "";
-  const prefilledEmail = searchParams.get("email") || "";
 
   const [reference, setReference] = useState(prefilledReference);
-  const [email, setEmail] = useState(prefilledEmail);
+  const [email, setEmail] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    FieldErrors<{ reference: string; email: string }>
+  >({});
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [receipt, setReceipt] = useState<BookingReceipt | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(Boolean(prefilledReference && prefilledEmail));
+  const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  // Auto-run the lookup when the customer arrives from an emailed link.
   useEffect(() => {
-    if (!prefilledReference || !prefilledEmail) return;
-
-    let cancelled = false;
-    fetchBookingAndReceipt(prefilledReference, prefilledEmail)
-      .then(({ detail, receipt: receiptData }) => {
-        if (cancelled) return;
-        setBooking(detail);
-        setReceipt(receiptData);
-        setError("");
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Booking not found");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [prefilledReference, prefilledEmail]);
+    if (prefilledReference) {
+      setReference(prefilledReference.toUpperCase());
+    }
+  }, [prefilledReference]);
 
   async function lookup(ref = reference, em = email) {
+    const validation = bookingLookupSchema.safeParse({
+      reference: ref,
+      email: em,
+    });
+
+    if (!validation.success) {
+      setFieldErrors(fieldErrorsFromZod(validation));
+      setError("Please fix the highlighted fields.");
+      return;
+    }
+
+    setFieldErrors({});
     setError("");
     setLoading(true);
     setBooking(null);
@@ -91,32 +92,39 @@ function BookingLookupContent() {
     <div className="mx-auto max-w-xl">
       <h1 className="font-display text-3xl font-semibold text-charcoal">Find Your Booking</h1>
       <p className="mt-2 text-charcoal-muted">
-        Enter your booking reference and email to view status and receipt.
+        Enter your booking reference and the email used at checkout. For your privacy, we never
+        include your email in shared links.
       </p>
 
       <form
         className="mt-8 space-y-4 rounded-2xl border border-border bg-white p-6"
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           void lookup();
         }}
       >
         <div>
-          <Label htmlFor="reference">Booking Reference</Label>
+          <Label htmlFor="reference">Booking Reference *</Label>
           <Input
             id="reference"
             required
+            aria-invalid={Boolean(fieldErrors.reference)}
+            error={fieldErrors.reference}
             value={reference}
-            onChange={(e) => setReference(e.target.value)}
+            onChange={(e) => setReference(e.target.value.toUpperCase())}
             placeholder="JW-2026-00001"
           />
         </div>
         <div>
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Email *</Label>
           <Input
             id="email"
             type="email"
             required
+            autoComplete="email"
+            aria-invalid={Boolean(fieldErrors.email)}
+            error={fieldErrors.email}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -157,7 +165,7 @@ function BookingLookupContent() {
             </div>
           )}
 
-          {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && (
+          {booking.status === "PENDING_PAYMENT" && booking.paymentStatus !== "PAID" && (
             <div className="mt-6 border-t border-border pt-6">
               <Button
                 type="button"

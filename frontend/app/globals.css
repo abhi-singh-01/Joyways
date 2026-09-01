@@ -56,6 +56,28 @@ body {
   font-family: var(--font-playfair), Georgia, serif;
 }
 
+.hero-sky {
+  background: linear-gradient(
+    180deg,
+    #9fd4ea 0%,
+    #cfe8f2 28%,
+    #e8f3ea 52%,
+    #7eb8c8 78%,
+    #3a8fa8 100%
+  );
+}
+
+.hero-landscape-static {
+  background: linear-gradient(
+    180deg,
+    #9fd4ea 0%,
+    #d4ead8 38%,
+    #2d6a4f 62%,
+    #1b4332 78%,
+    #3a8fa8 100%
+  );
+}
+
 /* Aurora drift */
 @keyframes aurora-drift {
   0%,
@@ -128,6 +150,15 @@ body {
 
 .destination-marquee {
   animation: destination-marquee 28s linear infinite;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

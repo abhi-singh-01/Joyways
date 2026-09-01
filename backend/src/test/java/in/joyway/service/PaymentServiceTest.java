@@ -224,7 +224,7 @@ class PaymentServiceTest {
 
         String payload = """
                 {"event":"payment.captured","payload":{"payment":{"entity":
-                {"id":"pay_test456","order_id":"order_test123"}}}}""";
+                {"id":"pay_test456","order_id":"order_test123","amount":1000000}}}}""";
 
         when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
         when(webhookEventRepository.existsByEventId("evt_2")).thenReturn(false);
@@ -259,7 +259,7 @@ class PaymentServiceTest {
 
         String payload = """
                 {"event":"payment.captured","payload":{"payment":{"entity":
-                {"id":"pay_test456","order_id":"order_test123"}}}}""";
+                {"id":"pay_test456","order_id":"order_test123","amount":1000000}}}}""";
 
         when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
         when(webhookEventRepository.existsByEventId("evt_3")).thenReturn(false);
@@ -286,6 +286,13 @@ class PaymentServiceTest {
 
         verify(webhookEventRepository, never()).save(any());
         verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processWebhook_rejectsMissingEventId() {
+        assertThatThrownBy(() -> paymentService.processWebhook("{}", "sig", " "))
+                .isInstanceOf(PaymentVerificationException.class);
+        verify(razorpayGateway, never()).verifyWebhookSignature(any(), any());
     }
 
     @Test

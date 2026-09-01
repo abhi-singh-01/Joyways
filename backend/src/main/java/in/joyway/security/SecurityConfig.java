@@ -2,6 +2,7 @@ package in.joyway.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.joyway.config.CorsProperties;
+import in.joyway.config.JwtProperties;
 import in.joyway.dto.ApiResponse;
 import in.joyway.observability.RequestCorrelationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,12 +17,13 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -39,13 +41,28 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsProperties corsProperties;
+    private final JwtProperties jwtProperties;
     private final ObjectMapper objectMapper;
     private final Environment environment;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfTokenRepository())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers(
+                                "/api/payments/webhook",
+                                "/api/bookings/**",
+                                "/api/payments/**",
+                                "/api/create-order",
+                                "/api/verify-payment",
+                                "/api/health",
+                                "/api/health/**",
+                                "/api/packages/**",
+                                "/api/files/**",
+                                "/api/admin/auth/login"
+                        ))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .headers(headers -> headers
                         .contentTypeOptions(contentType -> {})
@@ -55,6 +72,8 @@ public class SecurityConfig {
                         .httpStrictTransportSecurity(hsts -> hsts
                                 .includeSubDomains(true)
                                 .maxAgeInSeconds(31536000))
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'"))
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
@@ -109,6 +128,7 @@ public class SecurityConfig {
                 "Accept",
                 "Origin",
                 "X-Requested-With",
+                "X-XSRF-TOKEN",
                 RequestCorrelationFilter.REQUEST_ID_HEADER
         ));
         configuration.setExposedHeaders(List.of(
@@ -136,5 +156,21 @@ public class SecurityConfig {
         return Arrays.stream(environment.getActiveProfiles())
                 .anyMatch(profile -> profile.equalsIgnoreCase("dev")
                         || profile.equalsIgnoreCase("development"));
+    }
+
+    private CookieCsrfTokenRepository csrfTokenRepository() {
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        repository.setCookiePath("/");
+        repository.setCookieCustomizer(cookie -> {
+            String domain = jwtProperties.getCookieDomain();
+            if (domain != null && !domain.isBlank()) {
+                cookie.domain(domain.trim());
+            }
+            cookie.sameSite("Lax");
+            if (jwtProperties.isCookieSecure()) {
+                cookie.secure(true);
+            }
+        });
+        return repository;
     }
 }

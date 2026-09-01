@@ -21,6 +21,7 @@ import in.joyway.exception.PaymentVerificationException;
 import in.joyway.exception.ResourceNotFoundException;
 import in.joyway.notification.BookingNotificationService;
 import in.joyway.service.payment.RazorpayGateway;
+import in.joyway.service.payment.RazorpayGatewayImpl;
 import in.joyway.service.payment.RazorpayOrderResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +72,9 @@ public class PaymentService {
         Payment existing = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId())
                 .orElse(null);
         if (existing != null && existing.getStatus() == PaymentRecordStatus.CREATED
-                && existing.getRazorpayOrderId() != null) {
+                && existing.getRazorpayOrderId() != null
+                && existing.getAmount() != null
+                && existing.getAmount().compareTo(booking.getTotalAmount()) == 0) {
             return PaymentOrderResponse.builder()
                     .razorpayOrderId(existing.getRazorpayOrderId())
                     .razorpayKeyId(razorpayProperties.getKeyId())
@@ -143,12 +146,16 @@ public class PaymentService {
     public void processWebhook(String payload, String signature, String eventId) {
         log.info("event=payment.webhook.received eventId={}", eventId);
 
+        if (eventId == null || eventId.isBlank()) {
+            throw new PaymentVerificationException("Webhook event id is required.");
+        }
+
         if (!razorpayGateway.verifyWebhookSignature(payload, signature)) {
             log.warn("event=payment.webhook.failed reason=signature_invalid eventId={}", eventId);
             throw new PaymentVerificationException("Invalid webhook signature.");
         }
 
-        if (eventId != null && webhookEventRepository.existsByEventId(eventId)) {
+        if (webhookEventRepository.existsByEventId(eventId)) {
             log.info("event=payment.webhook.duplicate eventId={}", eventId);
             return;
         }
@@ -158,16 +165,18 @@ public class PaymentService {
             String eventType = root.path("event").asText("");
             String payloadHash = sha256(payload);
 
-            PaymentWebhookEvent webhookEvent = null;
-            if (eventId != null) {
-                webhookEvent = PaymentWebhookEvent.builder()
-                        .eventId(eventId)
-                        .eventType(eventType)
-                        .payloadHash(payloadHash)
-                        .processed(false)
-                        .build();
-                webhookEventRepository.save(webhookEvent);
+            if (webhookEventRepository.existsByPayloadHash(payloadHash)) {
+                log.info("event=payment.webhook.duplicate payloadHash={}", payloadHash);
+                return;
             }
+
+            PaymentWebhookEvent webhookEvent = PaymentWebhookEvent.builder()
+                    .eventId(eventId)
+                    .eventType(eventType)
+                    .payloadHash(payloadHash)
+                    .processed(false)
+                    .build();
+            webhookEventRepository.save(webhookEvent);
 
             switch (eventType) {
                 case "payment.captured", "order.paid" -> handlePaymentSuccess(root);
@@ -175,10 +184,8 @@ public class PaymentService {
                 default -> log.info("Unhandled webhook event type: {}", eventType);
             }
 
-            if (webhookEvent != null) {
-                webhookEvent.setProcessed(true);
-                webhookEventRepository.save(webhookEvent);
-            }
+            webhookEvent.setProcessed(true);
+            webhookEventRepository.save(webhookEvent);
         } catch (PaymentVerificationException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -230,6 +237,13 @@ public class PaymentService {
         payment.setStatus(PaymentRecordStatus.CAPTURED);
         paymentRepository.save(payment);
 
+        if (!capturedAmountMatchesBooking(booking, payment, paymentNode)) {
+            log.warn("event=payment.amount_mismatch bookingReference={} paymentId={}",
+                    booking.getBookingReference(), paymentId);
+            notifyPaymentOnInactiveBookingSafely(booking);
+            return;
+        }
+
         if (!isPayable(booking.getStatus())) {
             log.warn("Captured payment for non-payable booking: reference={}, status={}, paymentId={}",
                     booking.getBookingReference(), booking.getStatus(), paymentId);
@@ -252,6 +266,28 @@ public class PaymentService {
      * Cancelled, expired, refunded and completed bookings have already released or
      * consumed their seat allocation.
      */
+    private static boolean orderAmountMatchesBooking(Booking booking, Payment payment) {
+        return payment.getAmount() != null
+                && booking.getTotalAmount() != null
+                && payment.getAmount().compareTo(booking.getTotalAmount()) == 0;
+    }
+
+    private static boolean capturedAmountMatchesBooking(
+            Booking booking,
+            Payment payment,
+            JsonNode paymentNode
+    ) {
+        if (!orderAmountMatchesBooking(booking, payment)) {
+            return false;
+        }
+        JsonNode amountNode = paymentNode.path("amount");
+        if (amountNode.isMissingNode() || !amountNode.canConvertToLong()) {
+            return false;
+        }
+        int expectedPaise = RazorpayGatewayImpl.toPaise(booking.getTotalAmount());
+        return amountNode.asLong() == expectedPaise;
+    }
+
     private static boolean isPayable(BookingStatus status) {
         return status == BookingStatus.PENDING_PAYMENT;
     }
@@ -319,6 +355,10 @@ public class PaymentService {
 
         if (paymentRepository.findByRazorpayPaymentId(paymentId).isPresent()) {
             throw new PaymentVerificationException("This payment has already been processed.");
+        }
+
+        if (!orderAmountMatchesBooking(booking, payment)) {
+            throw new PaymentVerificationException("Payment amount does not match this booking.");
         }
 
         boolean valid = razorpayGateway.verifyPaymentSignature(

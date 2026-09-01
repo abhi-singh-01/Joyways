@@ -28,13 +28,13 @@ class StorageUploadValidatorTest {
     }
 
     @Test
-    void validate_rejectsOversizedFile() {
+    void validate_rejectsOversizedTravellerDocument() {
         byte[] jpeg = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
         MockMultipartFile file = new MockMultipartFile(
                 "file", "photo.jpg", "image/jpeg", jpeg) {
             @Override
             public long getSize() {
-                return 6 * 1024 * 1024;
+                return 3 * 1024 * 1024;
             }
         };
 

@@ -21,6 +21,10 @@ import {
   type CustomerInput,
   type TravellerInput,
 } from "@/lib/api/bookingApi";
+import {
+  type FieldErrors,
+  validateBookingStep,
+} from "@/lib/formValidation";
 import { PaymentCheckout } from "@/components/booking/PaymentCheckout";
 
 function emptyTraveller(): TravellerInput {
@@ -50,10 +54,17 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
   });
   const [travellers, setTravellers] = useState<TravellerInput[]>([emptyTraveller()]);
   const [documents, setDocuments] = useState<(File | null)[]>([null]);
+  const [customerErrors, setCustomerErrors] = useState<FieldErrors<CustomerInput>>({});
+  const [travellerErrors, setTravellerErrors] = useState<FieldErrors<TravellerInput>[]>([
+    {},
+  ]);
+  const [documentErrors, setDocumentErrors] = useState<(string | undefined)[]>([undefined]);
   const [review, setReview] = useState<BookingReview | null>(null);
   const [result, setResult] = useState<BookingResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [consentError, setConsentError] = useState("");
 
   if (!pkg.bookable) {
     return (
@@ -78,6 +89,16 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
       while (updated.length < clamped) updated.push(null);
       return updated.slice(0, clamped);
     });
+    setTravellerErrors((prev) => {
+      const updated = [...prev];
+      while (updated.length < clamped) updated.push({});
+      return updated.slice(0, clamped);
+    });
+    setDocumentErrors((prev) => {
+      const updated = [...prev];
+      while (updated.length < clamped) updated.push(undefined);
+      return updated.slice(0, clamped);
+    });
   }
 
   function buildPayload(): Parameters<typeof previewBooking>[0] {
@@ -86,11 +107,37 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
       numberOfTravellers: count,
       customer,
       travellers: travellers.slice(0, count),
+      consentAccepted,
     };
   }
 
-  async function handlePreview() {
+  function validateDetailsForm(): boolean {
+    const validation = validateBookingStep(
+      customer,
+      travellers,
+      documents,
+      count
+    );
+    setCustomerErrors(validation.customerErrors);
+    setTravellerErrors(validation.travellerErrors);
+    setDocumentErrors(validation.documentErrors);
+
+    if (!validation.valid) {
+      setError("Please fix the highlighted fields before continuing.");
+      document
+        .querySelector<HTMLElement>("[aria-invalid='true']")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
+
     setError("");
+    return true;
+  }
+
+  async function handlePreview(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!validateDetailsForm()) return;
+
     setLoading(true);
     try {
       const data = await previewBooking(buildPayload());
@@ -104,7 +151,17 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
   }
 
   async function handleSubmit() {
-    setError("");
+    if (!consentAccepted) {
+      setConsentError("You must accept the terms, privacy policy, and ID processing notice to continue.");
+      return;
+    }
+    setConsentError("");
+
+    if (!validateDetailsForm()) {
+      setStep(2);
+      return;
+    }
+
     setLoading(true);
     try {
       const files = documents.slice(0, count).filter((f): f is File => f !== null);
@@ -122,12 +179,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
   }
 
   if (result) {
-    return (
-      <PaymentCheckout
-        booking={result}
-        customer={customer}
-      />
-    );
+    return <PaymentCheckout booking={result} customer={customer} />;
   }
 
   return (
@@ -197,7 +249,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
               </button>
             </div>
             <div className="mt-8 flex justify-end">
-              <Button onClick={() => setStep(2)}>
+              <Button type="button" onClick={() => setStep(2)}>
                 Continue
                 <ArrowRight size={16} className="ml-2" />
               </Button>
@@ -206,8 +258,10 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
         )}
 
         {step === 2 && (
-          <motion.div
+          <motion.form
             key="step2"
+            noValidate
+            onSubmit={handlePreview}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -217,14 +271,22 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
               <h2 className="font-display text-xl font-semibold text-charcoal">
                 Primary Contact
               </h2>
+              <p className="mt-1 text-sm text-charcoal-muted">
+                Fields marked * are required
+              </p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <Label htmlFor="customerName">Full Name *</Label>
                   <Input
                     id="customerName"
                     required
+                    autoComplete="name"
+                    aria-invalid={Boolean(customerErrors.fullName)}
+                    error={customerErrors.fullName}
                     value={customer.fullName}
-                    onChange={(e) => setCustomer({ ...customer, fullName: e.target.value })}
+                    onChange={(e) =>
+                      setCustomer({ ...customer, fullName: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -233,6 +295,9 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
                     id="customerEmail"
                     type="email"
                     required
+                    autoComplete="email"
+                    aria-invalid={Boolean(customerErrors.email)}
+                    error={customerErrors.email}
                     value={customer.email}
                     onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
                   />
@@ -242,8 +307,12 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
                   <Input
                     id="customerMobile"
                     type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
                     maxLength={10}
                     required
+                    aria-invalid={Boolean(customerErrors.mobile)}
+                    error={customerErrors.mobile}
                     value={customer.mobile}
                     onChange={(e) =>
                       setCustomer({
@@ -262,6 +331,8 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
                 index={index}
                 data={traveller}
                 documentFile={documents[index]}
+                errors={travellerErrors[index]}
+                documentError={documentErrors[index]}
                 onChange={(data) => {
                   const updated = [...travellers];
                   updated[index] = data;
@@ -276,15 +347,15 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
             ))}
 
             <div className="flex justify-between gap-3">
-              <Button variant="outline" onClick={() => setStep(1)}>
+              <Button type="button" variant="outline" onClick={() => setStep(1)}>
                 Back
               </Button>
-              <Button onClick={handlePreview} disabled={loading}>
+              <Button type="submit" disabled={loading}>
                 {loading ? "Loading..." : "Review Booking"}
                 <ArrowRight size={16} className="ml-2" />
               </Button>
             </div>
-          </motion.div>
+          </motion.form>
         )}
 
         {step === 3 && review && (
@@ -300,11 +371,42 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
               review={review}
               customerName={customer.fullName}
             />
+            <div className="rounded-2xl border border-border bg-white p-5 sm:p-6">
+              <label className="flex items-start gap-3 text-sm leading-relaxed text-charcoal-muted">
+                <input
+                  type="checkbox"
+                  checked={consentAccepted}
+                  onChange={(e) => {
+                    setConsentAccepted(e.target.checked);
+                    if (e.target.checked) setConsentError("");
+                  }}
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-border text-forest focus:ring-forest/30"
+                  aria-invalid={Boolean(consentError)}
+                />
+                <span>
+                  I agree to the{" "}
+                  <Link href="/terms" className="font-medium text-forest hover:underline">
+                    Terms &amp; Conditions
+                  </Link>
+                  ,{" "}
+                  <Link href="/privacy" className="font-medium text-forest hover:underline">
+                    Privacy Policy
+                  </Link>
+                  , and consent to JOYWAY processing traveller identity documents for this
+                  booking.
+                </span>
+              </label>
+              {consentError && (
+                <p className="mt-2 text-xs text-red-600" role="alert">
+                  {consentError}
+                </p>
+              )}
+            </div>
             <div className="flex justify-between gap-3">
               <Button variant="outline" onClick={() => setStep(2)}>
                 Back
               </Button>
-              <Button onClick={handleSubmit} disabled={loading} size="lg">
+              <Button onClick={() => void handleSubmit()} disabled={loading} size="lg">
                 {loading ? "Creating booking..." : "Confirm Booking"}
               </Button>
             </div>

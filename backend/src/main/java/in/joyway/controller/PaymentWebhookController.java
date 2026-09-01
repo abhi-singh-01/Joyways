@@ -26,6 +26,9 @@ public class PaymentWebhookController {
         if (signature == null || signature.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
+        if (eventId == null || eventId.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
         paymentService.processWebhook(payload, signature, eventId);
         return ResponseEntity.ok().build();
     }

@@ -42,7 +42,7 @@ export function AdminSidebar() {
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-charcoal text-white">
       <div className="border-b border-white/10 px-6 py-5">
-        <JoywayLogo href="/admin" height={32} variant="onDark" />
+        <JoywayLogo href="/admin" height={36} variant="onDark" layout="compact" />
         <p className="mt-0.5 text-xs text-white/50">Admin Panel</p>
       </div>
 

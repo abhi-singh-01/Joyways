@@ -5,8 +5,10 @@ import in.joyway.domain.entity.TravelPackage;
 import in.joyway.domain.enums.PackageStatus;
 import in.joyway.dto.package_.PackageDetailDto;
 import in.joyway.dto.package_.PackageSummaryDto;
+import in.joyway.service.PackageImageUrlService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,11 +23,13 @@ class PackageMapperTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new PackageMapper();
+        PackageImageUrlService urlService = new PackageImageUrlService();
+        ReflectionTestUtils.setField(urlService, "publicApiBaseUrl", "https://api.joyway.in");
+        mapper = new PackageMapper(urlService);
 
         PackageImage image = PackageImage.builder()
                 .id(1L)
-                .imageUrl("https://example.com/image.jpg")
+                .privateStorageKey("package-images/test.jpg")
                 .altText("Test image")
                 .sortOrder(0)
                 .build();
@@ -59,7 +63,8 @@ class PackageMapperTest {
         assertThat(dto.title()).isEqualTo("Test Trip (DEMO)");
         assertThat(dto.destination()).isEqualTo("Nainital");
         assertThat(dto.pricePerPerson()).isEqualByComparingTo("4999.00");
-        assertThat(dto.heroImageUrl()).isEqualTo("https://example.com/image.jpg");
+        assertThat(dto.heroImageUrl())
+                .isEqualTo("https://api.joyway.in/api/files/package-images/test.jpg");
     }
 
     @Test

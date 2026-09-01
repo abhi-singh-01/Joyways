@@ -22,6 +22,9 @@ public class PackageImage {
     @JoinColumn(name = "package_id", nullable = false)
     private TravelPackage travelPackage;
 
+    /**
+     * Legacy column; URLs are resolved at read time from {@link #privateStorageKey}.
+     */
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 

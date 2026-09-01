@@ -44,6 +44,7 @@ class AdminOperationsSecurityTest {
                         .content("""
                                 {"registrationNumber":"DL01AB1234","vehicleType":"Bus","seatingCapacity":17,"ownershipType":"OWNED"}
                                 """))
-                .andExpect(status().isUnauthorized());
+                // Unauthenticated mutating requests are blocked by CSRF before auth (403).
+                .andExpect(status().isForbidden());
     }
 }

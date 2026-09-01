@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import type { TravellerInput } from "@/lib/api/bookingApi";
+import type { FieldErrors } from "@/lib/formValidation";
 
 const DOCUMENT_TYPES = [
   { value: "AADHAAR", label: "Aadhaar" },
@@ -16,6 +17,8 @@ type TravellerFormProps = {
   index: number;
   data: TravellerInput;
   documentFile: File | null;
+  errors?: FieldErrors<TravellerInput>;
+  documentError?: string;
   onChange: (data: TravellerInput) => void;
   onDocumentChange: (file: File | null) => void;
 };
@@ -24,6 +27,8 @@ export function TravellerForm({
   index,
   data,
   documentFile,
+  errors = {},
+  documentError,
   onChange,
   onDocumentChange,
 }: TravellerFormProps) {
@@ -42,6 +47,8 @@ export function TravellerForm({
           <Input
             id={`name-${index}`}
             required
+            aria-invalid={Boolean(errors.fullName)}
+            error={errors.fullName}
             value={data.fullName}
             onChange={(e) => update("fullName", e.target.value)}
           />
@@ -52,6 +59,8 @@ export function TravellerForm({
             id={`dob-${index}`}
             type="date"
             required
+            aria-invalid={Boolean(errors.dateOfBirth)}
+            error={errors.dateOfBirth}
             value={data.dateOfBirth}
             onChange={(e) => update("dateOfBirth", e.target.value)}
           />
@@ -61,6 +70,8 @@ export function TravellerForm({
           <Select
             id={`gender-${index}`}
             required
+            aria-invalid={Boolean(errors.gender)}
+            error={errors.gender}
             value={data.gender}
             onChange={(e) => update("gender", e.target.value)}
           >
@@ -76,6 +87,10 @@ export function TravellerForm({
             id={`mobile-${index}`}
             type="tel"
             required
+            inputMode="numeric"
+            autoComplete="tel"
+            aria-invalid={Boolean(errors.mobile)}
+            error={errors.mobile}
             maxLength={10}
             placeholder="10-digit mobile"
             value={data.mobile}
@@ -88,6 +103,9 @@ export function TravellerForm({
             id={`email-${index}`}
             type="email"
             required
+            autoComplete="email"
+            aria-invalid={Boolean(errors.email)}
+            error={errors.email}
             value={data.email}
             onChange={(e) => update("email", e.target.value)}
           />
@@ -97,6 +115,8 @@ export function TravellerForm({
           <Input
             id={`emergency-${index}`}
             required
+            aria-invalid={Boolean(errors.emergencyContact)}
+            error={errors.emergencyContact}
             placeholder="Name and phone number"
             value={data.emergencyContact}
             onChange={(e) => update("emergencyContact", e.target.value)}
@@ -107,6 +127,8 @@ export function TravellerForm({
           <Select
             id={`docType-${index}`}
             required
+            aria-invalid={Boolean(errors.idDocumentType)}
+            error={errors.idDocumentType}
             value={data.idDocumentType}
             onChange={(e) => update("idDocumentType", e.target.value)}
           >
@@ -123,6 +145,8 @@ export function TravellerForm({
           <Input
             id={`docRef-${index}`}
             required
+            aria-invalid={Boolean(errors.idDocumentReference)}
+            error={errors.idDocumentReference}
             maxLength={50}
             placeholder="e.g. XXXX1234"
             value={data.idDocumentReference}
@@ -136,16 +160,20 @@ export function TravellerForm({
             type="file"
             accept="image/jpeg,image/png,image/webp,application/pdf"
             required
+            aria-invalid={Boolean(documentError)}
             className="mt-1 block w-full text-sm text-charcoal-muted file:mr-4 file:rounded-lg file:border-0 file:bg-forest file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-forest-light"
             onChange={(e) => onDocumentChange(e.target.files?.[0] ?? null)}
           />
-          {documentFile && (
+          {documentError && (
+            <p className="mt-1 text-xs text-red-600">{documentError}</p>
+          )}
+          {documentFile && !documentError && (
             <p className="mt-1 text-xs text-charcoal-muted">
               Selected: {documentFile.name}
             </p>
           )}
           <p className="mt-1 text-xs text-charcoal-muted">
-            JPEG, PNG, WebP or PDF — max 5MB. Stored securely and never shown publicly.
+            JPEG, PNG, WebP or PDF — max 2MB per traveller. Stored securely and never shown publicly.
           </p>
         </div>
       </div>

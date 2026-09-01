@@ -1,6 +1,7 @@
 package in.joyway;
 
 import in.joyway.config.AdminBootstrapProperties;
+import in.joyway.config.BookingProperties;
 import in.joyway.config.CorsProperties;
 import in.joyway.config.JwtProperties;
 import in.joyway.config.MailProperties;
@@ -25,7 +26,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         StorageProperties.class,
         MailProperties.class,
         NotificationProperties.class,
-        RateLimitProperties.class
+        RateLimitProperties.class,
+        BookingProperties.class
 })
 public class JoywayApplication {
 
