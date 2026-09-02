@@ -24,6 +24,7 @@ import in.joyway.service.payment.RazorpayPaymentDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -513,6 +514,39 @@ class PaymentServiceTest {
     }
 
     @Test
+    void processWebhook_acknowledgesDuplicatePaymentId() {
+        Payment existingPayment = Payment.builder()
+                .id(99L)
+                .booking(booking)
+                .razorpayOrderId("order_other")
+                .razorpayPaymentId("pay_known")
+                .amount(new BigDecimal("10000.00"))
+                .currency("INR")
+                .status(PaymentRecordStatus.CAPTURED)
+                .build();
+
+        String payload = """
+                {"event":"payment.captured","payload":{"payment":{"entity":
+                {"id":"pay_known","order_id":"order_test123","amount":1000000}}}}""";
+
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_dup_payment")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentRepository.findByRazorpayPaymentId("pay_known"))
+                .thenReturn(Optional.of(existingPayment));
+
+        paymentService.processWebhook(payload, "sig", "evt_dup_payment");
+
+        verify(paymentRepository, never()).findByRazorpayOrderId(any());
+        verify(paymentRepository, never()).save(any(Payment.class));
+        verify(bookingRepository, never()).save(any(Booking.class));
+
+        ArgumentCaptor<PaymentWebhookEvent> captor = ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(webhookEventRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().getLast().getProcessed()).isTrue();
+    }
+
+    @Test
     void processWebhook_alreadyPaidBookingDoesNotSendSuccessNotification() {
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setPaymentStatus(PaymentStatus.PAID);
@@ -590,7 +624,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    void processWebhook_rejectsUnknownOrderId() {
+    void processWebhook_acknowledgesUnknownOrderWithoutConfirming() {
         String payload = """
                 {"event":"payment.captured","payload":{"payment":{"entity":
                 {"id":"pay_unknown","order_id":"order_missing","amount":1000000}}}}""";
@@ -604,6 +638,84 @@ class PaymentServiceTest {
         paymentService.processWebhook(payload, "sig", "evt_unknown");
 
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(bookingRepository, never()).save(any(Booking.class));
+
+        ArgumentCaptor<PaymentWebhookEvent> captor = ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(webhookEventRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().getLast().getProcessed()).isTrue();
+    }
+
+    @Test
+    void processWebhook_acknowledgesMissingPaymentPayload() {
+        String payload = """
+                {"event":"payment.captured","payload":{}}""";
+
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_missing_payload")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.processWebhook(payload, "sig", "evt_missing_payload");
+
+        verify(paymentRepository, never()).save(any(Payment.class));
+        ArgumentCaptor<PaymentWebhookEvent> captor = ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(webhookEventRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().getLast().getProcessed()).isTrue();
+    }
+
+    @Test
+    void processWebhook_acknowledgesMalformedPaymentCapturedPayload() {
+        String payload = """
+                {"event":"payment.captured","payload":{"payment":{"entity":
+                {"id":"pay_malformed","amount":1000000}}}}""";
+
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_malformed")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.processWebhook(payload, "sig", "evt_malformed");
+
+        verify(paymentRepository, never()).save(any(Payment.class));
+        verify(paymentRepository, never()).findByRazorpayOrderId(any());
+        ArgumentCaptor<PaymentWebhookEvent> captor = ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(webhookEventRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().getLast().getProcessed()).isTrue();
+    }
+
+    @Test
+    void processWebhook_retriesWhenBookingNotFound() {
+        Payment payment = Payment.builder()
+                .id(1L)
+                .booking(booking)
+                .razorpayOrderId("order_test123")
+                .amount(new BigDecimal("10000.00"))
+                .currency("INR")
+                .status(PaymentRecordStatus.CREATED)
+                .build();
+
+        String payload = """
+                {"event":"payment.captured","payload":{"payment":{"entity":
+                {"id":"pay_test456","order_id":"order_test123","amount":1000000}}}}""";
+
+        PaymentWebhookEvent unprocessedEvent = PaymentWebhookEvent.builder()
+                .eventId("evt_no_booking")
+                .eventType("payment.captured")
+                .payloadHash(sha256(payload))
+                .processed(false)
+                .build();
+
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_no_booking")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> unprocessedEvent);
+        when(paymentRepository.findByRazorpayPaymentId("pay_test456")).thenReturn(Optional.empty());
+        when(paymentRepository.findByRazorpayOrderId("order_test123")).thenReturn(Optional.of(payment));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00001"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.processWebhook(payload, "sig", "evt_no_booking"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Webhook processing incomplete");
+
+        assertThat(unprocessedEvent.getProcessed()).isFalse();
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 

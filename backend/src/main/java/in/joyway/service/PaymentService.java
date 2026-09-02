@@ -173,17 +173,35 @@ public class PaymentService {
                 return;
             }
 
-            switch (eventType) {
+            WebhookHandlerOutcome outcome = switch (eventType) {
                 case "payment.captured" -> handlePaymentSuccess(root);
-                case "order.paid" -> handleOrderPaidInformational(root);
+                case "order.paid" -> {
+                    handleOrderPaidInformational(root);
+                    yield WebhookHandlerOutcome.ACKNOWLEDGED;
+                }
                 case "payment.failed" -> handlePaymentFailed(root);
-                default -> log.info("Unhandled webhook event type: {}", eventType);
+                default -> {
+                    log.info("Unhandled webhook event type: {}", eventType);
+                    yield WebhookHandlerOutcome.ACKNOWLEDGED;
+                }
+            };
+
+            if (outcome == WebhookHandlerOutcome.RETRYABLE) {
+                log.warn("event=payment.webhook.retryable eventId={} eventType={}", eventId, eventType);
+                throw new IllegalStateException("Webhook processing incomplete.");
             }
 
             webhookEvent.setProcessed(true);
             webhookEventRepository.save(webhookEvent);
         } catch (PaymentVerificationException ex) {
             throw ex;
+        } catch (IllegalStateException ex) {
+            if ("Webhook processing incomplete.".equals(ex.getMessage())) {
+                throw ex;
+            }
+            log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
+                    eventId, ex.getClass().getSimpleName());
+            throw new IllegalStateException("Webhook processing failed.");
         } catch (Exception ex) {
             log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
                     eventId, ex.getClass().getSimpleName());
@@ -228,39 +246,57 @@ public class PaymentService {
         );
     }
 
-    private void handlePaymentSuccess(JsonNode root) {
+    /**
+     * Whether the webhook delivery can be acknowledged ({@code processed=true}) or must remain
+     * retryable ({@code processed=false} with a non-2xx response to Razorpay).
+     */
+    private enum WebhookHandlerOutcome {
+        /** Handler finished; same payload will not succeed on retry. */
+        ACKNOWLEDGED,
+        /** Transient failure — leave {@code processed=false} so Razorpay can retry. */
+        RETRYABLE
+    }
+
+    private WebhookHandlerOutcome handlePaymentSuccess(JsonNode root) {
         JsonNode paymentNode = extractPaymentNode(root);
         if (paymentNode == null) {
-            return;
+            log.warn("event=payment.webhook.unrecoverable reason=missing_payment_payload");
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         String orderId = paymentNode.path("order_id").asText(null);
         String paymentId = paymentNode.path("id").asText(null);
         if (orderId == null || paymentId == null) {
-            return;
+            log.warn("event=payment.webhook.unrecoverable reason=missing_payment_identifiers");
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         if (paymentRepository.findByRazorpayPaymentId(paymentId).isPresent()) {
             log.info("Duplicate payment webhook ignored: paymentId={}", paymentId);
-            return;
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         Payment payment = paymentRepository.findByRazorpayOrderId(orderId)
                 .orElse(null);
         if (payment == null) {
-            log.warn("Webhook payment success for unknown orderId={}", orderId);
-            return;
+            // Order rows are committed before the client receives a Razorpay order id, so an
+            // unknown order id will not become known on retry with the same event payload.
+            log.warn("event=payment.webhook.unrecoverable reason=unknown_order orderId={} paymentId={}",
+                    orderId, paymentId);
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         Booking booking = bookingRepository.findByBookingReferenceForUpdate(
                 payment.getBooking().getBookingReference()
         ).orElse(null);
         if (booking == null) {
-            return;
+            log.warn("event=payment.webhook.retryable reason=booking_not_found orderId={} paymentId={}",
+                    orderId, paymentId);
+            return WebhookHandlerOutcome.RETRYABLE;
         }
 
         if (booking.getPaymentStatus() == PaymentStatus.PAID) {
-            return;
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         // Money was captured by Razorpay, so always persist the payment record for
@@ -274,14 +310,14 @@ public class PaymentService {
             log.warn("event=payment.amount_mismatch bookingReference={} paymentId={}",
                     booking.getBookingReference(), paymentId);
             notifyPaymentOnInactiveBookingSafely(booking);
-            return;
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         if (!isPayable(booking.getStatus())) {
             log.warn("Captured payment for non-payable booking: reference={}, status={}, paymentId={}",
                     booking.getBookingReference(), booking.getStatus(), paymentId);
             notifyPaymentOnInactiveBookingSafely(booking);
-            return;
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         booking.setStatus(BookingStatus.CONFIRMED);
@@ -292,6 +328,7 @@ public class PaymentService {
                 booking.getBookingReference(), paymentId);
 
         notifyPaymentSuccessSafely(booking, payment);
+        return WebhookHandlerOutcome.ACKNOWLEDGED;
     }
 
     /**
@@ -325,15 +362,17 @@ public class PaymentService {
         return status == BookingStatus.PENDING_PAYMENT;
     }
 
-    private void handlePaymentFailed(JsonNode root) {
+    private WebhookHandlerOutcome handlePaymentFailed(JsonNode root) {
         JsonNode paymentNode = extractPaymentNode(root);
         if (paymentNode == null) {
-            return;
+            log.warn("event=payment.webhook.unrecoverable reason=missing_payment_payload eventType=payment.failed");
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         String orderId = paymentNode.path("order_id").asText(null);
         if (orderId == null) {
-            return;
+            log.warn("event=payment.webhook.unrecoverable reason=missing_order_id eventType=payment.failed");
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
         paymentRepository.findByRazorpayOrderId(orderId).ifPresent(payment -> {
@@ -347,6 +386,7 @@ public class PaymentService {
                 notifyPaymentFailedSafely(booking);
             }
         });
+        return WebhookHandlerOutcome.ACKNOWLEDGED;
     }
 
     private JsonNode extractPaymentNode(JsonNode root) {
