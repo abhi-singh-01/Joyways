@@ -8,6 +8,7 @@ import in.joyway.security.ResilientRateLimitBackend;
 import io.lettuce.core.SslOptions;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
+import io.lettuce.core.resource.ClientResources;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,13 +41,20 @@ public class RateLimitBackendConfig {
     }
 
     /**
-     * Azure Managed Redis uses {@code OSSCluster} topology. Clients must connect to the
-     * public endpoint (host:10000) with a cluster-aware Lettuce factory so shard discovery
-     * can reach dynamic 85xx node ports.
+     * Azure Managed Redis uses {@code OSSCluster} topology. Clients connect to the public
+     * endpoint (host:10000) with cluster-aware Lettuce, topology refresh, and TLS hostname
+     * mapping so shard connections validate against the Azure Redis certificate SAN.
      */
+    @Bean(destroyMethod = "shutdown")
+    @ConditionalOnProperty(prefix = "joyway.rate-limit", name = "backend", havingValue = "redis")
+    ClientResources rateLimitRedisClientResources(RateLimitProperties properties) {
+        return AzureRedisClusterAddressMapping.clientResources(properties.getRedisHost());
+    }
+
     @Bean
     @ConditionalOnProperty(prefix = "joyway.rate-limit", name = "backend", havingValue = "redis")
-    LettuceConnectionFactory rateLimitRedisConnectionFactory(RateLimitProperties properties) {
+    LettuceConnectionFactory rateLimitRedisConnectionFactory(RateLimitProperties properties,
+                                                           ClientResources rateLimitRedisClientResources) {
         RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration();
         clusterConfig.clusterNode(new RedisNode(properties.getRedisHost(), properties.getRedisPort()));
         if (StringUtils.hasText(properties.getRedisPassword())) {
@@ -55,6 +63,7 @@ public class RateLimitBackendConfig {
 
         LettuceClientConfiguration.LettuceClientConfigurationBuilder clientBuilder =
                 LettuceClientConfiguration.builder()
+                        .clientResources(rateLimitRedisClientResources)
                         .commandTimeout(Duration.ofMillis(properties.getRedisCommandTimeoutMs()));
 
         ClusterClientOptions.Builder clusterOptions = ClusterClientOptions.builder()
