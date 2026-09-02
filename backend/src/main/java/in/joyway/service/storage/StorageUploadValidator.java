@@ -17,6 +17,9 @@ public final class StorageUploadValidator {
     public static final String PACKAGE_IMAGES_CATEGORY = "package-images";
     public static final String TRAVELLER_DOCUMENTS_CATEGORY = "traveller-documents";
 
+    private static final Set<String> TRAVELLER_DOCUMENT_CONTENT_TYPES = Set.of(
+            "image/jpeg", "application/pdf"
+    );
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "application/pdf"
     );
@@ -44,7 +47,13 @@ public final class StorageUploadValidator {
     }
 
     public static void validateTravellerDocument(MultipartFile file) {
-        validateFile(file, MAX_TRAVELLER_DOCUMENT_BYTES, "2MB", ALLOWED_CONTENT_TYPES);
+        validateFile(
+                file,
+                MAX_TRAVELLER_DOCUMENT_BYTES,
+                "2MB",
+                TRAVELLER_DOCUMENT_CONTENT_TYPES,
+                "File type not allowed. Use JPEG or PDF only."
+        );
     }
 
     /**
@@ -86,6 +95,17 @@ public final class StorageUploadValidator {
             String maxLabel,
             Set<String> allowedContentTypes
     ) {
+        validateFile(file, maxBytes, maxLabel, allowedContentTypes,
+                "File type not allowed. Use JPEG, PNG, WebP, or PDF.");
+    }
+
+    private static void validateFile(
+            MultipartFile file,
+            long maxBytes,
+            String maxLabel,
+            Set<String> allowedContentTypes,
+            String typeErrorMessage
+    ) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File is required.");
         }
@@ -94,7 +114,7 @@ public final class StorageUploadValidator {
         }
         String contentType = normalizeContentType(file.getContentType());
         if (contentType == null || !allowedContentTypes.contains(contentType)) {
-            throw new IllegalArgumentException("File type not allowed. Use JPEG, PNG, WebP, or PDF.");
+            throw new IllegalArgumentException(typeErrorMessage);
         }
         validateMagicBytes(file, contentType);
     }

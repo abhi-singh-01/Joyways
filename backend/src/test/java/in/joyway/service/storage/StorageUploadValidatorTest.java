@@ -42,6 +42,19 @@ class StorageUploadValidatorTest {
     }
 
     @Test
+    void validateTravellerDocument_rejectsPngAndWebp() {
+        byte[] png = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validateTravellerDocument(
+                new MockMultipartFile("file", "id.png", "image/png", png)));
+
+        byte[] webp = new byte[]{
+                0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50
+        };
+        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validateTravellerDocument(
+                new MockMultipartFile("file", "id.webp", "image/webp", webp)));
+    }
+
+    @Test
     void validatePackageImage_acceptsJpegAndWebp() {
         byte[] jpeg = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00};
         StorageUploadValidator.validatePackageImage(new MockMultipartFile(

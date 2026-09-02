@@ -158,7 +158,7 @@ export function TravellerForm({
           <input
             id={`docFile-${index}`}
             type="file"
-            accept="image/jpeg,image/png,image/webp,application/pdf"
+            accept="image/jpeg,application/pdf,.jpg,.jpeg,.pdf"
             required
             aria-invalid={Boolean(documentError)}
             className="mt-1 block w-full text-sm text-charcoal-muted file:mr-4 file:rounded-lg file:border-0 file:bg-forest file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-forest-light"
@@ -173,7 +173,7 @@ export function TravellerForm({
             </p>
           )}
           <p className="mt-1 text-xs text-charcoal-muted">
-            JPEG, PNG, WebP or PDF — max 2MB per traveller. Stored securely and never shown publicly.
+            JPEG or PDF only — max 2MB.
           </p>
         </div>
       </div>

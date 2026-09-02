@@ -10,8 +10,6 @@ const DOCUMENT_TYPES = ["AADHAAR", "PASSPORT", "DRIVING_LICENCE", "OTHER"] as co
 
 export const ALLOWED_DOCUMENT_TYPES = [
   "image/jpeg",
-  "image/png",
-  "image/webp",
   "application/pdf",
 ] as const;
 
@@ -161,7 +159,7 @@ export function validateTravellerDocument(file: File | null): string | undefined
     return "Please upload an ID document";
   }
   if (!ALLOWED_DOCUMENT_TYPES.includes(file.type as (typeof ALLOWED_DOCUMENT_TYPES)[number])) {
-    return "Use JPEG, PNG, WebP, or PDF only";
+    return "Use JPEG or PDF only";
   }
   if (file.size > MAX_DOCUMENT_BYTES) {
     return "File must be 2MB or smaller";
