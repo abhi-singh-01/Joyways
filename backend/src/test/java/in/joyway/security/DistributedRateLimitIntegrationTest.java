@@ -2,48 +2,49 @@ package in.joyway.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.joyway.config.RateLimitProperties;
+import in.joyway.support.RedisClusterTestSupport;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * Distributed rate-limit behaviour verified against OSS Redis Cluster topology.
+ */
 @Testcontainers(disabledWithoutDocker = true)
 class DistributedRateLimitIntegrationTest {
 
-    private static final DockerImageName REDIS_IMAGE = DockerImageName.parse("redis:7-alpine");
+    private static RedisClusterTestSupport cluster;
 
-    @Container
-    @SuppressWarnings("resource")
-    static GenericContainer<?> redis = new GenericContainer<>(REDIS_IMAGE).withExposedPorts(6379);
+    @BeforeAll
+    static void startCluster() {
+        cluster = RedisClusterTestSupport.start();
+    }
+
+    @AfterAll
+    static void stopCluster() {
+        if (cluster != null) {
+            cluster.close();
+        }
+    }
 
     @Test
     void twoFiltersShareRedisCounterForLogin() throws Exception {
-        RateLimitProperties properties = new RateLimitProperties();
+        RateLimitProperties properties = cluster.clusterProperties("joyway:rl:dist-test");
         properties.setLoginRequestsPerMinute(10);
-        properties.setRedisKeyPrefix("joyway:rl:dist-test");
-        properties.setWindowTtlSeconds(120);
 
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(
-                redis.getHost(),
-                redis.getMappedPort(6379)
-        );
-        LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
-        factory.afterPropertiesSet();
-        StringRedisTemplate template = new StringRedisTemplate(factory);
-        template.afterPropertiesSet();
-
+        StringRedisTemplate template = cluster.createTemplate(properties);
         RedisRateLimitBackend sharedRedis = new RedisRateLimitBackend(template, properties);
-        InMemoryRateLimitBackend emergency = new InMemoryRateLimitBackend(java.time.Duration.ofMinutes(1));
+        InMemoryRateLimitBackend emergency = new InMemoryRateLimitBackend(Duration.ofMinutes(1));
         ResilientRateLimitBackend sharedBackend = new ResilientRateLimitBackend(sharedRedis, emergency, properties);
 
         RateLimitFilter filterA = buildFilter(properties, sharedBackend);

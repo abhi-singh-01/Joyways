@@ -5,12 +5,15 @@ import in.joyway.security.InMemoryRateLimitBackend;
 import in.joyway.security.RateLimitBackend;
 import in.joyway.security.RedisRateLimitBackend;
 import in.joyway.security.ResilientRateLimitBackend;
-import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SslOptions;
+import io.lettuce.core.cluster.ClusterClientOptions;
+import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.RedisClusterConfiguration;
+import org.springframework.data.redis.connection.RedisNode;
+import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -36,28 +39,37 @@ public class RateLimitBackendConfig {
         return newEmergencyBackend();
     }
 
+    /**
+     * Azure Managed Redis uses {@code OSSCluster} topology. Clients must connect to the
+     * public endpoint (host:10000) with a cluster-aware Lettuce factory so shard discovery
+     * can reach dynamic 85xx node ports.
+     */
     @Bean
     @ConditionalOnProperty(prefix = "joyway.rate-limit", name = "backend", havingValue = "redis")
     LettuceConnectionFactory rateLimitRedisConnectionFactory(RateLimitProperties properties) {
-        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
-        redisConfig.setHostName(properties.getRedisHost());
-        redisConfig.setPort(properties.getRedisPort());
+        RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration();
+        clusterConfig.clusterNode(new RedisNode(properties.getRedisHost(), properties.getRedisPort()));
         if (StringUtils.hasText(properties.getRedisPassword())) {
-            redisConfig.setPassword(properties.getRedisPassword());
+            clusterConfig.setPassword(RedisPassword.of(properties.getRedisPassword()));
         }
 
         LettuceClientConfiguration.LettuceClientConfigurationBuilder clientBuilder =
                 LettuceClientConfiguration.builder()
                         .commandTimeout(Duration.ofMillis(properties.getRedisCommandTimeoutMs()));
 
+        ClusterClientOptions.Builder clusterOptions = ClusterClientOptions.builder()
+                .topologyRefreshOptions(ClusterTopologyRefreshOptions.builder()
+                        .enableAllAdaptiveRefreshTriggers()
+                        .build());
+
         if (properties.isRedisSsl()) {
             clientBuilder.useSsl();
-            clientBuilder.clientOptions(ClientOptions.builder()
-                    .sslOptions(SslOptions.builder().build())
-                    .build());
+            clusterOptions.sslOptions(SslOptions.builder().build());
         }
 
-        return new LettuceConnectionFactory(redisConfig, clientBuilder.build());
+        clientBuilder.clientOptions(clusterOptions.build());
+
+        return new LettuceConnectionFactory(clusterConfig, clientBuilder.build());
     }
 
     @Bean
