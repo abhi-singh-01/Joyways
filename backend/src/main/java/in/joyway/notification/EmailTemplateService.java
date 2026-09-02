@@ -5,21 +5,25 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class EmailTemplateService {
+
+    private static final Set<String> LAYOUT_RAW_HTML_KEYS = Set.of("content");
 
     private final MailProperties mailProperties;
 
     public String render(String templateName, Map<String, String> variables) {
         String layout = loadTemplate("layout.html");
         String body = loadTemplate(templateName + ".html");
-        String merged = merge(body, variables);
+        String merged = merge(body, variables, Set.of());
         return merge(layout, Map.of(
                 "content", merged,
                 "brandName", "JOYWAY",
@@ -27,7 +31,7 @@ public class EmailTemplateService {
                 "supportEmail", mailProperties.getSupportFrom(),
                 "bookingsEmail", mailProperties.getBookingsFrom(),
                 "year", String.valueOf(java.time.Year.now().getValue())
-        ));
+        ), LAYOUT_RAW_HTML_KEYS);
     }
 
     public String preview(String templateName, Map<String, String> variables) {
@@ -43,11 +47,20 @@ public class EmailTemplateService {
         }
     }
 
-    private String merge(String template, Map<String, String> variables) {
+    private String merge(String template, Map<String, String> variables, Set<String> rawHtmlKeys) {
         String result = template;
         for (Map.Entry<String, String> entry : variables.entrySet()) {
-            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue() != null ? entry.getValue() : "");
+            String value = entry.getValue() != null ? entry.getValue() : "";
+            if (rawHtmlKeys.contains(entry.getKey())) {
+                result = result.replace("{{" + entry.getKey() + "}}", value);
+            } else {
+                result = result.replace("{{" + entry.getKey() + "}}", escapeHtml(value));
+            }
         }
         return result;
+    }
+
+    static String escapeHtml(String value) {
+        return HtmlUtils.htmlEscape(value);
     }
 }

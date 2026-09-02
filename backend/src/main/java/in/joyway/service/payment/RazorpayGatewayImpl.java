@@ -1,6 +1,7 @@
 package in.joyway.service.payment;
 
 import com.razorpay.Order;
+import com.razorpay.Payment;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Utils;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -76,6 +78,31 @@ public class RazorpayGatewayImpl implements RazorpayGateway {
         } catch (Exception ex) {
             log.warn("Payment signature verification failed for orderId={}", orderId);
             return false;
+        }
+    }
+
+    @Override
+    public Optional<RazorpayPaymentDetails> fetchPayment(String paymentId) {
+        if (!razorpayProperties.isConfigured()) {
+            return Optional.empty();
+        }
+        try {
+            RazorpayClient client = new RazorpayClient(
+                    razorpayProperties.getKeyId(),
+                    razorpayProperties.getKeySecret()
+            );
+            Payment payment = client.payments.fetch(paymentId);
+            Object amount = payment.get("amount");
+            if (amount == null) {
+                return Optional.empty();
+            }
+            long amountPaise = amount instanceof Number number ? number.longValue() : Long.parseLong(amount.toString());
+            String orderId = payment.has("order_id") ? payment.get("order_id") : null;
+            String status = payment.has("status") ? payment.get("status") : null;
+            return Optional.of(new RazorpayPaymentDetails(paymentId, orderId, amountPaise, status));
+        } catch (RazorpayException ex) {
+            log.warn("Razorpay payment fetch failed for paymentId={}", paymentId);
+            return Optional.empty();
         }
     }
 

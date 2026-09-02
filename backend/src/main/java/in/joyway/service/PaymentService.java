@@ -23,8 +23,10 @@ import in.joyway.notification.BookingNotificationService;
 import in.joyway.service.payment.RazorpayGateway;
 import in.joyway.service.payment.RazorpayGatewayImpl;
 import in.joyway.service.payment.RazorpayOrderResult;
+import in.joyway.service.payment.RazorpayPaymentDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -84,6 +88,8 @@ public class PaymentService {
                     .bookingId(booking.getId())
                     .build();
         }
+
+        supersedeCreatedOrdersForBooking(booking.getId());
 
         RazorpayOrderResult order = razorpayGateway.createOrder(
                 booking.getBookingReference(),
@@ -155,31 +161,21 @@ public class PaymentService {
             throw new PaymentVerificationException("Invalid webhook signature.");
         }
 
-        if (webhookEventRepository.existsByEventId(eventId)) {
-            log.info("event=payment.webhook.duplicate eventId={}", eventId);
-            return;
-        }
-
         try {
             JsonNode root = objectMapper.readTree(payload);
             String eventType = root.path("event").asText("");
             String payloadHash = sha256(payload);
 
-            if (webhookEventRepository.existsByPayloadHash(payloadHash)) {
-                log.info("event=payment.webhook.duplicate payloadHash={}", payloadHash);
+            PaymentWebhookEvent webhookEvent = acquireWebhookEvent(eventId, eventType, payloadHash);
+
+            if (Boolean.TRUE.equals(webhookEvent.getProcessed())) {
+                log.info("event=payment.webhook.duplicate eventId={}", eventId);
                 return;
             }
 
-            PaymentWebhookEvent webhookEvent = PaymentWebhookEvent.builder()
-                    .eventId(eventId)
-                    .eventType(eventType)
-                    .payloadHash(payloadHash)
-                    .processed(false)
-                    .build();
-            webhookEventRepository.save(webhookEvent);
-
             switch (eventType) {
-                case "payment.captured", "order.paid" -> handlePaymentSuccess(root);
+                case "payment.captured" -> handlePaymentSuccess(root);
+                case "order.paid" -> handleOrderPaidInformational(root);
                 case "payment.failed" -> handlePaymentFailed(root);
                 default -> log.info("Unhandled webhook event type: {}", eventType);
             }
@@ -193,6 +189,43 @@ public class PaymentService {
                     eventId, ex.getClass().getSimpleName());
             throw new IllegalStateException("Webhook processing failed.");
         }
+    }
+
+    /**
+     * Locks or creates the webhook idempotency row. Retries reuse an existing {@code processed=false}
+     * row; only {@code processed=true} deliveries are treated as duplicates.
+     */
+    private PaymentWebhookEvent acquireWebhookEvent(String eventId, String eventType, String payloadHash) {
+        Optional<PaymentWebhookEvent> existing = webhookEventRepository.findByEventIdForUpdate(eventId);
+        if (existing.isPresent()) {
+            PaymentWebhookEvent event = existing.get();
+            if (!payloadHash.equals(event.getPayloadHash())) {
+                log.warn("event=payment.webhook.payload_mismatch eventId={}", eventId);
+                throw new PaymentVerificationException("Webhook payload mismatch for event id.");
+            }
+            return event;
+        }
+
+        try {
+            return webhookEventRepository.save(PaymentWebhookEvent.builder()
+                    .eventId(eventId)
+                    .eventType(eventType)
+                    .payloadHash(payloadHash)
+                    .processed(false)
+                    .build());
+        } catch (DataIntegrityViolationException ex) {
+            return webhookEventRepository.findByEventIdForUpdate(eventId)
+                    .orElseThrow(() -> new IllegalStateException("Webhook event conflict without row."));
+        }
+    }
+
+    private void handleOrderPaidInformational(JsonNode root) {
+        JsonNode orderEntity = root.path("payload").path("order").path("entity");
+        String orderId = orderEntity.path("id").asText(null);
+        log.info(
+                "event=payment.webhook.order_paid_informational orderId={} (booking confirmation uses payment.captured only)",
+                orderId
+        );
     }
 
     private void handlePaymentSuccess(JsonNode root) {
@@ -375,6 +408,17 @@ public class PaymentService {
             throw new PaymentVerificationException("Payment verification failed.");
         }
 
+        RazorpayPaymentDetails razorpayPayment = razorpayGateway.fetchPayment(paymentId)
+                .orElseThrow(() -> new PaymentVerificationException("Unable to verify payment with Razorpay."));
+        if (razorpayPayment.orderId() == null
+                || !payment.getRazorpayOrderId().equals(razorpayPayment.orderId())) {
+            throw new PaymentVerificationException("Payment does not belong to this order.");
+        }
+        int expectedPaise = RazorpayGatewayImpl.toPaise(booking.getTotalAmount());
+        if (razorpayPayment.amountPaise() != expectedPaise) {
+            throw new PaymentVerificationException("Payment amount does not match this booking.");
+        }
+
         payment.setRazorpayPaymentId(paymentId);
         payment.setRazorpaySignature(signature);
         payment.setSignatureVerified(true);
@@ -421,6 +465,19 @@ public class PaymentService {
         } catch (Exception ex) {
             log.warn("Payment failed notification failed for reference={}: {}",
                     booking.getBookingReference(), ex.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * Marks stale CREATED payment rows as FAILED so only the latest order remains payable.
+     */
+    private void supersedeCreatedOrdersForBooking(Long bookingId) {
+        List<Payment> created = paymentRepository.findByBookingIdAndStatus(bookingId, PaymentRecordStatus.CREATED);
+        for (Payment stale : created) {
+            stale.setStatus(PaymentRecordStatus.FAILED);
+            paymentRepository.save(stale);
+            log.info("event=payment.order.superseded bookingId={} orderId={}",
+                    bookingId, stale.getRazorpayOrderId());
         }
     }
 

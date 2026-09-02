@@ -1,6 +1,7 @@
 package in.joyway.service.payment;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 public interface RazorpayGateway {
 
@@ -9,4 +10,9 @@ public interface RazorpayGateway {
     boolean verifyPaymentSignature(String orderId, String paymentId, String signature);
 
     boolean verifyWebhookSignature(String payload, String signature);
+
+    /**
+     * Fetches payment details from Razorpay for server-side amount/order verification.
+     */
+    Optional<RazorpayPaymentDetails> fetchPayment(String paymentId);
 }

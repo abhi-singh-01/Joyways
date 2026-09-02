@@ -111,12 +111,15 @@ public class ProductionSecurityValidator {
     }
 
     private void validateAdminBootstrap() {
-        if (!adminBootstrapProperties.isEnabled()) {
-            return;
+        if (adminBootstrapProperties.isEnabled()) {
+            throw new IllegalStateException(
+                    "ADMIN_BOOTSTRAP_ENABLED must be false in production after the first admin is created.");
         }
-
-        throw new IllegalStateException(
-                "ADMIN_BOOTSTRAP_ENABLED must be false in production after the first admin is created.");
+        if (StringUtils.hasText(adminBootstrapProperties.getPassword())) {
+            throw new IllegalStateException(
+                    "ADMIN_BOOTSTRAP_PASSWORD must not be set in production when bootstrap is disabled. "
+                            + "Remove the bootstrap password from the container environment/secrets.");
+        }
     }
 
     private void validateDatabaseUrl() {
