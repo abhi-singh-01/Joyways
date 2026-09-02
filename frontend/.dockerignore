@@ -14,7 +14,15 @@ dist
 .env
 .env.*
 !.env.example
-!.env.production.example
+
+# AI agent files and boilerplate docs
+AGENTS.md
+CLAUDE.md
+README.md
+docs
+graphify-out/
+.graphify_*
+raw/
 
 # Tooling / VCS / OS
 .git

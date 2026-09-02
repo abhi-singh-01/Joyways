@@ -2,31 +2,55 @@
 
 **Find Joy in Every Journey.**
 
-JOYWAY is a modern group travel booking platform for trips departing from Delhi to destinations across North India.
+Production group travel booking platform for trips from Delhi and North India.
 
-- **Website:** [joyway.in](https://joyway.in)
-- **Email:** hello@joyway.in
+| | |
+|---|---|
+| **Website** | [joyway.in](https://joyway.in) |
+| **API** | [api.joyway.in](https://api.joyway.in) |
+| **Operator** | AJS Technologies Pvt Ltd. |
 
 ---
 
-## Architecture
+## Overview
+
+JOYWAY is a full-stack travel booking product:
+
+- **Public site** — browse trips, book seats, pay via Razorpay, manage bookings
+- **Admin panel** — packages, bookings, drivers, vehicles, trips, notifications
+- **API-first backend** — all business rules enforced server-side
 
 ```
 joyway/
-├── frontend/          Next.js 16 (App Router, TypeScript, Tailwind CSS)
-├── backend/           Spring Boot 3.4 (Java 21, PostgreSQL, Flyway)
-└── README.md
+├── frontend/     Next.js 16 (TypeScript, Tailwind)
+├── backend/      Spring Boot 3.4 (Java 21, PostgreSQL, Flyway)
+├── docs/         Production runbooks and Azure guides
+└── scripts/      Deployment helpers
 ```
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js, TypeScript, Tailwind CSS, Framer Motion, React Three Fiber |
-| Backend | Spring Boot 3, Spring Security, Spring Data JPA, Flyway |
+| Layer | Stack |
+|-------|--------|
+| Frontend | Next.js App Router, TypeScript, Tailwind CSS |
+| Backend | Spring Boot, Spring Security, JPA, Flyway |
 | Database | PostgreSQL |
-| Payments | Razorpay (Phase 5+) |
-| Email | SMTP via hello@joyway.in (Phase 7+) |
+| Storage | Azure Blob Storage (production) |
+| Payments | Razorpay (live in production) |
+| Hosting | Azure Container Apps + Azure PostgreSQL |
 
-The frontend and backend are **logically independent**. All business logic lives in the Spring Boot API. The Next.js app is a client that consumes REST APIs.
+---
+
+## Security & secrets
+
+**Never commit secrets to Git.** The repository only contains `.env.example` templates.
+
+| Location | What goes there |
+|----------|-----------------|
+| **Git** | Source code, `.env.example` placeholders only |
+| **Docker images** | Application binaries only — `.dockerignore` blocks all `.env*` files |
+| **GitHub Actions** | Public build args only (`NEXT_PUBLIC_*`, CI placeholders) |
+| **Azure Container Apps** | All runtime secrets (`JWT_SECRET`, DB, Razorpay, SMTP, storage) |
+
+Production backend validates configuration at startup (`ProductionSecurityValidator`) and refuses to run with missing or insecure settings.
 
 ---
 
@@ -37,17 +61,19 @@ The frontend and backend are **logically independent**. All business logic lives
 | Node.js | 24 LTS |
 | Java | 21+ |
 | Maven | 3.9+ |
-| PostgreSQL | 15+ |
+| PostgreSQL | 15+ (local dev) |
+
+For Azure deployment: [Azure CLI](https://learn.microsoft.com/cli/azure/) and access to `rg-joyway-prod`.
 
 ---
 
-## Quick Start
+## Local development
 
-### 1. PostgreSQL Setup
+### 1. Database
 
 ```sql
 CREATE DATABASE joyway;
-CREATE USER joyway WITH ENCRYPTED PASSWORD 'joyway';
+CREATE USER joyway WITH ENCRYPTED PASSWORD 'your-local-password';
 GRANT ALL PRIVILEGES ON DATABASE joyway TO joyway;
 ```
 
@@ -56,113 +82,100 @@ GRANT ALL PRIVILEGES ON DATABASE joyway TO joyway;
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env with your database credentials and JWT secret
-
-# Set environment variables (PowerShell example)
-$env:DATABASE_URL="jdbc:postgresql://localhost:5432/joyway"
-$env:DATABASE_USERNAME="joyway"
-$env:DATABASE_PASSWORD="joyway"
-$env:JWT_SECRET="your-long-random-secret-key-minimum-256-bits"
-$env:ADMIN_BOOTSTRAP_PASSWORD="your-secure-admin-password"
+# Edit .env — set DATABASE_*, JWT_SECRET, optional ADMIN_BOOTSTRAP_* for first admin
 
 mvn spring-boot:run
 ```
 
-Backend runs at **http://localhost:8080**
-
-Flyway automatically creates the schema and seeds 5 demo packages (Nainital, Mussoorie, Rishikesh, Haridwar, Dalhousie).
+Runs at **http://localhost:8080**. Flyway applies migrations on startup.
 
 ### 3. Frontend
 
 ```bash
 cd frontend
 cp .env.example .env.local
-
-npm install
+npm ci
 npm run dev
 ```
 
-Frontend runs at **http://localhost:3000**
+Runs at **http://localhost:3000**.
 
 ---
 
-## Environment Variables
+## Environment variables
 
-### Frontend (`frontend/.env.local`)
+### Frontend (`.env.local` / build args)
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_API_BASE_URL` | Backend API URL (default: `http://localhost:8080`) |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay public key (Phase 5+) |
+See [`frontend/.env.example`](frontend/.env.example). Only `NEXT_PUBLIC_*` values are embedded in the client bundle.
 
-### Backend (`backend/.env` or system env)
+### Backend (`.env` or process env)
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL JDBC URL |
-| `DATABASE_USERNAME` | Database username |
-| `DATABASE_PASSWORD` | Database password |
-| `JWT_SECRET` | JWT signing secret (256+ bits) |
-| `CORS_ALLOWED_ORIGINS` | Allowed frontend origins |
-| `ADMIN_BOOTSTRAP_ENABLED` | Create first admin on startup |
-| `ADMIN_BOOTSTRAP_EMAIL` | Bootstrap admin email |
-| `ADMIN_BOOTSTRAP_PASSWORD` | Bootstrap admin password |
-| `RAZORPAY_KEY_ID` | Razorpay key (Phase 5+) |
-| `RAZORPAY_KEY_SECRET` | Razorpay secret (Phase 5+) |
-| `RAZORPAY_WEBHOOK_SECRET` | Webhook secret (Phase 6+) |
-| `SMTP_*` | Email configuration (Phase 7+) |
-| `STORAGE_*` | Document storage (Phase 4+) |
+See [`backend/.env.example`](backend/.env.example). All payment, database, JWT, SMTP, and storage secrets stay server-side.
 
-See `.env.example` files in each directory for the full list.
+**Production:** inject variables in Azure Container Apps — not in GitHub or Dockerfiles.
 
 ---
 
-## Admin Bootstrap
+## Build & test
 
-There is **no public admin registration page**. The first admin is created via secure bootstrap:
+```bash
+# Backend
+cd backend && mvn test && mvn package
 
-1. Set `ADMIN_BOOTSTRAP_ENABLED=true`
-2. Set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD`
-3. Start the backend — admin is created once
-4. Set `ADMIN_BOOTSTRAP_ENABLED=false` after first login
+# Frontend
+cd frontend && npm run typecheck && npm run build
+```
 
-Admin panel: **http://localhost:3000/admin** (Phase 3+)
+CI runs on every push to `main` (tests, typecheck, production build, Docker build, secret pattern scan).
 
 ---
 
-## API Endpoints
+## Production deployment (Azure)
 
-### Public
+Images are built in **Azure Container Registry** and deployed to **Container Apps**:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/packages` | List published packages |
-| GET | `/api/packages/id/{id}` | Package by ID (for booking) |
-| GET | `/api/packages/{slug}` | Package details |
-| POST | `/api/bookings/preview` | Server-side price & availability preview |
-| POST | `/api/bookings` | Create booking (multipart: JSON + ID documents) |
+| Service | Resource |
+|---------|----------|
+| Frontend | `joyway-frontend-prod` → joyway.in |
+| Backend | `joyway-backend-prod` → api.joyway.in |
+| Registry | `joywayprodacr.azurecr.io` |
+| Database | `joyway-pg-prod` |
 
-### Admin (requires ROLE_ADMIN + JWT cookie)
+```powershell
+# From repo root (requires Azure CLI login)
+.\scripts\deploy-azure-prod.ps1
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/admin/auth/login` | Admin login (sets HttpOnly cookie) |
-| POST | `/api/admin/auth/logout` | Admin logout |
-| GET | `/api/admin/auth/me` | Current admin profile |
-| GET | `/api/admin/dashboard` | Dashboard metrics |
-| GET | `/api/admin/packages` | List all packages (all statuses) |
-| POST | `/api/admin/packages` | Create package |
-| GET | `/api/admin/packages/{id}` | Package detail |
-| PUT | `/api/admin/packages/{id}` | Update package |
-| PATCH | `/api/admin/packages/{id}/status` | Publish/pause/etc. |
-| DELETE | `/api/admin/packages/{id}` | Delete package |
-| POST | `/api/admin/packages/{id}/images/url` | Add image by URL |
-| POST | `/api/admin/packages/{id}/images/upload` | Upload image file |
-| PATCH | `/api/admin/packages/{id}/images/{imageId}` | Update image |
-| DELETE | `/api/admin/packages/{id}/images/{imageId}` | Delete image |
+Or trigger **Deploy Production** in GitHub Actions (pushes images to ACR; update Container Apps revision in Azure).
 
-All responses use the standard format:
+Detailed checklists: [`docs/PRODUCTION_CHECKLIST.md`](docs/PRODUCTION_CHECKLIST.md), [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md).
+
+---
+
+## Key features
+
+- Server-side pricing, seat locking, and payment verification
+- Razorpay checkout + signed webhooks with idempotency
+- Traveller ID documents in private Azure Blob storage
+- Admin JWT in HttpOnly cookies with CSRF protection
+- Rate limiting, CORS lockdown, and production security validator
+- Privacy, Terms, and Cancellation policy pages
+
+---
+
+## Admin access
+
+There is no public admin registration. Create the first admin locally or in Azure with bootstrap env vars, then set `ADMIN_BOOTSTRAP_ENABLED=false`.
+
+Admin panel: **https://joyway.in/admin**
+
+---
+
+## API
+
+Public endpoints include `/api/health`, `/api/packages`, `/api/bookings`, and `/api/payments`. Admin routes under `/api/admin/**` require `ROLE_ADMIN`.
+
+Standard response format:
 
 ```json
 { "success": true, "data": {}, "message": "..." }
@@ -170,104 +183,19 @@ All responses use the standard format:
 
 ---
 
-## Customer Booking Flow (Phase 4)
-
-1. Select a trip → **Book Now** → `/book/{packageId}`
-2. Choose number of travellers (respects available seats)
-3. Enter primary contact + per-traveller details and upload ID documents
-4. Review server-calculated pricing via `POST /api/bookings/preview`
-5. Confirm → booking created with status `PENDING_PAYMENT` and reference `JW-YYYY-XXXXX`
-
-**Server guarantees:**
-- Price calculated on the backend (`pricePerPerson × travellers`)
-- Pessimistic row lock on package prevents overselling
-- ID documents stored via private `DocumentStorageService` (category `traveller-documents`)
-- Document storage keys are never exposed in public API responses
-
-Payment (Razorpay) is Phase 5.
-
----
-
-## Database Schema
-
-Tables created by Flyway (`V1__initial_schema.sql`):
-
-- `roles`, `users`, `user_roles` — Admin authentication
-- `packages`, `package_images` — Travel packages
-- `customers`, `bookings`, `travellers` — Booking flow
-- `payments`, `payment_webhook_events` — Payments (Phase 5+)
-
-Demo data seeded in `V2__seed_demo_packages.sql` (clearly marked DEMO).
-
----
-
-## Build & Test
-
-### Backend
-
-```bash
-cd backend
-mvn compile          # Compile
-mvn test             # Run tests (19 tests)
-mvn package          # Build JAR
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm run lint         # ESLint
-npx tsc --noEmit     # TypeScript check
-npm run build        # Production build
-```
-
----
-
-## Security Notes
-
-- Admin and customer experiences are **completely separated**
-- Spring Security enforces `ROLE_ADMIN` on all `/api/admin/**` endpoints
-- JWT tokens stored in HttpOnly cookies (Phase 3+)
-- Identity documents use private storage abstraction (never public URLs)
-- Never commit `.env` files or secrets to Git
-- Razorpay secrets stay server-side only
-
----
-
-## Phase Roadmap
-
-| Phase | Status | Scope |
-|-------|--------|-------|
-| 1 | **Complete** | Project setup, homepage, package API, demo data |
-| 2 | **Complete** | Trip listing, trip details, responsive UI, animations |
-| 3 | **Complete** | Admin auth, dashboard, package CRUD |
-| 4 | **Complete** | Customer booking flow (no payment yet) |
-| 5 | Pending | Razorpay test mode |
-| 6 | Pending | Webhooks, payment state |
-| 7 | Pending | Email, receipts, booking lookup |
-| 8 | Pending | Admin booking/customer/payment management |
-| 9 | Pending | Security hardening, testing |
-| 10 | Pending | Production deployment docs |
-
----
-
 ## Troubleshooting
 
-**Backend won't start — database connection refused**
-- Ensure PostgreSQL is running and credentials match `.env`
-
-**Frontend shows no trips**
-- Ensure backend is running at `NEXT_PUBLIC_API_BASE_URL`
-- Check `GET http://localhost:8080/api/packages` returns data
-
-**Flyway migration failed**
-- Drop and recreate the `joyway` database for a clean start
-
-**Admin bootstrap skipped**
-- Set `ADMIN_BOOTSTRAP_PASSWORD` to a non-empty value
+| Issue | Check |
+|-------|--------|
+| Backend won't start | PostgreSQL running; `DATABASE_*` and `JWT_SECRET` set |
+| Frontend can't reach API | `NEXT_PUBLIC_API_BASE_URL` matches backend URL |
+| Production startup fails | Azure env vars — see `docs/PRODUCTION_CHECKLIST.md` |
+| Flyway errors on prod | Do not edit applied migrations; add new versioned scripts |
 
 ---
 
 ## License
 
-Proprietary — JOYWAY © 2026
+Proprietary — JOYWAY © 2026. All rights reserved.
+
+Developed and managed by **AJS Technologies Pvt Ltd.**

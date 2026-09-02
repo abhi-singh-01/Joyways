@@ -8,7 +8,17 @@ target
 .env
 .env.*
 !.env.example
-!.env.production.example
+
+# Docs and local scratch (not needed in runtime image)
+docs
+*.md
+!README.md
+cp.txt
+BCryptCheck.java
+BCryptGen.java
+graphify-out/
+.graphify_*
+raw/
 
 # Runtime upload storage (mounted as a volume in production)
 storage

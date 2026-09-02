@@ -64,8 +64,8 @@ export default function CancellationPage() {
               that apply based on how many days before departure you cancel.
             </p>
             <p>
-              <strong className="text-charcoal">Example (demo packages):</strong> unless a trip
-              page states different terms, sample demo packages use the following schedule:
+              A typical group trip on JOYWAY may use a schedule like the following unless your
+              trip page states different terms:
             </p>
             <ul className="list-disc space-y-2 pl-5">
               <li>
