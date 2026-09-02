@@ -18,9 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class RateLimitFilterCorsTest {
 
     private static final String ALLOWED_ORIGIN = "https://joyway.in";
-    private static final String LOGIN_PATH = "/api/admin/auth/login";
+    private static final String LOGIN_PATH = RateLimitFilter.LOGIN_PATH;
 
     private RateLimitFilter filter;
+    private InMemoryRateLimitBackend backend;
 
     @BeforeEach
     void setUp() {
@@ -28,15 +29,23 @@ class RateLimitFilterCorsTest {
         properties.setEnabled(true);
         properties.setLoginRequestsPerMinute(1);
 
+        backend = new InMemoryRateLimitBackend(java.time.Duration.ofMinutes(1));
+
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(ALLOWED_ORIGIN));
-        configuration.setAllowedMethods(List.of("POST"));
+        configuration.setAllowedMethods(List.of("POST", "OPTIONS"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
-        filter = new RateLimitFilter(properties, new ObjectMapper(), source);
+        filter = new RateLimitFilter(
+                properties,
+                new ObjectMapper(),
+                source,
+                backend,
+                new ClientAddressResolver()
+        );
     }
 
     private MockHttpServletResponse loginAttempt(String origin, String clientIp) throws Exception {
@@ -104,5 +113,17 @@ class RateLimitFilterCorsTest {
         filter.doFilter(spoofed, throttled, new MockFilterChain());
 
         assertEquals(429, throttled.getStatus());
+    }
+
+    @Test
+    void optionsPreflightBypassesRateLimit() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            MockHttpServletRequest options = new MockHttpServletRequest("OPTIONS", "/api/bookings/lookup");
+            options.setRequestURI("/api/bookings/lookup");
+            options.setRemoteAddr("10.0.0.50");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilter(options, response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
     }
 }

@@ -60,6 +60,7 @@ public class ProductionSecurityValidator {
         validateRazorpaySecrets();
         validateStorageConfiguration();
         validateRateLimitsEnabled();
+        validateRateLimitRedisConfiguration();
         validateJwtCookieDomain();
         validateMailPreviewDisabled();
 
@@ -197,6 +198,24 @@ public class ProductionSecurityValidator {
     private void validateRateLimitsEnabled() {
         if (!rateLimitProperties.isEnabled()) {
             throw new IllegalStateException("RATE_LIMIT_ENABLED must be true in production.");
+        }
+    }
+
+    private void validateRateLimitRedisConfiguration() {
+        if (!rateLimitProperties.isEnabled() || !rateLimitProperties.isRedisBackend()) {
+            return;
+        }
+        if (!StringUtils.hasText(rateLimitProperties.getRedisHost())) {
+            throw new IllegalStateException(
+                    "REDIS_HOST must be set in production when RATE_LIMIT_BACKEND=redis.");
+        }
+        if (rateLimitProperties.getRedisPort() <= 0) {
+            throw new IllegalStateException(
+                    "REDIS_PORT must be set in production when RATE_LIMIT_BACKEND=redis.");
+        }
+        if (!StringUtils.hasText(rateLimitProperties.getRedisPassword())) {
+            throw new IllegalStateException(
+                    "REDIS_PASSWORD must be set in production when RATE_LIMIT_BACKEND=redis.");
         }
     }
 

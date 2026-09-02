@@ -20,7 +20,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -37,25 +36,31 @@ import java.time.Instant;
 @Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final String LOGIN_PATH = "/api/admin/auth/login";
-    private static final String BOOKINGS_PATH = "/api/bookings";
-    private static final String BOOKINGS_PREFIX = "/api/bookings/";
-    private static final String PAYMENT_ORDERS_PATH = "/api/payments/orders";
-    private static final String PAYMENT_VERIFY_PATH = "/api/payments/verify";
-    private static final String PAYMENT_ALIAS_ORDER_PATH = "/api/create-order";
-    private static final String PAYMENT_ALIAS_VERIFY_PATH = "/api/verify-payment";
+    static final String LOGIN_PATH = "/api/admin/auth/login";
+    static final String BOOKINGS_PATH = "/api/bookings";
+    static final String BOOKINGS_PREFIX = "/api/bookings/";
+    static final String PAYMENT_ORDERS_PATH = "/api/payments/orders";
+    static final String PAYMENT_VERIFY_PATH = "/api/payments/verify";
+    static final String PAYMENT_ALIAS_ORDER_PATH = "/api/create-order";
+    static final String PAYMENT_ALIAS_VERIFY_PATH = "/api/verify-payment";
+    static final String WEBHOOK_PATH = "/api/payments/webhook";
 
     private final RateLimitProperties properties;
     private final ObjectMapper objectMapper;
     private final CorsConfigurationSource corsConfigurationSource;
-    private final RateLimiter rateLimiter = new RateLimiter(Duration.ofMinutes(1));
+    private final RateLimitBackend rateLimitBackend;
+    private final ClientAddressResolver clientAddressResolver;
 
     public RateLimitFilter(RateLimitProperties properties,
                            ObjectMapper objectMapper,
-                           CorsConfigurationSource corsConfigurationSource) {
+                           CorsConfigurationSource corsConfigurationSource,
+                           RateLimitBackend rateLimitBackend,
+                           ClientAddressResolver clientAddressResolver) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.corsConfigurationSource = corsConfigurationSource;
+        this.rateLimitBackend = rateLimitBackend;
+        this.clientAddressResolver = clientAddressResolver;
     }
 
     @Override
@@ -67,17 +72,34 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        Integer limit = limitFor(request);
-        if (limit == null) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String key = request.getRequestURI() + "|" + clientKey(request);
-        if (!rateLimiter.tryAcquire(key, limit, Instant.now())) {
-            log.warn("event=security.rate_limit_exceeded path={} client={}",
-                    request.getRequestURI(), maskClient(clientKey(request)));
+        RateLimitRule rule = ruleFor(request);
+        if (rule == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String clientKey = clientAddressResolver.resolve(request);
+        RateLimitResult result = rateLimitBackend.tryAcquire(
+                rule.bucket(),
+                clientKey,
+                rule.limit(),
+                Instant.now()
+        );
+
+        if (result.outcome() == RateLimitOutcome.REJECTED) {
+            log.warn("event=security.rate_limit_exceeded path={} bucket={} client={}",
+                    request.getRequestURI(), rule.bucket().id(), ClientAddressResolver.maskForLog(clientKey));
             writeTooManyRequests(request, response);
+            return;
+        }
+
+        if (result.outcome() == RateLimitOutcome.SERVICE_UNAVAILABLE) {
+            writeServiceUnavailable(request, response);
             return;
         }
 
@@ -85,54 +107,32 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     /**
-     * @return the per-minute limit for this request, or {@code null} when the endpoint
-     *         is not throttled.
+     * @return the rule for this request, or {@code null} when the endpoint is not throttled.
      */
-    private Integer limitFor(HttpServletRequest request) {
+    RateLimitRule ruleFor(HttpServletRequest request) {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
+        if (WEBHOOK_PATH.equals(path)) {
+            return null;
+        }
+
         if ("POST".equals(method) && LOGIN_PATH.equals(path)) {
-            return properties.getLoginRequestsPerMinute();
+            return new RateLimitRule(RateLimitBucket.LOGIN, properties.getLoginRequestsPerMinute());
         }
         if ("POST".equals(method) && BOOKINGS_PATH.equals(path)) {
-            return properties.getBookingRequestsPerMinute();
+            return new RateLimitRule(RateLimitBucket.BOOKING_CREATE, properties.getBookingRequestsPerMinute());
         }
         if (path.startsWith(BOOKINGS_PREFIX)) {
-            return properties.getBookingLookupRequestsPerMinute();
+            return new RateLimitRule(RateLimitBucket.BOOKING_ACCESS, properties.getBookingLookupRequestsPerMinute());
         }
         if ("POST".equals(method) && (PAYMENT_ORDERS_PATH.equals(path)
                 || PAYMENT_VERIFY_PATH.equals(path)
                 || PAYMENT_ALIAS_ORDER_PATH.equals(path)
                 || PAYMENT_ALIAS_VERIFY_PATH.equals(path))) {
-            return properties.getPaymentRequestsPerMinute();
+            return new RateLimitRule(RateLimitBucket.PAYMENT, properties.getPaymentRequestsPerMinute());
         }
         return null;
-    }
-
-    /**
-     * Uses the right-most X-Forwarded-For hop. Ingress proxies append the connecting client,
-     * so the last value is the one added by Azure — not a spoofed left-most address.
-     */
-    private static String clientKey(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            String[] hops = forwarded.split(",");
-            for (int i = hops.length - 1; i >= 0; i--) {
-                String hop = hops[i].trim();
-                if (!hop.isEmpty()) {
-                    return hop;
-                }
-            }
-        }
-        String remote = request.getRemoteAddr();
-        return remote != null ? remote : "unknown";
-    }
-
-    /** Keeps enough of the address to correlate abuse without logging a full client IP. */
-    private static String maskClient(String client) {
-        int lastSeparator = Math.max(client.lastIndexOf('.'), client.lastIndexOf(':'));
-        return lastSeparator > 0 ? client.substring(0, lastSeparator) + ".x" : "unknown";
     }
 
     private void writeTooManyRequests(HttpServletRequest request, HttpServletResponse response)
@@ -144,6 +144,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
         objectMapper.writeValue(
                 response.getOutputStream(),
                 ApiResponse.error("Too many requests. Please try again in a minute.", "RATE_LIMITED")
+        );
+    }
+
+    private void writeServiceUnavailable(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        applyCorsHeaders(request, response);
+        response.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(
+                response.getOutputStream(),
+                ApiResponse.error("Rate limiting temporarily unavailable. Please try again shortly.",
+                        "RATE_LIMIT_UNAVAILABLE")
         );
     }
 
@@ -178,6 +190,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Scheduled(fixedDelay = 300_000)
     void evictExpiredWindows() {
-        rateLimiter.evictExpired(Instant.now());
+        rateLimitBackend.evictExpired(Instant.now());
+    }
+
+    record RateLimitRule(RateLimitBucket bucket, int limit) {
     }
 }

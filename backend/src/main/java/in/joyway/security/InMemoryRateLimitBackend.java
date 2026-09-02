@@ -9,42 +9,43 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Fixed-window in-memory request counter.
  *
- * <p>State is per instance, so with multiple replicas the effective limit is
- * {@code limit x replicas}. That is acceptable for the goal here, which is blunting
- * credential stuffing and scripted abuse rather than precise quota enforcement.
+ * <p>State is per JVM instance. Used for local development and as an emergency fallback for
+ * admin login when Redis is unavailable.
  */
-public class RateLimiter {
+public class InMemoryRateLimitBackend implements RateLimitBackend {
 
     private final Duration window;
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
 
-    public RateLimiter(Duration window) {
+    public InMemoryRateLimitBackend(Duration window) {
         this.window = window;
     }
 
-    /**
-     * @return {@code true} when the request is within the limit, {@code false} when it
-     *         should be rejected.
-     */
-    public boolean tryAcquire(String key, int limit, Instant now) {
-        Window current = windows.compute(key, (ignored, existing) -> {
+    @Override
+    public RateLimitResult tryAcquire(RateLimitBucket bucket, String clientKey, int limit, Instant now) {
+        String storageKey = bucket.id() + "|" + clientKey + "|" + epochMinute(now);
+        Window current = windows.compute(storageKey, (ignored, existing) -> {
             if (existing == null || now.isAfter(existing.expiresAt)) {
                 return new Window(now.plus(window));
             }
             return existing;
         });
-        return current.count.incrementAndGet() <= limit;
+        return current.count.incrementAndGet() <= limit
+                ? RateLimitResult.permitted()
+                : RateLimitResult.rejected();
     }
 
-    /**
-     * Drops expired entries so the map cannot grow without bound from one-off clients.
-     */
+    @Override
     public void evictExpired(Instant now) {
         windows.entrySet().removeIf(entry -> now.isAfter(entry.getValue().expiresAt));
     }
 
     int trackedKeys() {
         return windows.size();
+    }
+
+    private static long epochMinute(Instant now) {
+        return now.getEpochSecond() / 60L;
     }
 
     private static final class Window {

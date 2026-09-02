@@ -25,6 +25,9 @@ joyway:
       enabled: false
   cors:
     allowed-origins: http://localhost:3000
+  rate-limit:
+    enabled: true
+    backend: memory
   mail:
     enabled: false
     preview-enabled: false

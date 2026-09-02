@@ -6,18 +6,21 @@ import in.joyway.config.CorsProperties;
 import in.joyway.config.JwtProperties;
 import in.joyway.config.MailProperties;
 import in.joyway.config.NotificationProperties;
+import in.joyway.config.RateLimitBackendConfig;
 import in.joyway.config.RateLimitProperties;
 import in.joyway.config.RazorpayProperties;
 import in.joyway.config.StorageProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableAsync
 @EnableScheduling
+@Import(RateLimitBackendConfig.class)
 @EnableConfigurationProperties({
         CorsProperties.class,
         JwtProperties.class,
