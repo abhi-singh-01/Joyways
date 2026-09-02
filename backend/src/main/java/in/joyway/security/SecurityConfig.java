@@ -46,10 +46,13 @@ public class SecurityConfig {
     private final Environment environment;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            CookieCsrfTokenRepository csrfTokenRepository
+    ) throws Exception {
         http
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository())
+                        .csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                         .ignoringRequestMatchers(
                                 "/api/payments/webhook",
@@ -158,7 +161,8 @@ public class SecurityConfig {
                         || profile.equalsIgnoreCase("development"));
     }
 
-    private CookieCsrfTokenRepository csrfTokenRepository() {
+    @Bean
+    public CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         repository.setCookiePath("/");
         repository.setCookieCustomizer(cookie -> {
