@@ -18,6 +18,8 @@ export async function adminLogin(
   if (!response.data) {
     throw new Error("Login failed");
   }
+  // Load session + XSRF-TOKEN cookie before navigating to admin pages.
+  await getAdminSession();
   return response.data;
 }
 

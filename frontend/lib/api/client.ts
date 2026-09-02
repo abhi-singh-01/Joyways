@@ -9,6 +9,25 @@ function readCsrfToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+/** Prime the XSRF-TOKEN cookie (Set-Cookie from api.joyway.in, Domain=.joyway.in). */
+async function ensureCsrfToken(): Promise<void> {
+  if (typeof document === "undefined" || readCsrfToken()) return;
+  try {
+    await fetch(`${getApiBaseUrl()}/api/admin/auth/me`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+  } catch {
+    // Caller handles auth errors on the real request.
+  }
+}
+
+function isMutatingMethod(method?: string): boolean {
+  const m = (method ?? "GET").toUpperCase();
+  return m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE";
+}
+
 export type ApiResponse<T> = {
   success: boolean;
   data?: T;
@@ -138,6 +157,11 @@ export async function adminFetch<T>(
 ): Promise<ApiResponse<T>> {
   const url = `${getApiBaseUrl()}${path}`;
   const requestId = newRequestId();
+
+  if (isMutatingMethod(options?.method)) {
+    await ensureCsrfToken();
+  }
+
   const csrfToken = readCsrfToken();
   let response: Response;
   try {
@@ -167,6 +191,15 @@ export async function adminFetch<T>(
 
   if (response.status === 401) {
     throw new AdminAuthError(json.message || "Authentication required.");
+  }
+
+  if (response.status === 403) {
+    const code = json.errorCode ?? "";
+    if (code === "ACCESS_DENIED" || (json.message ?? "").toLowerCase().includes("csrf")) {
+      throw new AdminAuthError(
+        "Session expired or invalid. Please sign in again."
+      );
+    }
   }
 
   if (!response.ok) {

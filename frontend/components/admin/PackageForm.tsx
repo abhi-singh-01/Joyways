@@ -14,6 +14,7 @@ import {
   type CreatePackagePayload,
   type PackageStatus,
 } from "@/lib/api/adminPackagesApi";
+import { AdminAuthError } from "@/lib/api/client";
 import { PackageImageManager } from "@/components/admin/PackageImageManager";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
@@ -118,6 +119,10 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
         router.refresh();
       }
     } catch (err) {
+      if (err instanceof AdminAuthError) {
+        setError(`${err.message} Sign out and sign in again, then retry.`);
+        return;
+      }
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setLoading(false);
