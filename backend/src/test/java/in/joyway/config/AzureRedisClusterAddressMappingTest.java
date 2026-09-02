@@ -94,14 +94,33 @@ class AzureRedisClusterAddressMappingTest {
     }
 
     @Test
+    void defaultRedisCommandTimeoutIs1000Ms() {
+        RateLimitProperties properties = new RateLimitProperties();
+
+        assertThat(properties.getRedisCommandTimeoutMs()).isEqualTo(1000);
+    }
+
+    @Test
+    void redisCommandTimeoutRemainsConfigurable() {
+        RateLimitProperties properties = new RateLimitProperties();
+        properties.setRedisCommandTimeoutMs(500);
+
+        assertThat(properties.getRedisCommandTimeoutMs()).isEqualTo(500);
+    }
+
+    @Test
     void tlsClientConfigurationRemainsEnabledWhenRedisSslTrue() {
         LettuceClientConfiguration configuration = LettuceClientConfiguration.builder()
-                .commandTimeout(Duration.ofMillis(250))
+                .commandTimeout(Duration.ofMillis(propertiesDefaultTimeout()))
                 .useSsl()
                 .build();
 
         assertThat(configuration.isUseSsl()).isTrue();
-        assertThat(configuration.getCommandTimeout()).isEqualTo(Duration.ofMillis(250));
+        assertThat(configuration.getCommandTimeout()).isEqualTo(Duration.ofMillis(1000));
+    }
+
+    private static int propertiesDefaultTimeout() {
+        return new RateLimitProperties().getRedisCommandTimeoutMs();
     }
 
     @Test

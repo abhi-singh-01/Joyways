@@ -70,8 +70,8 @@ joyway:
     redis-port: ${REDIS_PORT:6379}
     redis-password: ${REDIS_PASSWORD:}
     redis-ssl: ${REDIS_SSL:false}
-    # Cluster topology discovery on cold start needs more headroom than standalone Redis.
-    redis-command-timeout-ms: ${REDIS_COMMAND_TIMEOUT_MS:250}
+    # Azure OSSCluster TLS + topology discovery needs headroom on cold start.
+    redis-command-timeout-ms: ${REDIS_COMMAND_TIMEOUT_MS:1000}
     login-fail-closed-on-redis-error: ${RATE_LIMIT_LOGIN_FAIL_CLOSED:false}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

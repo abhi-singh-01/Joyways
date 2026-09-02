@@ -39,7 +39,7 @@ public class RateLimitProperties {
 
     private boolean redisSsl = false;
 
-    private int redisCommandTimeoutMs = 250;
+    private int redisCommandTimeoutMs = 1000;
 
     /**
      * When Redis is unavailable, reject admin login with 503 instead of using the emergency
