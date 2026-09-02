@@ -12,12 +12,15 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,8 +43,12 @@ class AdminAuthControllerTest {
     @MockBean
     private in.joyway.security.JwtTokenProvider jwtTokenProvider;
 
+    @MockBean
+    private CsrfTokenRepository csrfTokenRepository;
+
     @Test
     void login_success() throws Exception {
+        when(csrfTokenRepository.generateToken(any())).thenReturn(mock(CsrfToken.class));
         when(adminAuthService.login(any(LoginRequest.class), any(HttpServletResponse.class)))
                 .thenReturn(AdminProfileDto.builder()
                         .id(1L)
