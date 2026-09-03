@@ -28,7 +28,7 @@ export function PackageCard({
     <motion.article
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
+      viewport={{ once: true, margin: "-60px 0px" }}
       transition={{ duration: 0.45, delay: index * 0.07, ease: "easeOut" }}
       whileHover={soldOut ? undefined : { y: -6 }}
       className={cn(

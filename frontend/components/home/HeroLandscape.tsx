@@ -7,6 +7,10 @@ type HeroLandscapeProps = {
   scrollYProgress: MotionValue<number>;
 };
 
+/** Full-bleed hero; cap reported slot at 1920px on ultra-wide viewports. */
+const heroImageSizes =
+  "(max-width: 640px) 100vw, (max-width: 1920px) 100vw, 1920px";
+
 export function HeroLandscape({ scrollYProgress }: HeroLandscapeProps) {
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.18]);
   const y = useTransform(scrollYProgress, [0, 1], [0, 80]);
@@ -19,7 +23,7 @@ export function HeroLandscape({ scrollYProgress }: HeroLandscapeProps) {
           alt=""
           fill
           priority
-          sizes="100vw"
+          sizes={heroImageSizes}
           className="object-cover object-center"
         />
       </motion.div>

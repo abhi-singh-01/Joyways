@@ -37,8 +37,9 @@ const themeGlow: Record<JourneyScene["theme"], string> = {
   road: "from-accent/35 to-transparent",
 };
 
+/** Cards sit in max-w-7xl 3-col grid (~400px wide), not full viewport thirds. */
 const journeyImageSizes =
-  "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw";
+  "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px";
 
 export function JourneyMoments() {
   return (
@@ -70,7 +71,7 @@ export function JourneyMoments() {
               y={32}
               duration={0.55}
               delay={index * 0.12}
-              viewport={{ once: true, margin: "-40px" }}
+              viewport={{ once: true, margin: "-120px 0px" }}
               className="group relative overflow-hidden rounded-3xl border border-white/10 bg-charcoal shadow-lg"
             >
               <MotionHoverLift className="h-full">
@@ -79,6 +80,8 @@ export function JourneyMoments() {
                     src={scene.image}
                     alt={scene.title}
                     fill
+                    loading="lazy"
+                    fetchPriority="low"
                     sizes={journeyImageSizes}
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />

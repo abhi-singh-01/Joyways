@@ -16,6 +16,37 @@ const highlights = [
   { icon: Shield, label: "Secure Online Booking" },
 ];
 
+const heroCardVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.7,
+      ease: "easeOut" as const,
+      staggerChildren: 0.1,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+const heroItemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" as const },
+  },
+};
+
+const heroFadeVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.6, ease: "easeOut" as const },
+  },
+};
+
 export function HeroSection() {
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -34,31 +65,25 @@ export function HeroSection() {
         className="mx-auto flex min-h-[92vh] max-w-7xl items-center px-4 pb-24 pt-20 sm:px-6 lg:px-8"
       >
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          variants={heroCardVariants}
+          initial="hidden"
+          animate="visible"
           className="mx-auto w-full max-w-3xl rounded-3xl border border-white/50 bg-white/82 px-6 py-10 text-center shadow-2xl shadow-forest/15 backdrop-blur-xl sm:px-10 sm:py-12"
         >
           <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.6 }}
+            variants={heroItemVariants}
             className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-forest"
           >
             Group Travel from Delhi
           </motion.p>
           <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25, duration: 0.6 }}
+            variants={heroFadeVariants}
             className="font-display text-4xl font-semibold leading-tight text-forest-dark sm:text-5xl lg:text-6xl"
           >
             Find Joy in Every Journey.
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.6 }}
+            variants={heroItemVariants}
             className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-charcoal"
           >
             Discover beautiful destinations, join unforgettable group trips, and
@@ -66,9 +91,7 @@ export function HeroSection() {
           </motion.p>
           <TripSearchBar />
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
+            variants={heroItemVariants}
             className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
           >
             <Link href="/trips">
@@ -102,17 +125,15 @@ export function HeroSection() {
           className="mx-auto grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4"
         >
           {highlights.map(({ icon: Icon, label }) => (
-            <motion.div
+            <div
               key={label}
-              whileHover={{ y: -4, scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 320, damping: 22 }}
-              className="flex flex-col items-center rounded-2xl border border-white/50 bg-white/85 p-4 text-center shadow-md backdrop-blur-md"
+              className="flex flex-col items-center rounded-2xl border border-white/50 bg-white/85 p-4 text-center shadow-md backdrop-blur-md transition-transform duration-200 hover:-translate-y-1 hover:scale-[1.02]"
             >
               <Icon size={22} className="mb-2 text-forest" />
               <span className="text-xs font-medium text-charcoal sm:text-sm">
                 {label}
               </span>
-            </motion.div>
+            </div>
           ))}
         </motion.div>
       </div>

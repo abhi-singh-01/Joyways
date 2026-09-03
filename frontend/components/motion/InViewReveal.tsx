@@ -21,7 +21,7 @@ export function InViewReveal({
     <motion.div
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      viewport={{ once: true, margin: "-80px 0px" }}
       transition={{ duration, delay }}
       className={className}
       {...props}

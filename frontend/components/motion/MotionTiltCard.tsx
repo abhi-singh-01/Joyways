@@ -20,7 +20,7 @@ export function MotionTiltCard({
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      viewport={{ once: true, margin: "-80px 0px" }}
       transition={{ duration: 0.5, delay }}
       whileHover={{ y: -10, rotate: 0, scale: 1.03 }}
       style={{ rotate: `${rotate}deg` }}
