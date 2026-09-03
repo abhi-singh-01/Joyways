@@ -60,16 +60,14 @@ export function HeroSection() {
     <section ref={heroRef} className="relative overflow-hidden lg:min-h-[92vh]">
       <HeroLandscape scrollYProgress={scrollYProgress} />
 
-      <motion.div
-        style={{ y: heroContentY }}
-        className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-8 px-4 pb-10 pt-20 sm:px-6 sm:gap-10 lg:min-h-[92vh] lg:justify-center lg:pb-16 lg:px-8"
-      >
-        <motion.div
-          variants={heroCardVariants}
-          initial="hidden"
-          animate="visible"
-          className="mx-auto w-full max-w-3xl rounded-3xl border border-white/50 bg-white/82 px-5 py-8 text-center shadow-2xl shadow-forest/15 backdrop-blur-xl sm:px-10 sm:py-12"
-        >
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-8 px-4 pb-10 pt-20 sm:px-6 sm:gap-10 lg:min-h-[92vh] lg:justify-center lg:pb-16 lg:px-8">
+        <motion.div style={{ y: heroContentY }} className="w-full">
+          <motion.div
+            variants={heroCardVariants}
+            initial="hidden"
+            animate="visible"
+            className="mx-auto w-full max-w-3xl rounded-3xl border border-white/50 bg-white/82 px-5 py-8 text-center shadow-2xl shadow-forest/15 backdrop-blur-xl sm:px-10 sm:py-12"
+          >
           <motion.p
             variants={heroItemVariants}
             className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-forest"
@@ -114,13 +112,14 @@ export function HeroSection() {
               Plan with us
             </ButtonLink>
           </motion.div>
+          </motion.div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.45 }}
-          className="relative z-10 mx-auto grid w-full max-w-4xl shrink-0 grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-4"
+          className="relative z-10 mx-auto grid w-full max-w-4xl shrink-0 grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-4 lg:mt-2"
         >
           {highlights.map(({ icon: Icon, label }) => (
             <div
@@ -134,7 +133,7 @@ export function HeroSection() {
             </div>
           ))}
         </motion.div>
-      </motion.div>
+      </div>
     </section>
   );
 }
