@@ -37,6 +37,16 @@ public class ProductionSecurityValidator {
             Pattern.CASE_INSENSITIVE
     );
 
+    private static final List<String> FORBIDDEN_ACTUATOR_ENDPOINTS = List.of(
+            "env",
+            "beans",
+            "configprops",
+            "mappings",
+            "threaddump",
+            "heapdump",
+            "loggers"
+    );
+
     private final Environment environment;
     private final JwtProperties jwtProperties;
     private final CorsProperties corsProperties;
@@ -63,8 +73,32 @@ public class ProductionSecurityValidator {
         validateRateLimitRedisConfiguration();
         validateJwtCookieDomain();
         validateMailPreviewDisabled();
+        validateActuatorExposure();
 
         log.info("Production security validation passed.");
+    }
+
+    private void validateActuatorExposure() {
+        String exposureInclude = environment.getProperty(
+                "management.endpoints.web.exposure.include", "");
+        if (!StringUtils.hasText(exposureInclude)) {
+            return;
+        }
+        String trimmed = exposureInclude.trim();
+        if ("*".equals(trimmed)) {
+            throw new IllegalStateException(
+                    "management.endpoints.web.exposure.include must not use wildcard (*) in production.");
+        }
+        Arrays.stream(trimmed.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .forEach(endpoint -> {
+                    String normalized = endpoint.toLowerCase(Locale.ROOT);
+                    if (FORBIDDEN_ACTUATOR_ENDPOINTS.contains(normalized)) {
+                        throw new IllegalStateException(
+                                "Actuator endpoint must not be exposed in production: " + endpoint);
+                    }
+                });
     }
 
     private void validateJwtSecret() {

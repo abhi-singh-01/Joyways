@@ -18,6 +18,7 @@ import in.joyway.dto.payment.VerifyPaymentRequest;
 import in.joyway.exception.AccessDeniedBookingException;
 import in.joyway.exception.PaymentVerificationException;
 import in.joyway.notification.BookingNotificationService;
+import in.joyway.observability.WebhookMetricsRecorder;
 import in.joyway.service.payment.RazorpayGateway;
 import in.joyway.service.payment.RazorpayOrderResult;
 import in.joyway.service.payment.RazorpayPaymentDetails;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -65,8 +65,9 @@ class PaymentServiceTest {
     private ReceiptService receiptService;
     @Mock
     private BookingNotificationService bookingNotificationService;
+    @Mock
+    private WebhookMetricsRecorder webhookMetricsRecorder;
 
-    @InjectMocks
     private PaymentService paymentService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -86,7 +87,8 @@ class PaymentServiceTest {
                 razorpayProperties,
                 receiptService,
                 objectMapper,
-                bookingNotificationService
+                bookingNotificationService,
+                webhookMetricsRecorder
         );
 
         customer = Customer.builder()
@@ -284,6 +286,7 @@ class PaymentServiceTest {
 
         paymentService.processWebhook(payload, "sig", "evt_3");
 
+        verify(webhookMetricsRecorder).recordSuccess();
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
         assertThat(booking.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
     }
@@ -295,6 +298,10 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.processWebhook("{}", "bad", "evt_4"))
                 .isInstanceOf(PaymentVerificationException.class);
 
+        verify(webhookMetricsRecorder).recordReceived();
+        verify(webhookMetricsRecorder).recordInvalidSignature();
+        verify(webhookMetricsRecorder, never()).recordSuccess();
+        verify(webhookMetricsRecorder, never()).recordFailure();
         verify(webhookEventRepository, never()).save(any());
         verify(paymentRepository, never()).save(any(Payment.class));
     }
@@ -303,6 +310,8 @@ class PaymentServiceTest {
     void processWebhook_rejectsMissingEventId() {
         assertThatThrownBy(() -> paymentService.processWebhook("{}", "sig", " "))
                 .isInstanceOf(PaymentVerificationException.class);
+        verify(webhookMetricsRecorder).recordReceived();
+        verify(webhookMetricsRecorder).recordMissingEventId();
         verify(razorpayGateway, never()).verifyWebhookSignature(any(), any());
     }
 
@@ -401,6 +410,8 @@ class PaymentServiceTest {
 
         paymentService.processWebhook(payload, "sig", "evt_1");
 
+        verify(webhookMetricsRecorder).recordDuplicate();
+        verify(webhookMetricsRecorder, never()).recordSuccess();
         verify(paymentRepository, never()).save(any(Payment.class));
         verify(webhookEventRepository, never()).save(any());
     }
@@ -474,6 +485,9 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.processWebhook(payload, "sig", "evt_fail"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Webhook processing failed");
+
+        verify(webhookMetricsRecorder).recordFailure();
+        verify(webhookMetricsRecorder, never()).recordSuccess();
     }
 
     @Test
@@ -637,6 +651,8 @@ class PaymentServiceTest {
 
         paymentService.processWebhook(payload, "sig", "evt_unknown");
 
+        verify(webhookMetricsRecorder).recordUnknownOrder();
+        verify(webhookMetricsRecorder).recordSuccess();
         verify(paymentRepository, never()).save(any(Payment.class));
         verify(bookingRepository, never()).save(any(Booking.class));
 
@@ -715,6 +731,10 @@ class PaymentServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Webhook processing incomplete");
 
+        verify(webhookMetricsRecorder).recordBookingNotFound();
+        verify(webhookMetricsRecorder).recordRetryableFailure();
+        verify(webhookMetricsRecorder, never()).recordSuccess();
+        verify(webhookMetricsRecorder, never()).recordFailure();
         assertThat(unprocessedEvent.getProcessed()).isFalse();
         verify(bookingRepository, never()).save(any(Booking.class));
     }

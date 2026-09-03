@@ -247,6 +247,63 @@ ORDER BY created_at DESC LIMIT 20;
 If the secret is unset, webhook verification **fails closed** (all webhooks rejected) rather
 than accepting unverified calls.
 
+#### Webhook metrics (in-process only until export is configured)
+
+Micrometer counters and a timer are registered in-process when webhooks are processed. They are
+**not** visible in Azure Monitor until a future metrics export mechanism (for example Azure
+Monitor OpenTelemetry or Prometheus scraping) is deployed. Use structured logs and the
+`payment_webhook_events` table for production investigation today.
+
+Controller-level HTTP 400 rejections (missing signature or event ID) increment their dedicated
+counter in `PaymentWebhookController` only. They do **not** call `PaymentService`, so they do
+**not** increment `joyway.payment.webhook.received` and do **not** record
+`joyway.payment.webhook.processing.duration`.
+
+| Metric | Purpose |
+|---|---|
+| `joyway.payment.webhook.received` | Deliveries entering `processWebhook` |
+| `joyway.payment.webhook.missing_signature` | Controller rejections when `X-Razorpay-Signature` is missing or blank (HTTP 400; service not called) |
+| `joyway.payment.webhook.missing_event_id` | Rejections due to missing or blank `X-Razorpay-Event-Id` (controller HTTP 400, or service defense-in-depth) |
+| `joyway.payment.webhook.invalid_signature` | HMAC verification failures inside `processWebhook` |
+| `joyway.payment.webhook.duplicate` | Already-processed event replays |
+| `joyway.payment.webhook.unknown_event` | Unhandled Razorpay event types (still ACK'd) |
+| `joyway.payment.webhook.unknown_order` | Captured payment for an unknown order id (ACK'd) |
+| `joyway.payment.webhook.booking_not_found` | Retryable path when booking row is missing |
+| `joyway.payment.webhook.success` | Events marked processed successfully |
+| `joyway.payment.webhook.failure` | Non-retryable processing failures |
+| `joyway.payment.webhook.retryable_failure` | Retryable failures (Razorpay will retry) |
+| `joyway.payment.webhook.processing.duration` | Wall-clock duration of `processWebhook` |
+
+**Allowed metric labels (bounded only):**
+
+| Label | Allowed values |
+|---|---|
+| `outcome` (timer) | `success`, `duplicate`, `retryable`, `failed`, `rejected` |
+
+**Never use high-cardinality identifiers as metric labels:** `event_id`, `order_id`,
+`payment_id`, `booking_reference`, `email`, `request_id`, or raw Razorpay event type strings.
+These explode time-series cost and provide little aggregate signal.
+
+**Outcome mapping (for log + metric correlation):**
+
+| Scenario | Counters incremented | Timer `outcome` |
+|---|---|---|
+| Missing signature (controller) | `missing_signature` | *(none — `PaymentService` not called)* |
+| Missing event ID (controller) | `missing_event_id` | *(none — `PaymentService` not called)* |
+| Missing event ID (service) | `received`, `missing_event_id` | `rejected` |
+| Invalid signature (service) | `received`, `invalid_signature` | `failed` |
+| Duplicate delivery | `received`, `duplicate` | `duplicate` |
+| Unknown event type (ACK) | `received`, `unknown_event`, `success` | `success` |
+| Unknown order (ACK) | `received`, `unknown_order`, `success` | `success` |
+| Booking not found (retry) | `received`, `booking_not_found`, `retryable_failure` | `retryable` |
+| Successful processing | `received`, `success` | `success` |
+| Non-retryable error | `received`, `failure` | `failed` |
+
+**Future Azure alerting (not configured in R-3B):** once metrics are exported, consider alerts
+on sustained `retryable_failure` or `failure` rates, spikes in `invalid_signature`, and p95
+`processing.duration` for `outcome=retryable`. Until export exists, alert on log patterns such
+as `event=payment.webhook.retryable` and `reason=processing_error`.
+
 ### Investigate a payment/booking mismatch
 
 ```sql

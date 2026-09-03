@@ -20,6 +20,9 @@ import in.joyway.dto.payment.VerifyPaymentResponse;
 import in.joyway.exception.PaymentVerificationException;
 import in.joyway.exception.ResourceNotFoundException;
 import in.joyway.notification.BookingNotificationService;
+import in.joyway.observability.WebhookMetricsRecorder;
+import in.joyway.observability.WebhookMetricsRecorder.HandlerBucket;
+import in.joyway.observability.WebhookMetricsRecorder.Outcome;
 import in.joyway.service.payment.RazorpayGateway;
 import in.joyway.service.payment.RazorpayGatewayImpl;
 import in.joyway.service.payment.RazorpayOrderResult;
@@ -36,6 +39,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +55,7 @@ public class PaymentService {
     private final ReceiptService receiptService;
     private final ObjectMapper objectMapper;
     private final BookingNotificationService bookingNotificationService;
+    private final WebhookMetricsRecorder webhookMetricsRecorder;
 
     @Transactional
     public PaymentOrderResponse createOrder(CreatePaymentOrderRequest request) {
@@ -150,63 +155,117 @@ public class PaymentService {
 
     @Transactional
     public void processWebhook(String payload, String signature, String eventId) {
+        long startNanos = System.nanoTime();
+        Outcome timerOutcome = Outcome.FAILED;
+        HandlerBucket handlerBucket = HandlerBucket.NONE;
+        String eventType = "";
+
         log.info("event=payment.webhook.received eventId={}", eventId);
-
-        if (eventId == null || eventId.isBlank()) {
-            throw new PaymentVerificationException("Webhook event id is required.");
-        }
-
-        if (!razorpayGateway.verifyWebhookSignature(payload, signature)) {
-            log.warn("event=payment.webhook.failed reason=signature_invalid eventId={}", eventId);
-            throw new PaymentVerificationException("Invalid webhook signature.");
-        }
+        webhookMetricsRecorder.recordReceived();
 
         try {
-            JsonNode root = objectMapper.readTree(payload);
-            String eventType = root.path("event").asText("");
-            String payloadHash = sha256(payload);
-
-            PaymentWebhookEvent webhookEvent = acquireWebhookEvent(eventId, eventType, payloadHash);
-
-            if (Boolean.TRUE.equals(webhookEvent.getProcessed())) {
-                log.info("event=payment.webhook.duplicate eventId={}", eventId);
-                return;
+            if (eventId == null || eventId.isBlank()) {
+                log.warn("event=payment.webhook.rejected reason=missing_event_id eventId={}", eventId);
+                webhookMetricsRecorder.recordMissingEventId();
+                timerOutcome = Outcome.REJECTED;
+                throw new PaymentVerificationException("Webhook event id is required.");
             }
 
-            WebhookHandlerOutcome outcome = switch (eventType) {
-                case "payment.captured" -> handlePaymentSuccess(root);
-                case "order.paid" -> {
-                    handleOrderPaidInformational(root);
-                    yield WebhookHandlerOutcome.ACKNOWLEDGED;
-                }
-                case "payment.failed" -> handlePaymentFailed(root);
-                default -> {
-                    log.info("Unhandled webhook event type: {}", eventType);
-                    yield WebhookHandlerOutcome.ACKNOWLEDGED;
-                }
-            };
-
-            if (outcome == WebhookHandlerOutcome.RETRYABLE) {
-                log.warn("event=payment.webhook.retryable eventId={} eventType={}", eventId, eventType);
-                throw new IllegalStateException("Webhook processing incomplete.");
+            if (!razorpayGateway.verifyWebhookSignature(payload, signature)) {
+                log.warn("event=payment.webhook.failed reason=signature_invalid eventId={}", eventId);
+                webhookMetricsRecorder.recordInvalidSignature();
+                timerOutcome = Outcome.FAILED;
+                throw new PaymentVerificationException("Invalid webhook signature.");
             }
 
-            webhookEvent.setProcessed(true);
-            webhookEventRepository.save(webhookEvent);
+            try {
+                JsonNode root = objectMapper.readTree(payload);
+                eventType = root.path("event").asText("");
+                String payloadHash = sha256(payload);
+
+                PaymentWebhookEvent webhookEvent = acquireWebhookEvent(eventId, eventType, payloadHash);
+
+                if (Boolean.TRUE.equals(webhookEvent.getProcessed())) {
+                    log.info("event=payment.webhook.duplicate eventId={}", eventId);
+                    webhookMetricsRecorder.recordDuplicate();
+                    timerOutcome = Outcome.DUPLICATE;
+                    return;
+                }
+
+                handlerBucket = handlerBucketForEventType(eventType);
+
+                WebhookHandlerOutcome outcome = switch (eventType) {
+                    case "payment.captured" -> handlePaymentSuccess(root);
+                    case "order.paid" -> {
+                        handleOrderPaidInformational(root);
+                        yield WebhookHandlerOutcome.ACKNOWLEDGED;
+                    }
+                    case "payment.failed" -> handlePaymentFailed(root);
+                    default -> {
+                        log.info("event=payment.webhook.unhandled handler_bucket=unknown eventType={}", eventType);
+                        webhookMetricsRecorder.recordUnknownEvent();
+                        handlerBucket = HandlerBucket.UNKNOWN;
+                        yield WebhookHandlerOutcome.ACKNOWLEDGED;
+                    }
+                };
+
+                if (outcome == WebhookHandlerOutcome.RETRYABLE) {
+                    log.warn("event=payment.webhook.retryable eventId={} eventType={}", eventId, eventType);
+                    webhookMetricsRecorder.recordBookingNotFound();
+                    webhookMetricsRecorder.recordRetryableFailure();
+                    timerOutcome = Outcome.RETRYABLE;
+                    throw new IllegalStateException("Webhook processing incomplete.");
+                }
+
+                webhookEvent.setProcessed(true);
+                webhookEventRepository.save(webhookEvent);
+                webhookMetricsRecorder.recordSuccess();
+                timerOutcome = Outcome.SUCCESS;
+                log.info(
+                        "event=payment.webhook.processed outcome=success handler_bucket={} eventId={} eventType={} durationMs={}",
+                        handlerBucket.tagValue(),
+                        eventId,
+                        eventType,
+                        durationMillis(startNanos)
+                );
+            } catch (PaymentVerificationException ex) {
+                webhookMetricsRecorder.recordFailure();
+                timerOutcome = Outcome.FAILED;
+                throw ex;
+            } catch (IllegalStateException ex) {
+                if ("Webhook processing incomplete.".equals(ex.getMessage())) {
+                    throw ex;
+                }
+                log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
+                        eventId, ex.getClass().getSimpleName());
+                webhookMetricsRecorder.recordFailure();
+                timerOutcome = Outcome.FAILED;
+                throw new IllegalStateException("Webhook processing failed.");
+            } catch (Exception ex) {
+                log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
+                        eventId, ex.getClass().getSimpleName());
+                webhookMetricsRecorder.recordFailure();
+                timerOutcome = Outcome.FAILED;
+                throw new IllegalStateException("Webhook processing failed.");
+            }
         } catch (PaymentVerificationException ex) {
             throw ex;
-        } catch (IllegalStateException ex) {
-            if ("Webhook processing incomplete.".equals(ex.getMessage())) {
-                throw ex;
-            }
-            log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
-                    eventId, ex.getClass().getSimpleName());
-            throw new IllegalStateException("Webhook processing failed.");
-        } catch (Exception ex) {
-            log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
-                    eventId, ex.getClass().getSimpleName());
-            throw new IllegalStateException("Webhook processing failed.");
+        } finally {
+            webhookMetricsRecorder.recordProcessingDuration(startNanos, timerOutcome);
         }
+    }
+
+    private static HandlerBucket handlerBucketForEventType(String eventType) {
+        return switch (eventType) {
+            case "payment.captured" -> HandlerBucket.PAYMENT_CAPTURED;
+            case "payment.failed" -> HandlerBucket.PAYMENT_FAILED;
+            case "order.paid" -> HandlerBucket.ORDER_PAID;
+            default -> HandlerBucket.UNKNOWN;
+        };
+    }
+
+    private static long durationMillis(long startNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
     }
 
     /**
@@ -283,6 +342,7 @@ public class PaymentService {
             // unknown order id will not become known on retry with the same event payload.
             log.warn("event=payment.webhook.unrecoverable reason=unknown_order orderId={} paymentId={}",
                     orderId, paymentId);
+            webhookMetricsRecorder.recordUnknownOrder();
             return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
