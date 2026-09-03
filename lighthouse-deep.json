@@ -1,0 +1,816 @@
+{
+  "mobile": {
+    "label": "m",
+    "lcpNumeric": 2943.18,
+    "fcpNumeric": 1691.1799999999998,
+    "tbtNumeric": 89.5,
+    "main": [
+      {
+        "group": "styleLayout",
+        "groupLabel": "Style & Layout",
+        "duration": 886.8720000000001
+      },
+      {
+        "group": "scriptEvaluation",
+        "groupLabel": "Script Evaluation",
+        "duration": 573.756000000003
+      },
+      {
+        "group": "other",
+        "groupLabel": "Other",
+        "duration": 386.11600000000294
+      },
+      {
+        "group": "scriptParseCompile",
+        "groupLabel": "Script Parsing & Compilation",
+        "duration": 85.32000000000001
+      },
+      {
+        "group": "paintCompositeRender",
+        "groupLabel": "Rendering",
+        "duration": 38.32799999999995
+      },
+      {
+        "group": "parseHTML",
+        "groupLabel": "Parse HTML & CSS",
+        "duration": 24.42
+      }
+    ],
+    "boot": [
+      {
+        "url": "https://joyway.in/",
+        "total": 982.9280000000001,
+        "scripting": 5.147999999999999,
+        "scriptParseCompile": 5.715999999999998
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "total": 432.6200000000023,
+        "scripting": 375.35600000000227,
+        "scriptParseCompile": 14.812
+      },
+      {
+        "url": "Unattributable",
+        "total": 280.6600000000013,
+        "scripting": 10.68,
+        "scriptParseCompile": 0
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+        "total": 119.69599999999996,
+        "scripting": 102.26799999999996,
+        "scriptParseCompile": 10.367999999999999
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/2kd5p3k3v__th.js",
+        "total": 79.23200000000004,
+        "scripting": 34.31200000000005,
+        "scriptParseCompile": 9.076
+      }
+    ],
+    "tasks": [
+      {
+        "url": "https://joyway.in/",
+        "duration": 370,
+        "startTime": 1133.1799999999998
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "duration": 124,
+        "startTime": 2568.18
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "duration": 79,
+        "startTime": 2920.18
+      },
+      {
+        "url": "https://joyway.in/",
+        "duration": 61,
+        "startTime": 1503.1799999999998
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "duration": 52,
+        "startTime": 2868.18
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+        "duration": 50,
+        "startTime": 2699.18
+      }
+    ],
+    "third": [],
+    "threeUrls": [],
+    "fmUrls": [],
+    "fonts": [
+      {
+        "url": "https://joyway.in/_next/static/media/2a65768255d6b625-s.p.3u4lli0-axodc.woff2",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 170.18300000205636,
+        "networkRequestTime": 171.14499999955297,
+        "networkEndTime": 351.132999997586,
+        "finished": true,
+        "transferSize": 38606,
+        "resourceSize": 38460,
+        "statusCode": 200,
+        "mimeType": "font/woff2",
+        "resourceType": "Font",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/static/media/5c285b27cdda1fe8-s.p.2_mbdogr7ni8i.woff2",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 170.71399999782443,
+        "networkRequestTime": 171.8889999985695,
+        "networkEndTime": 408.31900000199676,
+        "finished": true,
+        "transferSize": 37062,
+        "resourceSize": 36980,
+        "statusCode": 200,
+        "mimeType": "font/woff2",
+        "resourceType": "Font",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/static/media/c3cb240f9c892514-s.3z_x6eowsw16y.woff2",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 445.6270000003278,
+        "networkRequestTime": 544.4420000016689,
+        "networkEndTime": 612.437999997288,
+        "finished": true,
+        "transferSize": 18288,
+        "resourceSize": 18192,
+        "statusCode": 200,
+        "mimeType": "font/woff2",
+        "resourceType": "Font",
+        "priority": "VeryHigh",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      }
+    ],
+    "hero": [
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-hero.webp&w=750&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 170.91999999806285,
+        "networkRequestTime": 176.71299999952316,
+        "networkEndTime": 1563.6939999982715,
+        "finished": true,
+        "transferSize": 26997,
+        "resourceSize": 26746,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      }
+    ],
+    "journey": [
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-peaks.webp&w=750&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 1324.9389999993145,
+        "networkRequestTime": 1325.402000002563,
+        "networkEndTime": 10534.181000001729,
+        "finished": true,
+        "transferSize": 62431,
+        "resourceSize": 62277,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "Low",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-lake.webp&w=750&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 1325.0069999992847,
+        "networkRequestTime": 1325.5190000012517,
+        "networkEndTime": 10571.718999996781,
+        "finished": true,
+        "transferSize": 55949,
+        "resourceSize": 55788,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "Low",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-road.webp&w=750&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 1325.0729999989271,
+        "networkRequestTime": 1325.6180000007153,
+        "networkEndTime": 10477.859000001103,
+        "finished": true,
+        "transferSize": 50636,
+        "resourceSize": 50468,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "Low",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      }
+    ],
+    "phaseData": {
+      "largest-contentful-paint-element": {
+        "display": "2,940┬áms",
+        "details": [
+          {
+            "type": "table",
+            "headings": [
+              {
+                "key": "node",
+                "valueType": "node",
+                "label": "Element"
+              }
+            ],
+            "items": [
+              {
+                "node": {
+                  "type": "node",
+                  "lhId": "page-0-IMG",
+                  "path": "1,HTML,1,BODY,2,MAIN,0,SECTION,0,DIV,0,DIV,0,IMG",
+                  "selector": "section.relative > div.absolute > div.absolute > img.object-cover",
+                  "boundingRect": {
+                    "top": 65,
+                    "bottom": 878,
+                    "left": 0,
+                    "right": 412,
+                    "width": 412,
+                    "height": 813
+                  },
+                  "snippet": "<img alt=\"\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-center\" style=\"position: absolute; height: 100%; width: 100%; inset: 0px;\" sizes=\"100vw\" srcset=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=640&amp;q=75 640w, /_next/iΓÇª\" src=\"https://joyway.in/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=750&amp;q=ΓÇª\">",
+                  "nodeLabel": "section.relative > div.absolute > div.absolute > img.object-cover"
+                }
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "headings": [
+              {
+                "key": "phase",
+                "valueType": "text",
+                "label": "Phase"
+              },
+              {
+                "key": "percent",
+                "valueType": "text",
+                "label": "% of LCP"
+              },
+              {
+                "key": "timing",
+                "valueType": "ms",
+                "label": "Timing"
+              }
+            ],
+            "items": [
+              {
+                "phase": "TTFB",
+                "timing": 768.18,
+                "percent": "26%"
+              },
+              {
+                "phase": "Load Delay",
+                "timing": 0,
+                "percent": "0%"
+              },
+              {
+                "phase": "Load Time",
+                "timing": 950.0018370934635,
+                "percent": "32%"
+              },
+              {
+                "phase": "Render Delay",
+                "timing": 1224.9981629065364,
+                "percent": "42%"
+              }
+            ]
+          }
+        ]
+      },
+      "largest-contentful-paint": {
+        "display": "2.9┬ás"
+      },
+      "render-blocking-resources": {
+        "details": []
+      },
+      "uses-rel-preconnect": {
+        "display": "",
+        "details": []
+      },
+      "prioritize-lcp-image": {
+        "display": "",
+        "details": []
+      },
+      "lcp-lazy-loaded": {
+        "details": [
+          {
+            "node": {
+              "type": "node",
+              "lhId": "1-30-IMG",
+              "path": "1,HTML,1,BODY,2,MAIN,0,SECTION,0,DIV,0,DIV,0,IMG",
+              "selector": "section.relative > div.absolute > div.absolute > img.object-cover",
+              "boundingRect": {
+                "top": 65,
+                "bottom": 878,
+                "left": 0,
+                "right": 412,
+                "width": 412,
+                "height": 813
+              },
+              "snippet": "<img alt=\"\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-center\" style=\"position: absolute; height: 100%; width: 100%; inset: 0px;\" sizes=\"100vw\" srcset=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=640&amp;q=75 640w, /_next/iΓÇª\" src=\"https://joyway.in/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=750&amp;q=ΓÇª\">",
+              "nodeLabel": "section.relative > div.absolute > div.absolute > img.object-cover"
+            }
+          }
+        ]
+      }
+    },
+    "allScripts": [
+      {
+        "url": "3s6nzrbk-8mnv.js",
+        "transfer": 2125
+      },
+      {
+        "url": "40d19s7bewa0i.js",
+        "transfer": 8783
+      },
+      {
+        "url": "1mkbuudhndal5.js",
+        "transfer": 71681
+      },
+      {
+        "url": "1t0xo6qob6ecc.js",
+        "transfer": 43915
+      },
+      {
+        "url": "turbopack-3de9m4covcl7o.js",
+        "transfer": 3916
+      },
+      {
+        "url": "0h2qsuyze9ds1.js",
+        "transfer": 3730
+      },
+      {
+        "url": "3wmp8bneuy-fq.js",
+        "transfer": 9061
+      },
+      {
+        "url": "2kd5p3k3v__th.js",
+        "transfer": 39459
+      },
+      {
+        "url": "2lvr2pt70qn14.js",
+        "transfer": 8672
+      },
+      {
+        "url": "14tvyhmc4ks4x.js",
+        "transfer": 10878
+      },
+      {
+        "url": "2qjmlv4pd97sc.js",
+        "transfer": 2097
+      },
+      {
+        "url": "0s570b_eb_xqj.js",
+        "transfer": 65777
+      },
+      {
+        "url": "0gda4l8xalu2e.js",
+        "transfer": 1309
+      }
+    ]
+  },
+  "desktop": {
+    "label": "d",
+    "lcpNumeric": 4093.7649999999994,
+    "fcpNumeric": 1901.2649999999999,
+    "tbtNumeric": 1246,
+    "main": [
+      {
+        "group": "styleLayout",
+        "groupLabel": "Style & Layout",
+        "duration": 1921.7760000000005
+      },
+      {
+        "group": "other",
+        "groupLabel": "Other",
+        "duration": 1672.2559999999967
+      },
+      {
+        "group": "scriptEvaluation",
+        "groupLabel": "Script Evaluation",
+        "duration": 1154.8999999999917
+      },
+      {
+        "group": "scriptParseCompile",
+        "groupLabel": "Script Parsing & Compilation",
+        "duration": 149.176
+      },
+      {
+        "group": "paintCompositeRender",
+        "groupLabel": "Rendering",
+        "duration": 139.1720000000025
+      },
+      {
+        "group": "parseHTML",
+        "groupLabel": "Parse HTML & CSS",
+        "duration": 42.22
+      }
+    ],
+    "boot": [
+      {
+        "url": "https://joyway.in/",
+        "total": 2159.3960000000006,
+        "scripting": 11.064000000000002,
+        "scriptParseCompile": 12.392000000000001
+      },
+      {
+        "url": "Unattributable",
+        "total": 1238.3080000000007,
+        "scripting": 16.583999999999996,
+        "scriptParseCompile": 0
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "total": 953.4159999999999,
+        "scripting": 842.9879999999999,
+        "scriptParseCompile": 36.952
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/2kd5p3k3v__th.js",
+        "total": 474.55599999999987,
+        "scripting": 138.42400000000012,
+        "scriptParseCompile": 22.36
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+        "total": 146.9480000000002,
+        "scripting": 106.51200000000021,
+        "scriptParseCompile": 27.944
+      }
+    ],
+    "tasks": [
+      {
+        "url": "Unattributable",
+        "duration": 854,
+        "startTime": 2001.2649999999999
+      },
+      {
+        "url": "https://joyway.in/",
+        "duration": 749,
+        "startTime": 1094.2649999999999
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "duration": 302,
+        "startTime": 2855.265
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "duration": 134,
+        "startTime": 3157.265
+      },
+      {
+        "url": "https://joyway.in/",
+        "duration": 123,
+        "startTime": 1843.2649999999999
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "duration": 120,
+        "startTime": 3291.265
+      },
+      {
+        "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+        "duration": 71,
+        "startTime": 3411.265
+      },
+      {
+        "url": "Unattributable",
+        "duration": 64.99999999999989,
+        "startTime": 998.265
+      }
+    ],
+    "third": [],
+    "threeUrls": [],
+    "fmUrls": [],
+    "fonts": [
+      {
+        "url": "https://joyway.in/_next/static/media/2a65768255d6b625-s.p.3u4lli0-axodc.woff2",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 155.9050000011921,
+        "networkRequestTime": 158.70499999821186,
+        "networkEndTime": 249.04699999839067,
+        "finished": true,
+        "transferSize": 38615,
+        "resourceSize": 38460,
+        "statusCode": 200,
+        "mimeType": "font/woff2",
+        "resourceType": "Font",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/static/media/5c285b27cdda1fe8-s.p.2_mbdogr7ni8i.woff2",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 156.47700000181794,
+        "networkRequestTime": 159.01699999719858,
+        "networkEndTime": 270.0819999985397,
+        "finished": true,
+        "transferSize": 37062,
+        "resourceSize": 36980,
+        "statusCode": 200,
+        "mimeType": "font/woff2",
+        "resourceType": "Font",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/static/media/c3cb240f9c892514-s.3z_x6eowsw16y.woff2",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 491.59099999815226,
+        "networkRequestTime": 663.5690000019968,
+        "networkEndTime": 742.1149999983609,
+        "finished": true,
+        "transferSize": 18288,
+        "resourceSize": 18192,
+        "statusCode": 200,
+        "mimeType": "font/woff2",
+        "resourceType": "Font",
+        "priority": "VeryHigh",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      }
+    ],
+    "hero": [
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-hero.webp&w=3840&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 156.8339999988675,
+        "networkRequestTime": 167.1409999988973,
+        "networkEndTime": 13262.894000001252,
+        "finished": true,
+        "transferSize": 100232,
+        "resourceSize": 100035,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      }
+    ],
+    "journey": [
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-peaks.webp&w=828&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 729.9380000010133,
+        "networkRequestTime": 730.6109999977052,
+        "networkEndTime": 13266.17100000009,
+        "finished": true,
+        "transferSize": 73277,
+        "resourceSize": 73124,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "Low",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-lake.webp&w=828&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 730.0619999989867,
+        "networkRequestTime": 731.1730000004172,
+        "networkEndTime": 13294.084999997169,
+        "finished": true,
+        "transferSize": 65869,
+        "resourceSize": 65681,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "Low",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-road.webp&w=828&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 730.1769999973476,
+        "networkRequestTime": 731.4449999965727,
+        "networkEndTime": 11655.162000000477,
+        "finished": true,
+        "transferSize": 60334,
+        "resourceSize": 60075,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "Low",
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      }
+    ],
+    "phaseData": {
+      "largest-contentful-paint-element": {
+        "display": "4,090┬áms",
+        "details": [
+          {
+            "type": "table",
+            "headings": [
+              {
+                "key": "node",
+                "valueType": "node",
+                "label": "Element"
+              }
+            ],
+            "items": [
+              {
+                "node": {
+                  "type": "node",
+                  "lhId": "page-3-IMG",
+                  "path": "1,HTML,1,BODY,2,MAIN,0,SECTION,0,DIV,0,DIV,0,IMG",
+                  "selector": "section.relative > div.absolute > div.absolute > img.object-cover",
+                  "boundingRect": {
+                    "top": 65,
+                    "bottom": 930,
+                    "left": 0,
+                    "right": 1335,
+                    "width": 1335,
+                    "height": 865
+                  },
+                  "snippet": "<img alt=\"\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-center\" style=\"position: absolute; height: 100%; width: 100%; inset: 0px;\" sizes=\"100vw\" srcset=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=640&amp;q=75 640w, /_next/iΓÇª\" src=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=3840&amp;q=75\">",
+                  "nodeLabel": "section.relative > div.absolute > div.absolute > img.object-cover"
+                }
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "headings": [
+              {
+                "key": "phase",
+                "valueType": "text",
+                "label": "Phase"
+              },
+              {
+                "key": "percent",
+                "valueType": "text",
+                "label": "% of LCP"
+              },
+              {
+                "key": "timing",
+                "valueType": "ms",
+                "label": "Timing"
+              }
+            ],
+            "items": [
+              {
+                "phase": "TTFB",
+                "timing": 698.265,
+                "percent": "17%"
+              },
+              {
+                "phase": "Load Delay",
+                "timing": 0,
+                "percent": "0%"
+              },
+              {
+                "phase": "Load Time",
+                "timing": 3375.6657684692777,
+                "percent": "82%"
+              },
+              {
+                "phase": "Render Delay",
+                "timing": 19.83423153072181,
+                "percent": "0%"
+              }
+            ]
+          }
+        ]
+      },
+      "largest-contentful-paint": {
+        "display": "4.1┬ás"
+      },
+      "render-blocking-resources": {
+        "details": []
+      },
+      "uses-rel-preconnect": {
+        "display": "",
+        "details": []
+      },
+      "prioritize-lcp-image": {
+        "display": "",
+        "details": []
+      },
+      "lcp-lazy-loaded": {
+        "details": [
+          {
+            "node": {
+              "type": "node",
+              "lhId": "1-30-IMG",
+              "path": "1,HTML,1,BODY,2,MAIN,0,SECTION,0,DIV,0,DIV,0,IMG",
+              "selector": "section.relative > div.absolute > div.absolute > img.object-cover",
+              "boundingRect": {
+                "top": 65,
+                "bottom": 930,
+                "left": 0,
+                "right": 1335,
+                "width": 1335,
+                "height": 865
+              },
+              "snippet": "<img alt=\"\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-center\" style=\"position: absolute; height: 100%; width: 100%; inset: 0px;\" sizes=\"100vw\" srcset=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=640&amp;q=75 640w, /_next/iΓÇª\" src=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=3840&amp;q=75\">",
+              "nodeLabel": "section.relative > div.absolute > div.absolute > img.object-cover"
+            }
+          }
+        ]
+      }
+    },
+    "allScripts": [
+      {
+        "url": "3s6nzrbk-8mnv.js",
+        "transfer": 2125
+      },
+      {
+        "url": "40d19s7bewa0i.js",
+        "transfer": 8783
+      },
+      {
+        "url": "1mkbuudhndal5.js",
+        "transfer": 71699
+      },
+      {
+        "url": "1t0xo6qob6ecc.js",
+        "transfer": 43942
+      },
+      {
+        "url": "turbopack-3de9m4covcl7o.js",
+        "transfer": 3916
+      },
+      {
+        "url": "0h2qsuyze9ds1.js",
+        "transfer": 3730
+      },
+      {
+        "url": "3wmp8bneuy-fq.js",
+        "transfer": 9061
+      },
+      {
+        "url": "2kd5p3k3v__th.js",
+        "transfer": 39495
+      },
+      {
+        "url": "2lvr2pt70qn14.js",
+        "transfer": 8672
+      },
+      {
+        "url": "14tvyhmc4ks4x.js",
+        "transfer": 10878
+      },
+      {
+        "url": "2qjmlv4pd97sc.js",
+        "transfer": 2097
+      },
+      {
+        "url": "0s570b_eb_xqj.js",
+        "transfer": 65782
+      },
+      {
+        "url": "0gda4l8xalu2e.js",
+        "transfer": 1309
+      }
+    ]
+  }
+}

@@ -1,0 +1,888 @@
+{
+  "desktopAudits": {
+    "lcp-breakdown-insight": {
+      "items": [
+        {
+          "type": "table",
+          "headings": [
+            {
+              "key": "label",
+              "valueType": "text",
+              "label": "Subpart"
+            },
+            {
+              "key": "duration",
+              "valueType": "ms",
+              "label": "Duration"
+            }
+          ],
+          "items": [
+            {
+              "subpart": "timeToFirstByte",
+              "label": "Time to first byte",
+              "duration": 146.051
+            },
+            {
+              "subpart": "resourceLoadDelay",
+              "label": "Resource load delay",
+              "duration": 15.841
+            },
+            {
+              "subpart": "resourceLoadDuration",
+              "label": "Resource load duration",
+              "duration": 13106.06
+            },
+            {
+              "subpart": "elementRenderDelay",
+              "label": "Element render delay",
+              "duration": 64.596
+            }
+          ]
+        },
+        {
+          "type": "node",
+          "lhId": "page-3-IMG",
+          "path": "1,HTML,1,BODY,2,MAIN,0,SECTION,0,DIV,0,DIV,0,IMG",
+          "selector": "section.relative > div.absolute > div.absolute > img.object-cover",
+          "boundingRect": {
+            "top": 65,
+            "bottom": 930,
+            "left": 0,
+            "right": 1335,
+            "width": 1335,
+            "height": 865
+          },
+          "snippet": "<img alt=\"\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-center\" style=\"position: absolute; height: 100%; width: 100%; inset: 0px;\" sizes=\"100vw\" srcset=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=640&amp;q=75 640w, /_next/iΓÇª\" src=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=3840&amp;q=75\">",
+          "nodeLabel": "section.relative > div.absolute > div.absolute > img.object-cover"
+        }
+      ]
+    },
+    "layout-shifts": {
+      "items": []
+    },
+    "network-rtt": {
+      "display": "30┬áms",
+      "numeric": 31.673,
+      "items": [
+        {
+          "origin": "https://joyway.in",
+          "rtt": 31.673
+        }
+      ]
+    },
+    "server-response-time": {
+      "display": "Root document took 50┬áms",
+      "numeric": 49.20099999999999,
+      "items": [
+        {
+          "url": "https://joyway.in/",
+          "responseTime": 49.20099999999999
+        }
+      ]
+    },
+    "mainthread-work-breakdown": {
+      "display": "5.1┬ás",
+      "numeric": 5079.499999999991,
+      "items": [
+        {
+          "group": "styleLayout",
+          "groupLabel": "Style & Layout",
+          "duration": 1921.7760000000005
+        },
+        {
+          "group": "other",
+          "groupLabel": "Other",
+          "duration": 1672.2559999999967
+        },
+        {
+          "group": "scriptEvaluation",
+          "groupLabel": "Script Evaluation",
+          "duration": 1154.8999999999917
+        },
+        {
+          "group": "scriptParseCompile",
+          "groupLabel": "Script Parsing & Compilation",
+          "duration": 149.176
+        },
+        {
+          "group": "paintCompositeRender",
+          "groupLabel": "Rendering",
+          "duration": 139.1720000000025
+        },
+        {
+          "group": "parseHTML",
+          "groupLabel": "Parse HTML & CSS",
+          "duration": 42.22
+        }
+      ]
+    },
+    "long-tasks": {
+      "display": "8 long tasks found",
+      "items": [
+        {
+          "url": "Unattributable",
+          "duration": 854,
+          "startTime": 2001.2649999999999
+        },
+        {
+          "url": "https://joyway.in/",
+          "duration": 749,
+          "startTime": 1094.2649999999999
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "duration": 302,
+          "startTime": 2855.265
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "duration": 134,
+          "startTime": 3157.265
+        },
+        {
+          "url": "https://joyway.in/",
+          "duration": 123,
+          "startTime": 1843.2649999999999
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "duration": 120,
+          "startTime": 3291.265
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "duration": 71,
+          "startTime": 3411.265
+        },
+        {
+          "url": "Unattributable",
+          "duration": 64.99999999999989,
+          "startTime": 998.265
+        }
+      ]
+    },
+    "bootup-time": {
+      "display": "1.2┬ás",
+      "numeric": 1215.2200000000003,
+      "items": [
+        {
+          "url": "https://joyway.in/",
+          "total": 2159.3960000000006,
+          "scripting": 11.064000000000002,
+          "scriptParseCompile": 12.392000000000001
+        },
+        {
+          "url": "Unattributable",
+          "total": 1238.3080000000007,
+          "scripting": 16.583999999999996,
+          "scriptParseCompile": 0
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "total": 953.4159999999999,
+          "scripting": 842.9879999999999,
+          "scriptParseCompile": 36.952
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/2kd5p3k3v__th.js",
+          "total": 474.55599999999987,
+          "scripting": 138.42400000000012,
+          "scriptParseCompile": 22.36
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+          "total": 146.9480000000002,
+          "scripting": 106.51200000000021,
+          "scriptParseCompile": 27.944
+        }
+      ]
+    },
+    "third-party-summary": {
+      "items": []
+    },
+    "duplicated-javascript": {
+      "display": "",
+      "numeric": 0,
+      "items": []
+    },
+    "legacy-javascript": {
+      "display": "Est savings of 7┬áKiB",
+      "numeric": 40,
+      "items": [
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "wastedBytes": 7431,
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "signal": "Array.prototype.at",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 1116
+                }
+              },
+              {
+                "signal": "Array.prototype.flat",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 504
+                }
+              },
+              {
+                "signal": "Array.prototype.flatMap",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 617
+                }
+              },
+              {
+                "signal": "Object.fromEntries",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 993
+                }
+              },
+              {
+                "signal": "Object.hasOwn",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 1251
+                }
+              },
+              {
+                "signal": "String.prototype.trimEnd",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 246
+                }
+              },
+              {
+                "signal": "String.prototype.trimStart",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 161
+                }
+              }
+            ]
+          },
+          "totalBytes": 0
+        }
+      ]
+    },
+    "dom-size": {
+      "display": "467 elements",
+      "numeric": 467,
+      "items": [
+        {
+          "statistic": "Total DOM Elements",
+          "value": {
+            "type": "numeric",
+            "granularity": 1,
+            "value": 467
+          }
+        },
+        {
+          "node": {
+            "type": "node",
+            "lhId": "1-25-path",
+            "path": "1,HTML,1,BODY,2,MAIN,2,SECTION,0,DIV,1,DIV,0,DIV,0,ARTICLE,0,A,0,DIV,2,DIV,1,SPAN,0,svg,0,path",
+            "selector": "div.absolute > span.flex > svg.lucide > path",
+            "boundingRect": {
+              "top": 1404,
+              "bottom": 1407,
+              "left": 212,
+              "right": 212,
+              "width": 0,
+              "height": 3
+            },
+            "snippet": "<path d=\"M8 6v6\">",
+            "nodeLabel": "div.absolute > span.flex > svg.lucide > path"
+          },
+          "statistic": "Maximum DOM Depth",
+          "value": {
+            "type": "numeric",
+            "granularity": 1,
+            "value": 13
+          }
+        },
+        {
+          "node": {
+            "type": "node",
+            "lhId": "1-26-DIV",
+            "path": "1,HTML,1,BODY,2,MAIN,5,SECTION,0,DIV,1,DIV,2,DIV",
+            "selector": "section.overflow-hidden > div.mx-auto > div.relative > div.destination-marquee",
+            "boundingRect": {
+              "top": 3706,
+              "bottom": 3748,
+              "left": -531,
+              "right": 1424,
+              "width": 1956,
+              "height": 42
+            },
+            "snippet": "<div class=\"destination-marquee flex w-max gap-4\">",
+            "nodeLabel": "≡ƒÅö∩╕Å\nNainital\nΓ¢░∩╕Å\nMussoorie\n≡ƒîè\nRishikesh\n≡ƒ¬ö\nHaridwar\nΓ¥ä∩╕Å\nDalhousie\n≡ƒî▓\nManali\n≡ƒÜé\nShimla\n≡ƒÅö∩╕Å\nNΓÇª"
+          },
+          "statistic": "Maximum Child Elements",
+          "value": {
+            "type": "numeric",
+            "granularity": 1,
+            "value": 14
+          }
+        }
+      ]
+    },
+    "total-blocking-time": {
+      "display": "1,250┬áms",
+      "numeric": 1246,
+      "items": []
+    },
+    "max-potential-fid": {
+      "display": "850┬áms",
+      "numeric": 854,
+      "items": []
+    },
+    "interactive": {
+      "display": "4.1┬ás",
+      "numeric": 4144.215,
+      "items": []
+    }
+  },
+  "mobileAudits": {
+    "lcp-breakdown-insight": {
+      "items": [
+        {
+          "type": "table",
+          "headings": [
+            {
+              "key": "label",
+              "valueType": "text",
+              "label": "Subpart"
+            },
+            {
+              "key": "duration",
+              "valueType": "ms",
+              "label": "Duration"
+            }
+          ],
+          "items": [
+            {
+              "subpart": "timeToFirstByte",
+              "label": "Time to first byte",
+              "duration": 158.558
+            },
+            {
+              "subpart": "resourceLoadDelay",
+              "label": "Resource load delay",
+              "duration": 13.286
+            },
+            {
+              "subpart": "resourceLoadDuration",
+              "label": "Resource load duration",
+              "duration": 1392.774
+            },
+            {
+              "subpart": "elementRenderDelay",
+              "label": "Element render delay",
+              "duration": 1115.513
+            }
+          ]
+        },
+        {
+          "type": "node",
+          "lhId": "page-0-IMG",
+          "path": "1,HTML,1,BODY,2,MAIN,0,SECTION,0,DIV,0,DIV,0,IMG",
+          "selector": "section.relative > div.absolute > div.absolute > img.object-cover",
+          "boundingRect": {
+            "top": 65,
+            "bottom": 878,
+            "left": 0,
+            "right": 412,
+            "width": 412,
+            "height": 813
+          },
+          "snippet": "<img alt=\"\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-center\" style=\"position: absolute; height: 100%; width: 100%; inset: 0px;\" sizes=\"100vw\" srcset=\"/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=640&amp;q=75 640w, /_next/iΓÇª\" src=\"https://joyway.in/_next/image?url=%2Fimages%2Fmountains-hero.webp&amp;w=750&amp;q=ΓÇª\">",
+          "nodeLabel": "section.relative > div.absolute > div.absolute > img.object-cover"
+        }
+      ]
+    },
+    "layout-shifts": {
+      "items": []
+    },
+    "network-rtt": {
+      "display": "30┬áms",
+      "numeric": 31.483999999999998,
+      "items": [
+        {
+          "origin": "https://joyway.in",
+          "rtt": 31.483999999999998
+        }
+      ]
+    },
+    "server-response-time": {
+      "display": "Root document took 60┬áms",
+      "numeric": 61.842,
+      "items": [
+        {
+          "url": "https://joyway.in/",
+          "responseTime": 61.842
+        }
+      ]
+    },
+    "mainthread-work-breakdown": {
+      "display": "2.0┬ás",
+      "numeric": 1994.812000000006,
+      "items": [
+        {
+          "group": "styleLayout",
+          "groupLabel": "Style & Layout",
+          "duration": 886.8720000000001
+        },
+        {
+          "group": "scriptEvaluation",
+          "groupLabel": "Script Evaluation",
+          "duration": 573.756000000003
+        },
+        {
+          "group": "other",
+          "groupLabel": "Other",
+          "duration": 386.11600000000294
+        },
+        {
+          "group": "scriptParseCompile",
+          "groupLabel": "Script Parsing & Compilation",
+          "duration": 85.32000000000001
+        },
+        {
+          "group": "paintCompositeRender",
+          "groupLabel": "Rendering",
+          "duration": 38.32799999999995
+        },
+        {
+          "group": "parseHTML",
+          "groupLabel": "Parse HTML & CSS",
+          "duration": 24.42
+        }
+      ]
+    },
+    "long-tasks": {
+      "display": "6 long tasks found",
+      "items": [
+        {
+          "url": "https://joyway.in/",
+          "duration": 370,
+          "startTime": 1133.1799999999998
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "duration": 124,
+          "startTime": 2568.18
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "duration": 79,
+          "startTime": 2920.18
+        },
+        {
+          "url": "https://joyway.in/",
+          "duration": 61,
+          "startTime": 1503.1799999999998
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "duration": 52,
+          "startTime": 2868.18
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+          "duration": 50,
+          "startTime": 2699.18
+        }
+      ]
+    },
+    "bootup-time": {
+      "display": "0.6┬ás",
+      "numeric": 567.7360000000023,
+      "items": [
+        {
+          "url": "https://joyway.in/",
+          "total": 982.9280000000001,
+          "scripting": 5.147999999999999,
+          "scriptParseCompile": 5.715999999999998
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "total": 432.6200000000023,
+          "scripting": 375.35600000000227,
+          "scriptParseCompile": 14.812
+        },
+        {
+          "url": "Unattributable",
+          "total": 280.6600000000013,
+          "scripting": 10.68,
+          "scriptParseCompile": 0
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+          "total": 119.69599999999996,
+          "scripting": 102.26799999999996,
+          "scriptParseCompile": 10.367999999999999
+        },
+        {
+          "url": "https://joyway.in/_next/static/chunks/2kd5p3k3v__th.js",
+          "total": 79.23200000000004,
+          "scripting": 34.31200000000005,
+          "scriptParseCompile": 9.076
+        }
+      ]
+    },
+    "third-party-summary": {
+      "items": []
+    },
+    "duplicated-javascript": {
+      "display": "",
+      "numeric": 0,
+      "items": []
+    },
+    "legacy-javascript": {
+      "display": "Est savings of 12┬áKiB",
+      "numeric": 0,
+      "items": [
+        {
+          "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+          "wastedBytes": 12018,
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "signal": "Array.prototype.at",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 1116
+                }
+              },
+              {
+                "signal": "Array.prototype.flat",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 504
+                }
+              },
+              {
+                "signal": "Array.prototype.flatMap",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 617
+                }
+              },
+              {
+                "signal": "Object.fromEntries",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 993
+                }
+              },
+              {
+                "signal": "Object.hasOwn",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 1251
+                }
+              },
+              {
+                "signal": "String.prototype.trimEnd",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 246
+                }
+              },
+              {
+                "signal": "String.prototype.trimStart",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 161
+                }
+              }
+            ]
+          },
+          "totalBytes": 0
+        }
+      ]
+    },
+    "dom-size": {
+      "display": "467 elements",
+      "numeric": 467,
+      "items": [
+        {
+          "statistic": "Total DOM Elements",
+          "value": {
+            "type": "numeric",
+            "granularity": 1,
+            "value": 467
+          }
+        },
+        {
+          "node": {
+            "type": "node",
+            "lhId": "1-25-path",
+            "path": "1,HTML,1,BODY,2,MAIN,2,SECTION,0,DIV,1,DIV,0,DIV,0,ARTICLE,0,A,0,DIV,2,DIV,1,SPAN,0,svg,0,path",
+            "selector": "div.absolute > span.flex > svg.lucide > path",
+            "boundingRect": {
+              "top": 1660,
+              "bottom": 1663,
+              "left": 168,
+              "right": 168,
+              "width": 0,
+              "height": 3
+            },
+            "snippet": "<path d=\"M8 6v6\">",
+            "nodeLabel": "div.absolute > span.flex > svg.lucide > path"
+          },
+          "statistic": "Maximum DOM Depth",
+          "value": {
+            "type": "numeric",
+            "granularity": 1,
+            "value": 13
+          }
+        },
+        {
+          "node": {
+            "type": "node",
+            "lhId": "1-26-DIV",
+            "path": "1,HTML,1,BODY,2,MAIN,5,SECTION,0,DIV,1,DIV,2,DIV",
+            "selector": "section.overflow-hidden > div.mx-auto > div.relative > div.destination-marquee",
+            "boundingRect": {
+              "top": 5314,
+              "bottom": 5356,
+              "left": -405,
+              "right": 1551,
+              "width": 1956,
+              "height": 42
+            },
+            "snippet": "<div class=\"destination-marquee flex w-max gap-4\">",
+            "nodeLabel": "≡ƒÅö∩╕Å\nNainital\nΓ¢░∩╕Å\nMussoorie\n≡ƒîè\nRishikesh\n≡ƒ¬ö\nHaridwar\nΓ¥ä∩╕Å\nDalhousie\n≡ƒî▓\nManali\n≡ƒÜé\nShimla\n≡ƒÅö∩╕Å\nNΓÇª"
+          },
+          "statistic": "Maximum Child Elements",
+          "value": {
+            "type": "numeric",
+            "granularity": 1,
+            "value": 14
+          }
+        }
+      ]
+    },
+    "total-blocking-time": {
+      "display": "90┬áms",
+      "numeric": 89.5,
+      "items": []
+    },
+    "max-potential-fid": {
+      "display": "120┬áms",
+      "numeric": 124,
+      "items": []
+    },
+    "interactive": {
+      "display": "3.0┬ás",
+      "numeric": 2950.6800000000003,
+      "items": []
+    }
+  },
+  "heroTiming": {
+    "mobile": {
+      "label": "m",
+      "hero": {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-hero.webp&w=750&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 170.91999999806285,
+        "networkRequestTime": 176.71299999952316,
+        "networkEndTime": 1563.6939999982715,
+        "finished": true,
+        "transferSize": 26997,
+        "resourceSize": 26746,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      "lcp": 2943.18,
+      "heroTransfer": 26997
+    },
+    "desktop": {
+      "label": "d",
+      "hero": {
+        "url": "https://joyway.in/_next/image?url=%2Fimages%2Fmountains-hero.webp&w=3840&q=75",
+        "sessionTargetType": "page",
+        "protocol": "h2",
+        "rendererStartTime": 156.8339999988675,
+        "networkRequestTime": 167.1409999988973,
+        "networkEndTime": 13262.894000001252,
+        "finished": true,
+        "transferSize": 100232,
+        "resourceSize": 100035,
+        "statusCode": 200,
+        "mimeType": "image/avif",
+        "resourceType": "Image",
+        "priority": "High",
+        "isLinkPreload": true,
+        "experimentalFromMainFrame": true,
+        "entity": "joyway.in"
+      },
+      "lcp": 4093.7649999999994,
+      "heroTransfer": 100232
+    }
+  },
+  "desktopLongTasks": [
+    {
+      "url": "Unattributable",
+      "duration": 854,
+      "startTime": 2001.2649999999999
+    },
+    {
+      "url": "https://joyway.in/",
+      "duration": 749,
+      "startTime": 1094.2649999999999
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+      "duration": 302,
+      "startTime": 2855.265
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+      "duration": 134,
+      "startTime": 3157.265
+    },
+    {
+      "url": "https://joyway.in/",
+      "duration": 123,
+      "startTime": 1843.2649999999999
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+      "duration": 120,
+      "startTime": 3291.265
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+      "duration": 71,
+      "startTime": 3411.265
+    },
+    {
+      "url": "Unattributable",
+      "duration": 64.99999999999989,
+      "startTime": 998.265
+    }
+  ],
+  "desktopBoot": [
+    {
+      "url": "https://joyway.in/",
+      "total": 2159.3960000000006,
+      "scripting": 11.064000000000002,
+      "scriptParseCompile": 12.392000000000001
+    },
+    {
+      "url": "Unattributable",
+      "total": 1238.3080000000007,
+      "scripting": 16.583999999999996,
+      "scriptParseCompile": 0
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+      "total": 953.4159999999999,
+      "scripting": 842.9879999999999,
+      "scriptParseCompile": 36.952
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/2kd5p3k3v__th.js",
+      "total": 474.55599999999987,
+      "scripting": 138.42400000000012,
+      "scriptParseCompile": 22.36
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+      "total": 146.9480000000002,
+      "scripting": 106.51200000000021,
+      "scriptParseCompile": 27.944
+    }
+  ],
+  "mobileBoot": [
+    {
+      "url": "https://joyway.in/",
+      "total": 982.9280000000001,
+      "scripting": 5.147999999999999,
+      "scriptParseCompile": 5.715999999999998
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1mkbuudhndal5.js",
+      "total": 432.6200000000023,
+      "scripting": 375.35600000000227,
+      "scriptParseCompile": 14.812
+    },
+    {
+      "url": "Unattributable",
+      "total": 280.6600000000013,
+      "scripting": 10.68,
+      "scriptParseCompile": 0
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/1t0xo6qob6ecc.js",
+      "total": 119.69599999999996,
+      "scripting": 102.26799999999996,
+      "scriptParseCompile": 10.367999999999999
+    },
+    {
+      "url": "https://joyway.in/_next/static/chunks/2kd5p3k3v__th.js",
+      "total": 79.23200000000004,
+      "scripting": 34.31200000000005,
+      "scriptParseCompile": 9.076
+    }
+  ],
+  "threeInNetwork": [],
+  "networkThreeMobile": []
+}
