@@ -1,9 +1,6 @@
-"use client";
-
-import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PackageCard } from "@/components/packages/PackageCard";
+import { InViewReveal } from "@/components/motion/InViewReveal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import type { PackageSummary } from "@/lib/api/packagesApi";
@@ -65,17 +62,12 @@ export function FeaturedTrips({ packages }: FeaturedTripsProps) {
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="mt-10 text-center sm:hidden"
-        >
+        <InViewReveal className="mt-10 text-center sm:hidden">
           <ButtonLink href="/trips" variant="primary">
             View all trips
             <ArrowRight size={16} className="ml-2" />
           </ButtonLink>
-        </motion.div>
+        </InViewReveal>
       </div>
     </section>
   );

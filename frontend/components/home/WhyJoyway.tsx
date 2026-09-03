@@ -1,7 +1,5 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { Bus, Package, Users, IndianRupee } from "lucide-react";
+import { InViewReveal } from "@/components/motion/InViewReveal";
 
 const features = [
   {
@@ -38,12 +36,9 @@ export function WhyJoyway() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature, index) => (
-            <motion.div
+            <InViewReveal
               key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              delay={index * 0.1}
               className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
             >
               <feature.icon size={28} className="text-accent" />
@@ -53,7 +48,7 @@ export function WhyJoyway() {
               <p className="mt-2 text-sm leading-relaxed text-white/70">
                 {feature.description}
               </p>
-            </motion.div>
+            </InViewReveal>
           ))}
         </div>
       </div>

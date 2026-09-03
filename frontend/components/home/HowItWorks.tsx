@@ -1,7 +1,5 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { MapPin, Ticket, CheckCircle, Heart } from "lucide-react";
+import { InViewReveal } from "@/components/motion/InViewReveal";
 
 const steps = [
   {
@@ -42,12 +40,9 @@ export function HowItWorks() {
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, index) => (
-            <motion.div
+            <InViewReveal
               key={step.number}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              delay={index * 0.1}
               className="relative rounded-2xl border border-border bg-white p-6"
             >
               <span className="font-display text-4xl font-bold text-forest/20">
@@ -60,7 +55,7 @@ export function HowItWorks() {
               <p className="mt-2 text-sm leading-relaxed text-charcoal-muted">
                 {step.description}
               </p>
-            </motion.div>
+            </InViewReveal>
           ))}
         </div>
       </div>

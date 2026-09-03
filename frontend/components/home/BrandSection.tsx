@@ -1,18 +1,11 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { JoywayLogo } from "@/components/layout/JoywayLogo";
+import { InViewReveal } from "@/components/motion/InViewReveal";
 
 export function BrandSection() {
   return (
     <section className="py-24 sm:py-32">
       <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-        >
+        <InViewReveal y={20} duration={0.7}>
           <h2 className="font-display text-3xl font-semibold leading-tight text-charcoal sm:text-4xl lg:text-5xl">
             The journey matters too.
           </h2>
@@ -25,7 +18,7 @@ export function BrandSection() {
             <JoywayLogo href={null} height={72} layout="compact" showTagline />
             <p className="mt-4 text-lg text-accent">Find Joy in Every Journey.</p>
           </div>
-        </motion.div>
+        </InViewReveal>
       </div>
     </section>
   );

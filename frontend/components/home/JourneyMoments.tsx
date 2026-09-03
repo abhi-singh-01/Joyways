@@ -1,7 +1,7 @@
-"use client";
-
-import { motion } from "framer-motion";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { InViewReveal } from "@/components/motion/InViewReveal";
+import { MotionHoverLift } from "@/components/motion/MotionHoverLift";
 
 type JourneyScene = {
   title: string;
@@ -37,17 +37,18 @@ const themeGlow: Record<JourneyScene["theme"], string> = {
   road: "from-accent/35 to-transparent",
 };
 
+const journeyImageSizes =
+  "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw";
+
 export function JourneyMoments() {
   return (
     <section className="relative overflow-hidden bg-charcoal py-20 text-white sm:py-28">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--color-forest)_0%,_transparent_55%)] opacity-40" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+        <InViewReveal
+          y={20}
+          duration={0.6}
           className="mx-auto mb-12 max-w-2xl text-center"
         >
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">
@@ -60,41 +61,43 @@ export function JourneyMoments() {
             Mountain peaks, alpine lakes, and highland roads — the landscapes that
             define a Joyway trip.
           </p>
-        </motion.div>
+        </InViewReveal>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {scenes.map((scene, index) => (
-            <motion.article
+            <InViewReveal
               key={scene.title}
-              initial={{ opacity: 0, y: 32 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              y={32}
+              duration={0.55}
+              delay={index * 0.12}
               viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.55, delay: index * 0.12 }}
-              whileHover={{ y: -6 }}
               className="group relative overflow-hidden rounded-3xl border border-white/10 bg-charcoal shadow-lg"
             >
-              <div className="relative aspect-[4/5] sm:aspect-[3/4]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={scene.image}
-                  alt={scene.title}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div
-                  className={cn(
-                    "pointer-events-none absolute inset-0 bg-gradient-to-t",
-                    themeGlow[scene.theme]
-                  )}
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/20 to-transparent" />
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-light">
-                  {scene.subtitle}
-                </p>
-                <h3 className="mt-1 font-display text-xl font-semibold">{scene.title}</h3>
-              </div>
-            </motion.article>
+              <MotionHoverLift className="h-full">
+                <div className="relative aspect-[4/5] sm:aspect-[3/4]">
+                  <Image
+                    src={scene.image}
+                    alt={scene.title}
+                    fill
+                    sizes={journeyImageSizes}
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div
+                    className={cn(
+                      "pointer-events-none absolute inset-0 bg-gradient-to-t",
+                      themeGlow[scene.theme]
+                    )}
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/20 to-transparent" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-light">
+                    {scene.subtitle}
+                  </p>
+                  <h3 className="mt-1 font-display text-xl font-semibold">{scene.title}</h3>
+                </div>
+              </MotionHoverLift>
+            </InViewReveal>
           ))}
         </div>
       </div>

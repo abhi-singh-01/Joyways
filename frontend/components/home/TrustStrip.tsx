@@ -1,7 +1,5 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { Bus, MapPin, Shield, Sparkles, Users } from "lucide-react";
+import { InViewReveal } from "@/components/motion/InViewReveal";
 
 const stats = [
   { icon: MapPin, label: "Delhi departures", value: "Every weekend" },
@@ -17,12 +15,11 @@ export function TrustStrip() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {stats.map((item, index) => (
-            <motion.div
+            <InViewReveal
               key={item.label}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.06, duration: 0.45 }}
+              delay={index * 0.06}
+              duration={0.45}
+              y={12}
               className="flex items-center gap-3 rounded-2xl border border-border/80 bg-surface/50 px-4 py-4"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forest/10 text-forest">
@@ -34,7 +31,7 @@ export function TrustStrip() {
                 </p>
                 <p className="text-sm font-semibold text-charcoal">{item.value}</p>
               </div>
-            </motion.div>
+            </InViewReveal>
           ))}
         </div>
       </div>

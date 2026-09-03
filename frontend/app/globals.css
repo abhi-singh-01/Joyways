@@ -102,23 +102,6 @@ body {
   animation-delay: -4s;
 }
 
-/* Sparkle twinkle */
-@keyframes sparkle-twinkle {
-  0%,
-  100% {
-    opacity: 0.15;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.4);
-  }
-}
-
-.sparkle-particle {
-  animation: sparkle-twinkle 3s ease-in-out infinite;
-}
-
 /* Moving gradient border (Aceternity-style) */
 @keyframes moving-border-spin {
   to {
@@ -165,7 +148,6 @@ body {
   .aurora-blob-1,
   .aurora-blob-2,
   .aurora-blob-3,
-  .sparkle-particle,
   .moving-border-gradient,
   .destination-marquee {
     animation: none !important;

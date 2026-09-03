@@ -1,6 +1,5 @@
-"use client";
-
-import { motion } from "framer-motion";
+import { InViewReveal } from "@/components/motion/InViewReveal";
+import { MotionTiltCard } from "@/components/motion/MotionTiltCard";
 
 const destinations = [
   { name: "Nainital", emoji: "🏔️", rotate: -3 },
@@ -18,11 +17,9 @@ export function DestinationSection() {
   return (
     <section className="overflow-hidden bg-surface py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55 }}
+        <InViewReveal
+          y={16}
+          duration={0.55}
           className="mb-12 text-center"
         >
           <h2 className="font-display text-3xl font-semibold text-charcoal sm:text-4xl">
@@ -31,7 +28,7 @@ export function DestinationSection() {
           <p className="mt-3 text-charcoal-muted">
             Explore India&apos;s most loved hill stations and spiritual destinations
           </p>
-        </motion.div>
+        </InViewReveal>
 
         <div className="relative mb-14 overflow-hidden py-2">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-surface to-transparent" />
@@ -51,21 +48,17 @@ export function DestinationSection() {
 
         <div className="flex flex-wrap items-center justify-center gap-6">
           {destinations.slice(0, 5).map((dest, index) => (
-            <motion.div
+            <MotionTiltCard
               key={dest.name}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.08 }}
-              whileHover={{ y: -10, rotate: 0, scale: 1.03 }}
-              style={{ rotate: `${dest.rotate}deg` }}
+              rotate={dest.rotate}
+              delay={index * 0.08}
               className="flex h-36 w-36 cursor-default flex-col items-center justify-center rounded-2xl border border-border bg-white shadow-sm transition-shadow hover:shadow-xl sm:h-40 sm:w-40"
             >
               <span className="text-3xl">{dest.emoji}</span>
               <span className="mt-2 font-display text-lg font-medium text-charcoal">
                 {dest.name}
               </span>
-            </motion.div>
+            </MotionTiltCard>
           ))}
         </div>
       </div>

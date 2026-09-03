@@ -102,7 +102,7 @@ export function Footer() {
           <p className="text-sm text-white/50">
             &copy; {new Date().getFullYear()} JOYWAY. All rights reserved.
           </p>
-          <p className="mt-2 text-sm text-white/40">
+          <p className="mt-2 text-sm text-white/60">
             Developed and managed by AJS Technologies Pvt Ltd.
           </p>
         </div>
