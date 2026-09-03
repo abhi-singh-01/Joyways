@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getBooking, getBookingReceipt, cancelBooking, type BookingDetail, type BookingReceipt } from "@/lib/api/bookingApi";
@@ -24,11 +24,10 @@ async function fetchBookingAndReceipt(reference: string, email: string) {
   return { detail, receipt };
 }
 
-function BookingLookupContent() {
-  const searchParams = useSearchParams();
-  const prefilledReference = searchParams.get("reference") || "";
-
-  const [reference, setReference] = useState(prefilledReference);
+function BookingLookupContent({ initialReference }: { initialReference: string }) {
+  const [reference, setReference] = useState(
+    initialReference ? initialReference.toUpperCase() : ""
+  );
   const [email, setEmail] = useState("");
   const [fieldErrors, setFieldErrors] = useState<
     FieldErrors<{ reference: string; email: string }>
@@ -38,12 +37,6 @@ function BookingLookupContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-
-  useEffect(() => {
-    if (prefilledReference) {
-      setReference(prefilledReference.toUpperCase());
-    }
-  }, [prefilledReference]);
 
   async function lookup(ref = reference, em = email) {
     const validation = bookingLookupSchema.safeParse({
@@ -218,10 +211,22 @@ function BookingLookupContent() {
   );
 }
 
+function BookingLookupPageInner() {
+  const searchParams = useSearchParams();
+  const initialReference = searchParams.get("reference") ?? "";
+
+  return (
+    <BookingLookupContent
+      key={initialReference}
+      initialReference={initialReference}
+    />
+  );
+}
+
 export default function BookingLookupPage() {
   return (
     <Suspense fallback={<p className="text-charcoal-muted">Loading...</p>}>
-      <BookingLookupContent />
+      <BookingLookupPageInner />
     </Suspense>
   );
 }

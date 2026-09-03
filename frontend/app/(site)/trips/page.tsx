@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getPackages } from "@/lib/api/packagesApi";
-import { TripsPageContent } from "@/components/packages/TripsPageContent";
 import { PageHero } from "@/components/layout/PageHero";
+import { TripsPageClient } from "@/components/packages/TripsPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +43,7 @@ export default async function TripsPage() {
             <p className="text-center text-charcoal-muted">Loading trips…</p>
           }
         >
-          <TripsPageContent packages={packages} />
+          <TripsPageClient packages={packages} />
         </Suspense>
       </section>
     </>

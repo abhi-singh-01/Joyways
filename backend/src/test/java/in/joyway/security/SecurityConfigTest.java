@@ -40,6 +40,14 @@ class SecurityConfigTest {
     }
 
     @Test
+    void publicContactEnquiry_isAccessible() throws Exception {
+        mockMvc.perform(post("/api/contact/enquiry")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void adminDashboard_requiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/admin/dashboard"))
                 .andExpect(status().isUnauthorized());

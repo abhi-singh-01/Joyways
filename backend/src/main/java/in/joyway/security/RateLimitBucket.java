@@ -7,7 +7,8 @@ public enum RateLimitBucket {
     LOGIN("login"),
     BOOKING_CREATE("booking-create"),
     BOOKING_ACCESS("booking-access"),
-    PAYMENT("payment");
+    PAYMENT("payment"),
+    CONTACT("contact");
 
     private final String id;
 

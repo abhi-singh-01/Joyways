@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
 import { PUBLIC_EMAILS } from "@/lib/publicEmails";
+import { submitContactEnquiry } from "@/lib/api/contactApi";
 import {
   contactEnquirySchema,
   fieldErrorsFromZod,
@@ -31,14 +32,17 @@ const emptyForm: ContactFormData = {
 export function ContactEnquiryForm() {
   const [form, setForm] = useState<ContactFormData>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors<ContactFormData>>({});
+  const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   function updateField<K extends keyof ContactFormData>(key: K, value: ContactFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitError("");
     const result = contactEnquirySchema.safeParse(form);
 
     if (!result.success) {
@@ -51,42 +55,39 @@ export function ContactEnquiryForm() {
     }
 
     setErrors({});
-    const data = result.data;
-    const body = [
-      `Name: ${data.name}`,
-      `Email: ${data.email}`,
-      `Phone: ${data.phone}`,
-      "",
-      data.message,
-    ].join("\n");
-
-    const mailto = `mailto:${PUBLIC_EMAILS.support}?subject=${encodeURIComponent(
-      `[JOYWAY Enquiry] ${data.subject}`
-    )}&body=${encodeURIComponent(body)}`;
-
-    window.location.href = mailto;
-    setSubmitted(true);
+    setLoading(true);
+    try {
+      await submitContactEnquiry(result.data);
+      setSubmitted(true);
+      setForm(emptyForm);
+    } catch (err) {
+      setSubmitted(false);
+      setSubmitError(err instanceof Error ? err.message : "Unable to send your message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="rounded-2xl border border-border bg-white p-6 sm:p-8">
       <h2 className="font-display text-2xl font-semibold text-charcoal">Send us a message</h2>
       <p className="mt-2 text-sm text-charcoal-muted">
-        All fields marked * are required. Your email app will open to send the message to our
-        support team.
+        All fields marked * are required. We&apos;ll respond to your enquiry by email.
       </p>
 
       {submitted && (
         <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
-          If your email app did not open, write to us at{" "}
-          <a href={`mailto:${PUBLIC_EMAILS.support}`} className="font-medium underline">
-            {PUBLIC_EMAILS.support}
-          </a>
-          .
+          Thank you — your message was sent successfully. Our team will get back to you shortly.
         </p>
       )}
 
-      <form noValidate onSubmit={handleSubmit} className="mt-6 space-y-4">
+      {submitError && (
+        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {submitError}
+        </p>
+      )}
+
+      <form noValidate onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="contactName">Full Name *</Label>
@@ -158,9 +159,16 @@ export function ContactEnquiryForm() {
           </div>
         </div>
 
-        <Button type="submit" size="lg">
-          Send enquiry
+        <Button type="submit" size="lg" disabled={loading}>
+          {loading ? "Sending..." : "Send enquiry"}
         </Button>
+        <p className="text-xs text-charcoal-muted">
+          Prefer email directly? Write to{" "}
+          <a href={`mailto:${PUBLIC_EMAILS.support}`} className="font-medium text-forest hover:underline">
+            {PUBLIC_EMAILS.support}
+          </a>
+          .
+        </p>
       </form>
     </div>
   );

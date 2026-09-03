@@ -26,7 +26,7 @@ const navItems = [
   { href: "/admin/drivers", label: "Drivers", icon: UserCircle },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -53,6 +53,7 @@ export function AdminSidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                 active
@@ -70,6 +71,7 @@ export function AdminSidebar() {
       <div className="border-t border-white/10 px-3 py-4">
         <Link
           href="/"
+          onClick={onNavigate}
           className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/50 hover:bg-white/10 hover:text-white"
         >
           <Settings size={18} />

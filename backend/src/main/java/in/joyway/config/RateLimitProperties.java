@@ -26,6 +26,9 @@ public class RateLimitProperties {
     /** Payment order/verify attempts allowed per client per minute. */
     private int paymentRequestsPerMinute = 30;
 
+    /** Contact form submissions allowed per client per minute. */
+    private int contactRequestsPerMinute = 5;
+
     private String redisKeyPrefix = "joyway:rl:v1";
 
     /** TTL applied on first INCR in a window; must exceed 60 seconds for one-minute windows. */

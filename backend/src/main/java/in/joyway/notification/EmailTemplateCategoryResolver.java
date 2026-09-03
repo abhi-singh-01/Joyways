@@ -23,6 +23,7 @@ public final class EmailTemplateCategoryResolver {
                  EmailTemplates.ADMIN_PAYMENT_FAILED,
                  EmailTemplates.ADMIN_BOOKING_CANCELLED -> EmailCategory.NOREPLY;
             case EmailTemplates.WELCOME -> EmailCategory.GENERAL;
+            case EmailTemplates.CONTACT_ENQUIRY -> EmailCategory.SUPPORT;
             default -> EmailCategory.GENERAL;
         };
     }

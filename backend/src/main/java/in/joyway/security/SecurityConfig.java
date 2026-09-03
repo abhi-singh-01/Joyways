@@ -64,6 +64,7 @@ public class SecurityConfig {
                                 "/api/health/**",
                                 "/api/packages/**",
                                 "/api/files/**",
+                                "/api/contact/**",
                                 "/api/admin/auth/login"
                         ))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -88,6 +89,7 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.POST, "/api/payments/orders", "/api/payments/verify").permitAll()
                             .requestMatchers(HttpMethod.POST, "/api/create-order", "/api/verify-payment").permitAll()
                             .requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
+                            .requestMatchers(HttpMethod.POST, "/api/contact/enquiry").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/files/package-images/**").permitAll()
                             .requestMatchers("/api/admin/auth/login").permitAll();
                     if (isDevProfile()) {

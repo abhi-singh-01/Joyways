@@ -74,6 +74,7 @@ joyway:
     booking-requests-per-minute: ${RATE_LIMIT_BOOKING_PER_MINUTE:20}
     booking-lookup-requests-per-minute: ${RATE_LIMIT_BOOKING_LOOKUP_PER_MINUTE:10}
     payment-requests-per-minute: ${RATE_LIMIT_PAYMENT_PER_MINUTE:30}
+    contact-requests-per-minute: ${RATE_LIMIT_CONTACT_PER_MINUTE:5}
     redis-key-prefix: ${RATE_LIMIT_REDIS_KEY_PREFIX:joyway:rl:v1}
     window-ttl-seconds: ${RATE_LIMIT_WINDOW_TTL_SECONDS:120}
     redis-host: ${REDIS_HOST:localhost}

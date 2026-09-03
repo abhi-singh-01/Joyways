@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const CanvasScene = dynamic(
   () => import("./TripHeroVisual").then((m) => m.TripHeroVisual),
@@ -30,21 +30,33 @@ function AnimatedAccent() {
   );
 }
 
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mediaQuery.addEventListener("change", onStoreChange);
+  return () => mediaQuery.removeEventListener("change", onStoreChange);
+}
+
+function getReducedMotionSnapshot() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getReducedMotionServerSnapshot() {
+  return true;
+}
+
 export function TripHeroAccent() {
-  const [hydrated, setHydrated] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(true);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot
+  );
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const applyPreference = () => setReducedMotion(mediaQuery.matches);
-
-    applyPreference();
-    setHydrated(true);
-    mediaQuery.addEventListener("change", applyPreference);
-    return () => mediaQuery.removeEventListener("change", applyPreference);
-  }, []);
-
-  if (!hydrated || reducedMotion) {
+  if (!mounted || reducedMotion) {
     return <StaticAccent />;
   }
 

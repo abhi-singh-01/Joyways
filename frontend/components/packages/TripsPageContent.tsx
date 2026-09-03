@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { PackageCard } from "@/components/packages/PackageCard";
@@ -14,18 +13,13 @@ type SortKey = "date" | "price-asc" | "price-desc" | "seats";
 
 type TripsPageContentProps = {
   packages: PackageSummary[];
+  initialQuery?: string;
 };
 
-export function TripsPageContent({ packages }: TripsPageContentProps) {
-  const searchParams = useSearchParams();
+export function TripsPageContent({ packages, initialQuery = "" }: TripsPageContentProps) {
   const [destination, setDestination] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<SortKey>("date");
-
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) setQuery(q);
-  }, [searchParams]);
 
   const destinations = useMemo(() => {
     const unique = [...new Set(packages.map((p) => p.destination))];

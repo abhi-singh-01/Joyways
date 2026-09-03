@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll } from "framer-motion";
 import { ArrowRight, Bus, MapPin, Shield, Sparkles } from "lucide-react";
 import { MovingBorder } from "@/components/effects/MovingBorder";
 import { HeroLandscape } from "@/components/home/HeroLandscape";
@@ -54,20 +54,17 @@ export function HeroSection() {
     offset: ["start start", "end start"],
   });
 
-  const heroContentY = useTransform(scrollYProgress, [0, 1], [0, 56]);
-
   return (
-    <section ref={heroRef} className="relative overflow-hidden lg:min-h-[92vh]">
+    <section ref={heroRef} className="relative overflow-x-hidden lg:min-h-[92vh]">
       <HeroLandscape scrollYProgress={scrollYProgress} />
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-8 px-4 pb-10 pt-20 sm:px-6 sm:gap-10 lg:min-h-[92vh] lg:justify-center lg:pb-16 lg:px-8">
-        <motion.div style={{ y: heroContentY }} className="w-full">
-          <motion.div
-            variants={heroCardVariants}
-            initial="hidden"
-            animate="visible"
-            className="mx-auto w-full max-w-3xl rounded-3xl border border-white/50 bg-white/82 px-5 py-8 text-center shadow-2xl shadow-forest/15 backdrop-blur-xl sm:px-10 sm:py-12"
-          >
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-10 px-4 pb-10 pt-20 sm:gap-12 sm:px-6 lg:min-h-[92vh] lg:justify-center lg:gap-10 lg:pb-16 lg:px-8">
+        <motion.div
+          variants={heroCardVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative z-20 mx-auto w-full max-w-3xl shrink-0 rounded-3xl border border-white/50 bg-white/82 px-5 py-8 text-center shadow-2xl shadow-forest/15 backdrop-blur-xl sm:px-10 sm:py-12"
+        >
           <motion.p
             variants={heroItemVariants}
             className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-forest"
@@ -90,9 +87,9 @@ export function HeroSection() {
           <TripSearchBar />
           <motion.div
             variants={heroItemVariants}
-            className="mt-6 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-4"
+            className="mt-6 flex w-full flex-col items-stretch justify-center gap-4 sm:mt-8 sm:flex-row sm:items-center sm:gap-4"
           >
-            <Link href="/trips" className="w-full sm:w-auto">
+            <Link href="/trips" className="block w-full shrink-0 sm:w-auto">
               <MovingBorder containerClassName="block w-full sm:inline-block">
                 <span className="group inline-flex w-full min-w-0 items-center justify-center rounded-full bg-forest px-8 py-3.5 text-base font-medium text-white transition-colors hover:bg-forest-light sm:min-w-[200px] sm:py-4 sm:text-lg">
                   Explore Trips
@@ -107,11 +104,10 @@ export function HeroSection() {
               href="/contact"
               variant="outline"
               size="lg"
-              className="w-full bg-white sm:min-w-[200px] sm:w-auto"
+              className="block w-full shrink-0 bg-white sm:min-w-[200px] sm:w-auto"
             >
               Plan with us
             </ButtonLink>
-          </motion.div>
           </motion.div>
         </motion.div>
 
@@ -119,7 +115,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.45 }}
-          className="relative z-10 mx-auto grid w-full max-w-4xl shrink-0 grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-4 lg:mt-2"
+          className="relative z-10 mx-auto grid w-full max-w-4xl shrink-0 grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3"
         >
           {highlights.map(({ icon: Icon, label }) => (
             <div

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { JoywayLogo } from "@/components/layout/JoywayLogo";
@@ -17,16 +17,14 @@ const navLinks = [
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(
+    () => typeof window !== "undefined" && window.scrollY > 24
+  );
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (value) => {
     setScrolled(value > 24);
   });
-
-  useEffect(() => {
-    setScrolled(window.scrollY > 24);
-  }, []);
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";

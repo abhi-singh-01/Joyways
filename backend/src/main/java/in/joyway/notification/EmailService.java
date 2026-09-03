@@ -41,6 +41,31 @@ public class EmailService {
         sendTemplateEmail(template, recipient, subject, variables, relatedEntityType, relatedEntityId);
     }
 
+    /**
+     * Sends a templated email with a custom reply-to address (e.g. contact form submitter).
+     */
+    @Transactional
+    public void sendTemplateEmailWithReplyTo(
+            String template,
+            String recipient,
+            String subject,
+            Map<String, String> variables,
+            String relatedEntityType,
+            Long relatedEntityId,
+            String replyTo
+    ) {
+        sendTemplateEmail(
+                template,
+                recipient,
+                subject,
+                variables,
+                relatedEntityType,
+                relatedEntityId,
+                null,
+                replyTo
+        );
+    }
+
     @Transactional
     public void sendTemplateEmail(
             String template,
@@ -50,7 +75,7 @@ public class EmailService {
             String relatedEntityType,
             Long relatedEntityId
     ) {
-        sendTemplateEmail(template, recipient, subject, variables, relatedEntityType, relatedEntityId, null);
+        sendTemplateEmail(template, recipient, subject, variables, relatedEntityType, relatedEntityId, null, null);
     }
 
     @Transactional
@@ -62,6 +87,29 @@ public class EmailService {
             String relatedEntityType,
             Long relatedEntityId,
             EmailCategory categoryOverride
+    ) {
+        sendTemplateEmail(
+                template,
+                recipient,
+                subject,
+                variables,
+                relatedEntityType,
+                relatedEntityId,
+                categoryOverride,
+                null
+        );
+    }
+
+    @Transactional
+    public void sendTemplateEmail(
+            String template,
+            String recipient,
+            String subject,
+            Map<String, String> variables,
+            String relatedEntityType,
+            Long relatedEntityId,
+            EmailCategory categoryOverride,
+            String replyToOverride
     ) {
         if (!mailProperties.isEnabled()) {
             log.info("Email disabled; skipping template={} recipient={}", template, maskEmail(recipient));
@@ -88,7 +136,7 @@ public class EmailService {
         EmailCategory category = categoryOverride != null
                 ? categoryOverride
                 : EmailTemplateCategoryResolver.resolve(template);
-        deliver(emailLog, variables, category);
+        deliver(emailLog, variables, category, replyToOverride);
     }
 
     @Transactional
@@ -97,10 +145,15 @@ public class EmailService {
             return;
         }
         EmailCategory category = EmailTemplateCategoryResolver.resolve(emailLog.getTemplate());
-        deliver(emailLog, variables, category);
+        deliver(emailLog, variables, category, null);
     }
 
-    private void deliver(EmailLog emailLog, Map<String, String> variables, EmailCategory category) {
+    private void deliver(
+            EmailLog emailLog,
+            Map<String, String> variables,
+            EmailCategory category,
+            String replyToOverride
+    ) {
         emailLog.setAttemptCount(emailLog.getAttemptCount() + 1);
         emailLog.setLastAttemptedAt(Instant.now());
         try {
@@ -112,8 +165,11 @@ public class EmailService {
             helper.setTo(emailLog.getRecipient());
             helper.setSubject(emailLog.getSubject());
             helper.setFrom(sender.fromAddress(), sender.fromName());
-            if (sender.replyTo() != null && !sender.replyTo().isBlank()) {
-                helper.setReplyTo(sender.replyTo());
+            String replyTo = replyToOverride != null && !replyToOverride.isBlank()
+                    ? replyToOverride
+                    : sender.replyTo();
+            if (replyTo != null && !replyTo.isBlank()) {
+                helper.setReplyTo(replyTo);
             }
             helper.setText(html, true);
             mailSender.send(message);
