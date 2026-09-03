@@ -9,6 +9,7 @@ import in.joyway.domain.repository.UserRepository;
 import in.joyway.dto.admin.NotificationDto;
 import in.joyway.exception.ResourceNotFoundException;
 import in.joyway.security.JoywayUserDetails;
+import in.joyway.util.EmailUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -104,10 +105,14 @@ public class NotificationService {
 
     private User getCurrentAdminUser() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof JoywayUserDetails userDetails)) {
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
             throw new ResourceNotFoundException("Admin not found.");
         }
-        return userDetails.getUser();
+        if (auth.getPrincipal() instanceof JoywayUserDetails userDetails) {
+            return userDetails.getUser();
+        }
+        return userRepository.findByEmail(EmailUtils.normalize(auth.getName()))
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found."));
     }
 
     private NotificationDto toDto(Notification notification) {

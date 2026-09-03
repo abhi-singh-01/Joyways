@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +53,19 @@ class NotificationServiceTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void unreadCount_resolvesAdminFromJwtEmailPrincipal() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("admin@joyway.in", null, List.of())
+        );
+        when(userRepository.findByEmail("admin@joyway.in")).thenReturn(Optional.of(admin));
+        when(notificationRepository.countByRecipientUserIdAndReadFalse(1L)).thenReturn(3L);
+
+        long count = notificationService.unreadCountForCurrentAdmin();
+
+        org.assertj.core.api.Assertions.assertThat(count).isEqualTo(3L);
     }
 
     @Test
