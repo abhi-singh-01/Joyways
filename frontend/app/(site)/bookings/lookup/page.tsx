@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getBooking, getBookingReceipt, cancelBooking, type BookingDetail, type BookingReceipt } from "@/lib/api/bookingApi";
+import { PaymentCheckout } from "@/components/booking/PaymentCheckout";
 import { formatDateRange, formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -167,15 +168,42 @@ function BookingLookupContent() {
 
           {booking.status === "PENDING_PAYMENT" && booking.paymentStatus !== "PAID" && (
             <div className="mt-6 border-t border-border pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={cancelling}
-                onClick={() => void handleCancel()}
-                className="border-red-200 text-red-700 hover:bg-red-50"
-              >
-                {cancelling ? "Cancelling..." : "Cancel Booking"}
-              </Button>
+              <h2 className="font-semibold text-charcoal">Complete payment</h2>
+              <div className="mt-4">
+                <PaymentCheckout
+                  embedded
+                  booking={booking}
+                  customer={{
+                    fullName: booking.customerName,
+                    email: booking.customerEmail,
+                    mobile: booking.customerMobile,
+                  }}
+                  onPaid={async (paidReceipt) => {
+                    setReceipt(paidReceipt);
+                    try {
+                      const detail = await getBooking(booking.bookingReference, email.trim());
+                      setBooking(detail);
+                    } catch {
+                      setBooking({
+                        ...booking,
+                        status: "CONFIRMED",
+                        paymentStatus: "PAID",
+                      });
+                    }
+                  }}
+                />
+              </div>
+              <div className="mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={cancelling}
+                  onClick={() => void handleCancel()}
+                  className="border-red-200 text-red-700 hover:bg-red-50"
+                >
+                  {cancelling ? "Cancelling..." : "Cancel Booking"}
+                </Button>
+              </div>
             </div>
           )}
         </div>

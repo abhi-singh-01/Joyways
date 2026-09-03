@@ -11,6 +11,7 @@ import {
 const footerLinks = {
   explore: [
     { href: "/trips", label: "All Trips" },
+    { href: "/bookings/lookup", label: "Find Booking" },
     { href: "/about", label: "About Us" },
     { href: "/contact", label: "Contact" },
   ],

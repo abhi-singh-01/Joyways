@@ -14,9 +14,12 @@ type PaymentCheckoutProps = {
   booking: BookingResult;
   customer: CustomerInput;
   onReset?: () => void;
+  /** Compact layout for booking lookup (no duplicate hero). */
+  embedded?: boolean;
+  onPaid?: (receipt: BookingReceipt) => void;
 };
 
-export function PaymentCheckout({ booking, customer, onReset }: PaymentCheckoutProps) {
+export function PaymentCheckout({ booking, customer, onReset, embedded = false, onPaid }: PaymentCheckoutProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<BookingReceipt | null>(null);
@@ -48,6 +51,7 @@ export function PaymentCheckout({ booking, customer, onReset }: PaymentCheckoutP
             });
             setReceipt(result.receipt);
             setPaid(true);
+            onPaid?.(result.receipt);
           } catch (err) {
             setError(err instanceof Error ? err.message : "Payment verification failed");
           } finally {
@@ -70,6 +74,19 @@ export function PaymentCheckout({ booking, customer, onReset }: PaymentCheckoutP
   }
 
   if (paid && receipt) {
+    if (embedded) {
+      return (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-left">
+          <p className="font-semibold text-forest">Payment successful — booking confirmed.</p>
+          {receipt.razorpayPaymentId && (
+            <p className="mt-2 text-sm text-charcoal-muted">
+              Payment ID: {receipt.razorpayPaymentId}
+            </p>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="mx-auto max-w-lg text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -127,6 +144,32 @@ export function PaymentCheckout({ booking, customer, onReset }: PaymentCheckoutP
             <Button>Browse more trips</Button>
           </Link>
         </div>
+      </div>
+    );
+  }
+
+  if (embedded) {
+    return (
+      <div className="text-left">
+        <p className="text-sm text-charcoal-muted">
+          Complete payment to confirm your seats. Amount due:{" "}
+          <span className="font-semibold text-charcoal">
+            {formatPrice(booking.totalAmount)}
+          </span>
+        </p>
+        {error && (
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="mt-4">
+          <Button onClick={handlePayNow} disabled={loading} className="w-full sm:w-auto">
+            {loading ? "Opening Razorpay..." : "Pay Now with Razorpay"}
+          </Button>
+        </div>
+        <p className="mt-3 text-xs text-charcoal-muted">
+          Secure payment powered by Razorpay.
+        </p>
       </div>
     );
   }
