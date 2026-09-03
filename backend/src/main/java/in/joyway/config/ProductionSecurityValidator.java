@@ -257,7 +257,7 @@ public class ProductionSecurityValidator {
         String domain = jwtProperties.getCookieDomain();
         if (!StringUtils.hasText(domain)) {
             throw new IllegalStateException(
-                    "JWT_COOKIE_DOMAIN must be set in production (e.g. .joyway.in) so the admin cookie is shared between joyway.in and api.joyway.in.");
+                    "JWT_COOKIE_DOMAIN must be set in production (e.g. joyway.in) so the admin cookie is shared between joyway.in and api.joyway.in.");
         }
     }
 

@@ -9,6 +9,7 @@ import in.joyway.mapper.AdminMapper;
 import in.joyway.security.JwtAuthenticationFilter;
 import in.joyway.security.JwtTokenProvider;
 import in.joyway.security.JoywayUserDetails;
+import in.joyway.util.CookieDomainNormalizer;
 import in.joyway.util.EmailUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -77,7 +78,7 @@ public class AdminAuthService {
     }
 
     private ResponseCookie buildTokenCookie(String token, Duration maxAge) {
-        String domain = jwtProperties.getCookieDomain();
+        String domain = CookieDomainNormalizer.forResponseCookie(jwtProperties.getCookieDomain());
         return ResponseCookie.from(JwtAuthenticationFilter.JWT_COOKIE_NAME, token)
                 .httpOnly(true)
                 .secure(jwtProperties.isCookieSecure())

@@ -3,6 +3,7 @@ package in.joyway.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.joyway.config.CorsProperties;
 import in.joyway.config.JwtProperties;
+import in.joyway.util.CookieDomainNormalizer;
 import in.joyway.dto.ApiResponse;
 import in.joyway.observability.RequestCorrelationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -168,9 +169,9 @@ public class SecurityConfig {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         repository.setCookiePath("/");
         repository.setCookieCustomizer(cookie -> {
-            String domain = jwtProperties.getCookieDomain();
+            String domain = CookieDomainNormalizer.forResponseCookie(jwtProperties.getCookieDomain());
             if (domain != null && !domain.isBlank()) {
-                cookie.domain(domain.trim());
+                cookie.domain(domain);
             }
             cookie.sameSite("Lax");
             if (jwtProperties.isCookieSecure()) {

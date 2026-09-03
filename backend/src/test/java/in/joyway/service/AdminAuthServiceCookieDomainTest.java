@@ -72,7 +72,7 @@ class AdminAuthServiceCookieDomainTest {
         adminAuthService.login(request, response);
 
         String setCookie = captureSetCookie(response);
-        assertTrue(setCookie.contains("Domain=.joyway.in"), setCookie);
+        assertTrue(setCookie.contains("Domain=joyway.in"), setCookie);
         assertTrue(setCookie.contains("Path=/"), setCookie);
         assertTrue(setCookie.contains("HttpOnly"), setCookie);
     }
@@ -84,7 +84,7 @@ class AdminAuthServiceCookieDomainTest {
         adminAuthService.logout(response);
 
         String setCookie = captureSetCookie(response);
-        assertTrue(setCookie.contains("Domain=.joyway.in"), setCookie);
+        assertTrue(setCookie.contains("Domain=joyway.in"), setCookie);
         assertTrue(setCookie.contains("Max-Age=0"), setCookie);
     }
 
