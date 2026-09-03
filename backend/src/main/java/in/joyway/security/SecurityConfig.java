@@ -24,7 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -51,10 +51,12 @@ public class SecurityConfig {
             HttpSecurity http,
             CookieCsrfTokenRepository csrfTokenRepository
     ) throws Exception {
+        CsrfTokenRequestHandler csrfRequestHandler = new SpaCsrfTokenRequestHandler();
+
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .csrfTokenRequestHandler(csrfRequestHandler)
                         .ignoringRequestMatchers(
                                 "/api/payments/webhook",
                                 "/api/bookings/**",

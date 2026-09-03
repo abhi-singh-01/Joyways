@@ -167,6 +167,22 @@ export function validateTravellerDocument(file: File | null): string | undefined
   return undefined;
 }
 
+export function resolveBookingCustomer(
+  count: number,
+  customer: CustomerInput,
+  travellers: TravellerInput[]
+): CustomerInput {
+  if (count > 1) {
+    return customer;
+  }
+  const primary = travellers[0];
+  return {
+    fullName: primary?.fullName ?? "",
+    email: primary?.email ?? "",
+    mobile: primary?.mobile ?? "",
+  };
+}
+
 export function validateBookingStep(
   customer: CustomerInput,
   travellers: TravellerInput[],
@@ -178,10 +194,12 @@ export function validateBookingStep(
   travellerErrors: FieldErrors<TravellerInput>[];
   documentErrors: (string | undefined)[];
 } {
-  const customerResult = validateCustomer(customer);
-  const customerErrors = customerResult.success
-    ? {}
-    : fieldErrorsFromZod(customerResult);
+  const customerResult =
+    count > 1 ? validateCustomer(customer) : { success: true as const };
+  const customerErrors =
+    count > 1 && !customerResult.success
+      ? fieldErrorsFromZod(customerResult)
+      : {};
 
   const travellerErrors: FieldErrors<TravellerInput>[] = [];
   const documentErrors: (string | undefined)[] = [];

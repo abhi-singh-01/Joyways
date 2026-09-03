@@ -9,9 +9,9 @@ function readCsrfToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-/** Prime the XSRF-TOKEN cookie (Set-Cookie from api.joyway.in, Domain=.joyway.in). */
+/** Refresh the XSRF-TOKEN cookie (Set-Cookie from api.joyway.in, Domain=joyway.in). */
 async function ensureCsrfToken(): Promise<void> {
-  if (typeof document === "undefined" || readCsrfToken()) return;
+  if (typeof document === "undefined") return;
   try {
     await fetch(`${getApiBaseUrl()}/api/admin/auth/me`, {
       method: "GET",
@@ -150,18 +150,18 @@ export async function apiFetch<T>(
   }
 }
 
-/** Admin API fetch — sends cookies, no caching */
-export async function adminFetch<T>(
-  path: string,
+function isCsrfAuthFailure(status: number, json: ApiResponse<unknown>): boolean {
+  if (status !== 403) return false;
+  const code = json.errorCode ?? "";
+  const message = (json.message ?? "").toLowerCase();
+  return code === "ACCESS_DENIED" || message.includes("csrf");
+}
+
+async function adminFetchOnce<T>(
+  url: string,
+  requestId: string,
   options?: RequestInit
-): Promise<ApiResponse<T>> {
-  const url = `${getApiBaseUrl()}${path}`;
-  const requestId = newRequestId();
-
-  if (isMutatingMethod(options?.method)) {
-    await ensureCsrfToken();
-  }
-
+): Promise<{ response: Response; json: ApiResponse<T> }> {
   const csrfToken = readCsrfToken();
   let response: Response;
   try {
@@ -189,17 +189,35 @@ export async function adminFetch<T>(
     throw new Error("Unable to reach the server. Please try again.");
   }
 
+  return { response, json };
+}
+
+/** Admin API fetch — sends cookies, no caching */
+export async function adminFetch<T>(
+  path: string,
+  options?: RequestInit
+): Promise<ApiResponse<T>> {
+  const url = `${getApiBaseUrl()}${path}`;
+  const requestId = newRequestId();
+  const mutating = isMutatingMethod(options?.method);
+
+  if (mutating) {
+    await ensureCsrfToken();
+  }
+
+  let { response, json } = await adminFetchOnce<T>(url, requestId, options);
+
+  if (mutating && isCsrfAuthFailure(response.status, json)) {
+    await ensureCsrfToken();
+    ({ response, json } = await adminFetchOnce<T>(url, requestId, options));
+  }
+
   if (response.status === 401) {
     throw new AdminAuthError(json.message || "Authentication required.");
   }
 
-  if (response.status === 403) {
-    const code = json.errorCode ?? "";
-    if (code === "ACCESS_DENIED" || (json.message ?? "").toLowerCase().includes("csrf")) {
-      throw new AdminAuthError(
-        "Session expired or invalid. Please sign in again."
-      );
-    }
+  if (isCsrfAuthFailure(response.status, json)) {
+    throw new AdminAuthError("Session expired or invalid. Please sign in again.");
   }
 
   if (!response.ok) {

@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/bookingApi";
 import {
   type FieldErrors,
+  resolveBookingCustomer,
   validateBookingStep,
 } from "@/lib/formValidation";
 import { PaymentCheckout } from "@/components/booking/PaymentCheckout";
@@ -105,11 +106,13 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
     return {
       packageId: pkg.id,
       numberOfTravellers: count,
-      customer,
+      customer: resolveBookingCustomer(count, customer, travellers),
       travellers: travellers.slice(0, count),
       consentAccepted,
     };
   }
+
+  const bookingCustomer = resolveBookingCustomer(count, customer, travellers);
 
   function validateDetailsForm(): boolean {
     const validation = validateBookingStep(
@@ -179,7 +182,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
   }
 
   if (result) {
-    return <PaymentCheckout booking={result} customer={customer} />;
+    return <PaymentCheckout booking={result} customer={bookingCustomer} />;
   }
 
   return (
@@ -267,63 +270,65 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <div className="rounded-2xl border border-border bg-white p-5 sm:p-6">
-              <h2 className="font-display text-xl font-semibold text-charcoal">
-                Primary Contact
-              </h2>
-              <p className="mt-1 text-sm text-charcoal-muted">
-                Fields marked * are required
-              </p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <Label htmlFor="customerName">Full Name *</Label>
-                  <Input
-                    id="customerName"
-                    required
-                    autoComplete="name"
-                    aria-invalid={Boolean(customerErrors.fullName)}
-                    error={customerErrors.fullName}
-                    value={customer.fullName}
-                    onChange={(e) =>
-                      setCustomer({ ...customer, fullName: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="customerEmail">Email *</Label>
-                  <Input
-                    id="customerEmail"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    aria-invalid={Boolean(customerErrors.email)}
-                    error={customerErrors.email}
-                    value={customer.email}
-                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="customerMobile">Mobile *</Label>
-                  <Input
-                    id="customerMobile"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    maxLength={10}
-                    required
-                    aria-invalid={Boolean(customerErrors.mobile)}
-                    error={customerErrors.mobile}
-                    value={customer.mobile}
-                    onChange={(e) =>
-                      setCustomer({
-                        ...customer,
-                        mobile: e.target.value.replace(/\D/g, ""),
-                      })
-                    }
-                  />
+            {count > 1 && (
+              <div className="rounded-2xl border border-border bg-white p-5 sm:p-6">
+                <h2 className="font-display text-xl font-semibold text-charcoal">
+                  Primary Contact
+                </h2>
+                <p className="mt-1 text-sm text-charcoal-muted">
+                  Fields marked * are required
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="customerName">Full Name *</Label>
+                    <Input
+                      id="customerName"
+                      required
+                      autoComplete="name"
+                      aria-invalid={Boolean(customerErrors.fullName)}
+                      error={customerErrors.fullName}
+                      value={customer.fullName}
+                      onChange={(e) =>
+                        setCustomer({ ...customer, fullName: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customerEmail">Email *</Label>
+                    <Input
+                      id="customerEmail"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      aria-invalid={Boolean(customerErrors.email)}
+                      error={customerErrors.email}
+                      value={customer.email}
+                      onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customerMobile">Mobile *</Label>
+                    <Input
+                      id="customerMobile"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      maxLength={10}
+                      required
+                      aria-invalid={Boolean(customerErrors.mobile)}
+                      error={customerErrors.mobile}
+                      value={customer.mobile}
+                      onChange={(e) =>
+                        setCustomer({
+                          ...customer,
+                          mobile: e.target.value.replace(/\D/g, ""),
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {travellers.slice(0, count).map((traveller, index) => (
               <TravellerForm
@@ -369,7 +374,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
             <BookingReviewCard
               pkg={pkg}
               review={review}
-              customerName={customer.fullName}
+              customerName={bookingCustomer.fullName}
             />
             <div className="rounded-2xl border border-border bg-white p-5 sm:p-6">
               <label className="flex items-start gap-3 text-sm leading-relaxed text-charcoal-muted">

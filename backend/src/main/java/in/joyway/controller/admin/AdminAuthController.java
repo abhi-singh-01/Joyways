@@ -39,7 +39,15 @@ public class AdminAuthController {
     }
 
     @GetMapping("/me")
-    public ApiResponse<AdminProfileDto> me() {
+    public ApiResponse<AdminProfileDto> me(
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
+    ) {
+        CsrfToken csrfToken = csrfTokenRepository.loadToken(httpRequest);
+        if (csrfToken == null) {
+            csrfToken = csrfTokenRepository.generateToken(httpRequest);
+        }
+        csrfTokenRepository.saveToken(csrfToken, httpRequest, response);
         return ApiResponse.success(adminAuthService.getCurrentAdmin());
     }
 }
