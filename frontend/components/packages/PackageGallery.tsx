@@ -40,12 +40,9 @@ export function PackageGallery({ images, destination, className }: PackageGaller
   return (
     <>
       <div className={cn("space-y-3", className)}>
-        <div className="group relative aspect-[16/9] overflow-hidden rounded-2xl bg-charcoal/5">
-          <motion.div
-            key={active.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.35 }}
+        <div className="group relative aspect-[16/9] overflow-hidden rounded-2xl bg-surface">
+          <button
+            type="button"
             className="relative h-full w-full cursor-zoom-in"
             onClick={() => setLightboxOpen(true)}
           >
@@ -55,7 +52,7 @@ export function PackageGallery({ images, destination, className }: PackageGaller
               priority
               sizes="(max-width: 1024px) 100vw, 70vw"
             />
-          </motion.div>
+          </button>
 
           {images.length > 1 && (
             <>

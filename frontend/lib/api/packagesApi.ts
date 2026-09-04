@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { apiFetch } from "./client";
 
 export type PackageSummary = {
@@ -50,18 +51,18 @@ export type PackageDetail = {
   bookable: boolean;
 };
 
-export async function getPackages(): Promise<PackageSummary[]> {
+export const getPackages = cache(async (): Promise<PackageSummary[]> => {
   const response = await apiFetch<PackageSummary[]>("/api/packages");
   return response.data ?? [];
-}
+});
 
-export async function getPackageBySlug(slug: string): Promise<PackageDetail> {
+export const getPackageBySlug = cache(async (slug: string): Promise<PackageDetail> => {
   const response = await apiFetch<PackageDetail>(`/api/packages/${slug}`);
   if (!response.data) {
     throw new Error("Package not found");
   }
   return response.data;
-}
+});
 
 export async function getPackageById(id: number): Promise<PackageDetail> {
   const response = await apiFetch<PackageDetail>(`/api/packages/id/${id}`, {

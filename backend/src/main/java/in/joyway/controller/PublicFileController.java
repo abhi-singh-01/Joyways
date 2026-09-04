@@ -6,6 +6,7 @@ import in.joyway.service.storage.StorageContentTypeResolver;
 import in.joyway.service.storage.StorageKeyValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/files")
@@ -48,6 +50,7 @@ public class PublicFileController {
         InputStreamResource resource = new InputStreamResource(stream);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePublic().immutable())
                 .body(resource);
     }
 }

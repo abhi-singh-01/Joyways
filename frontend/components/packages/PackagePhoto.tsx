@@ -9,12 +9,22 @@ type PackagePhotoProps = {
   priority?: boolean;
 };
 
+function isApiPackagePhoto(src: string): boolean {
+  try {
+    const url = new URL(src, "https://joyway.in");
+    return url.pathname.startsWith("/api/files/package-images/");
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Local assets under /public use the Next.js optimizer. Package photos from Azure
- * (via api.joyway.in/api/files/...) are also optimized when remotePatterns allow.
+ * Local assets use the Next.js optimizer. Package photos on api.joyway.in load
+ * directly from the API/CDN to avoid an extra frontend image-proxy hop.
  */
 export function PackagePhoto({ src, alt, className, sizes, priority }: PackagePhotoProps) {
   const isLocalAsset = src.startsWith("/");
+  const directApiPhoto = isApiPackagePhoto(src);
 
   if (isLocalAsset || src.startsWith("http")) {
     return (
@@ -23,6 +33,7 @@ export function PackagePhoto({ src, alt, className, sizes, priority }: PackagePh
         alt={alt}
         fill
         priority={priority}
+        unoptimized={directApiPhoto}
         loading={priority ? undefined : "lazy"}
         className={cn("object-cover", className)}
         sizes={sizes ?? "(max-width: 768px) 100vw, 33vw"}

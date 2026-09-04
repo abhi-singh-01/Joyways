@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import {
   Bus,
@@ -17,7 +14,6 @@ import {
 import { PackageGallery } from "@/components/packages/PackageGallery";
 import { PackageItinerary } from "@/components/packages/PackageItinerary";
 import { StickyBookBar } from "@/components/packages/StickyBookBar";
-import { TripHeroAccent } from "@/components/packages/TripHeroAccent";
 import { Button } from "@/components/ui/Button";
 import {
   formatDateRange,
@@ -105,45 +101,38 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
   return (
     <>
       {/* Hero header */}
-      <section className="relative overflow-hidden border-b border-border bg-white">
-        <TripHeroAccent />
+      <section className="border-b border-border bg-white">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <Link
+            href="/trips"
+            className="text-sm font-medium text-forest hover:text-forest-light"
           >
-            <Link
-              href="/trips"
-              className="text-sm font-medium text-forest hover:text-forest-light"
-            >
-              ← All trips
-            </Link>
-            <p className="mt-4 text-sm font-semibold uppercase tracking-widest text-forest">
-              {pkg.departureCity} → {pkg.destination}
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-semibold leading-tight text-charcoal sm:text-4xl lg:text-5xl">
-              {pkg.title}
-            </h1>
-            <p className="mt-3 max-w-2xl text-lg text-charcoal-muted">
-              {pkg.shortDescription}
-            </p>
+            ← All trips
+          </Link>
+          <p className="mt-4 text-sm font-semibold uppercase tracking-widest text-forest">
+            {pkg.departureCity} → {pkg.destination}
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-semibold leading-tight text-charcoal sm:text-4xl lg:text-5xl">
+            {pkg.title}
+          </h1>
+          <p className="mt-3 max-w-2xl text-lg text-charcoal-muted">
+            {pkg.shortDescription}
+          </p>
 
-            <div className="mt-6 flex flex-wrap gap-4 text-sm text-charcoal-muted">
-              <span className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5">
-                <Calendar size={15} className="text-forest" />
-                {formatDateRange(pkg.startDate, pkg.endDate)}
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5">
-                <Users size={15} className="text-forest" />
-                {pkg.availableSeats} of {pkg.totalSeats} seats left
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5">
-                <MapPin size={15} className="text-forest" />
-                {pkg.duration}
-              </span>
-            </div>
-          </motion.div>
+          <div className="mt-6 flex flex-wrap gap-4 text-sm text-charcoal-muted">
+            <span className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5">
+              <Calendar size={15} className="text-forest" />
+              {formatDateRange(pkg.startDate, pkg.endDate)}
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5">
+              <Users size={15} className="text-forest" />
+              {pkg.availableSeats} of {pkg.totalSeats} seats left
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5">
+              <MapPin size={15} className="text-forest" />
+              {pkg.duration}
+            </span>
+          </div>
         </div>
       </section>
 
@@ -154,35 +143,25 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
             <PackageGallery images={pkg.images} destination={pkg.destination} />
 
             {pkg.fullDescription && (
-              <motion.section
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4 }}
-              >
+              <section>
                 <h2 className="font-display text-2xl font-semibold text-charcoal">
                   About this trip
                 </h2>
                 <p className="mt-4 whitespace-pre-line leading-relaxed text-charcoal-muted">
                   {pkg.fullDescription}
                 </p>
-              </motion.section>
+              </section>
             )}
 
             {pkg.itinerary && (
-              <motion.section
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4 }}
-              >
+              <section>
                 <h2 className="font-display text-2xl font-semibold text-charcoal">
                   Itinerary
                 </h2>
                 <div className="mt-6 rounded-2xl border border-border bg-white p-6">
                   <PackageItinerary itinerary={pkg.itinerary} />
                 </div>
-              </motion.section>
+              </section>
             )}
 
             <div className="grid gap-6 sm:grid-cols-2">
@@ -259,12 +238,7 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
           {/* Sidebar booking card — desktop */}
           <div className="hidden lg:block">
             <div className="sticky top-24">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 }}
-                className="rounded-2xl border border-border bg-white p-6 shadow-lg"
-              >
+              <div className="rounded-2xl border border-border bg-white p-6 shadow-lg">
                 <p className="text-sm text-charcoal-muted">Price per person</p>
                 <p className="mt-1 font-display text-3xl font-semibold text-forest">
                   {formatPrice(pkg.pricePerPerson)}
@@ -314,7 +288,7 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
                 <p className="mt-4 text-center text-xs text-charcoal-muted">
                   Secure online booking · Instant confirmation
                 </p>
-              </motion.div>
+              </div>
             </div>
           </div>
         </div>

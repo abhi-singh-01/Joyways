@@ -4,7 +4,7 @@ import { getPackages } from "@/lib/api/packagesApi";
 import { PageHero } from "@/components/layout/PageHero";
 import { TripsPageClient } from "@/components/packages/TripsPageClient";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "All Trips | JOYWAY",

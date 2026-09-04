@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getPackageBySlug, getPackages } from "@/lib/api/packagesApi";
 import { PackageDetailView } from "@/components/packages/PackageDetailView";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 type PageProps = {
   params: Promise<{ slug: string }>;
