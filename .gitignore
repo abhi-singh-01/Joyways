@@ -3,19 +3,24 @@ node_modules/
 frontend/node_modules/
 backend/target/
 
-# Environment (never commit secrets)
+# Environment secrets — never commit, never push to GitHub
+# Keep only *.example / *.template files in the repo (placeholders, no real values).
 .env
 .env.*
+.envrc
+.env.vault
+*.env
+*.env.local
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
 !.env.example
 !.env.template
 !.env.production.example
-backend/.env
-backend/.env.*
 !backend/.env.example
 !backend/.env.template
 !backend/.env.production.example
-frontend/.env
-frontend/.env.*
 !frontend/.env.example
 !frontend/.env.template
 !frontend/.env.production.example
@@ -87,3 +92,6 @@ uploads/
 # Test / coverage
 coverage/
 frontend/coverage/
+
+# Local performance dumps (do not commit)
+lighthouse*.json

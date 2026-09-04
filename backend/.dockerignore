@@ -7,7 +7,13 @@ target
 # Local environment files holding real credentials
 .env
 .env.*
+.envrc
+.env.vault
+*.env
+*.env.local
 !.env.example
+!.env.template
+!.env.production.example
 
 # Docs and local scratch (not needed in runtime image)
 docs

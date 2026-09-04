@@ -4,6 +4,10 @@ target/
 /uploads/
 .env
 .env.*
+.envrc
+.env.vault
+*.env
+*.env.local
 !.env.example
 !.env.template
 !.env.production.example

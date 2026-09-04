@@ -1,0 +1,23 @@
+# Environment secrets - Cursor must not index or send these to the model.
+# *.example / *.template stay readable (placeholders only, no real credentials).
+.env
+.env.*
+.envrc
+.env.vault
+*.env
+*.env.local
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.template
+!**/.env.production.example
+
+# Credentials and key material
+*.pem
+*.key
+*.p12
+*.jks
+*.pfx
+credentials.json
+secrets.json
+service-account*.json

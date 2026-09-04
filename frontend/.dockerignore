@@ -13,7 +13,13 @@ dist
 # (including the Razorpay key) into the production bundle.
 .env
 .env.*
+.envrc
+.env.vault
+*.env
+*.env.local
 !.env.example
+!.env.template
+!.env.production.example
 
 # AI agent files and boilerplate docs
 AGENTS.md

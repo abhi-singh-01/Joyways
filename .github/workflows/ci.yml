@@ -91,6 +91,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fail if real env/credential files are tracked
+        run: |
+          set -euo pipefail
+          leaked=$(git ls-files | grep -E '(^|/)\.env($|\.(local|production|development|test|staging|vault))|(^|/).envrc$|\.pem$|\.p12$|\.jks$|(^|/)(credentials|secrets|service-account.*)\.json$' || true)
+          leaked=$(printf '%s\n' "$leaked" | grep -vE '\.env\.(example|template|production\.example)$' || true)
+          if [ -n "$leaked" ]; then
+            echo "Secret files must not be committed to GitHub:"
+            echo "$leaked"
+            exit 1
+          fi
+          echo "No tracked .env or credential files."
+
       - name: Scan tracked source for obvious secret literals
         run: |
           set -euo pipefail

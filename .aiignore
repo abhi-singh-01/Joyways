@@ -1,0 +1,21 @@
+# Same secret patterns as .cursorignore — for tools that honor .aiignore.
+.env
+.env.*
+.envrc
+.env.vault
+*.env
+*.env.local
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.template
+!**/.env.production.example
+
+*.pem
+*.key
+*.p12
+*.jks
+*.pfx
+credentials.json
+secrets.json
+service-account*.json
