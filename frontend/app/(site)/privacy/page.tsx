@@ -322,7 +322,7 @@ export default function PrivacyPage() {
             </ul>
           </Section>
         </div>
-      </div>
+    </div>
     </>
   );
 }
