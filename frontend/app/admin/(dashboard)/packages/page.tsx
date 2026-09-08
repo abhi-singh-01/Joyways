@@ -27,7 +27,10 @@ export default function AdminPackagesPage() {
   return (
     <div>
       <PackageListHeader />
-      <PackageTable packages={packages} />
+      <PackageTable
+        packages={packages}
+        onDeleted={(id) => setPackages((prev) => prev.filter((pkg) => pkg.id !== id))}
+      />
     </div>
   );
 }

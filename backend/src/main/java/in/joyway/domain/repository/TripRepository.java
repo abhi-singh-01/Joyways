@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -123,6 +124,19 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
             ORDER BY t.startAt DESC
             """)
     List<String> findActiveTripReferencesForDriver(Long driverId, Pageable pageable);
+
+    @Query("""
+            SELECT t FROM Trip t
+            WHERE t.travelPackage.id = :packageId
+            AND t.travelDate = :travelDate
+            AND t.status IN :statuses
+            ORDER BY t.startAt ASC
+            """)
+    List<Trip> findAssignableForPackageAndDate(
+            Long packageId,
+            LocalDate travelDate,
+            Collection<TripStatus> statuses
+    );
 
     @Query("""
             SELECT COUNT(t) FROM Trip t

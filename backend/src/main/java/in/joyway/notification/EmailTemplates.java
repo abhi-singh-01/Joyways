@@ -15,6 +15,8 @@ public final class EmailTemplates {
     public static final String ADMIN_PAYMENT_SUCCESS = "admin-payment-success";
     public static final String ADMIN_PAYMENT_FAILED = "admin-payment-failed";
     public static final String ADMIN_BOOKING_CANCELLED = "admin-booking-cancelled";
+    public static final String BOOKING_REFUNDED = "booking-refunded";
+    public static final String ADMIN_BOOKING_REFUNDED = "admin-booking-refunded";
     public static final String CONTACT_ENQUIRY = "contact-enquiry";
 
     private EmailTemplates() {

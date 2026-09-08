@@ -12,7 +12,9 @@ import in.joyway.service.BookingService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -67,6 +69,17 @@ public class BookingController {
         validateAccessRequest(request);
         return ApiResponse.success(
                 bookingQueryService.getReceiptForCustomer(request.getReference(), request.getEmail()));
+    }
+
+    @PostMapping("/receipt.pdf")
+    public ResponseEntity<byte[]> downloadReceiptPdf(@RequestBody BookingAccessRequest request) {
+        validateAccessRequest(request);
+        byte[] pdf = bookingQueryService.getReceiptPdfForCustomer(request.getReference(), request.getEmail());
+        String filename = "joyway-receipt-" + request.getReference().trim().toUpperCase() + ".pdf";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     @PostMapping("/cancel")

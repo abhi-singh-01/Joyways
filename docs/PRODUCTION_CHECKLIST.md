@@ -154,7 +154,7 @@ Use this checklist before going live. Do not commit real secrets to Git.
 ### Razorpay
 - Live mode keys in production env
 - Webhook URL: `https://api.joyway.in/api/payments/webhook`
-- Webhook events: `payment.captured`, `payment.failed` (as applicable)
+- Webhook events: `payment.captured`, `payment.failed`, `refund.processed`, `refund.failed`
 
 ### SMTP (Hostinger)
 - SPF/DKIM configured for `joyway.in`

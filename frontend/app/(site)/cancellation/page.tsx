@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/layout/PageHero";
 import { PUBLIC_EMAILS } from "@/lib/publicEmails";
+import { DEVELOPER_SITE_LABEL, DEVELOPER_SITE_URL } from "@/lib/publicCredits";
 import {
   PUBLIC_CALL_NUMBER,
   formatPhoneDisplay,
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
     "Cancellation and refund terms for JOYWAY group travel bookings — timelines, eligibility, and how to request a refund.",
 };
 
-const lastUpdated = "2 September 2026";
+const lastUpdated = "5 September 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -47,8 +48,16 @@ export default function CancellationPage() {
               <a href="https://joyway.in" className="text-forest hover:text-forest-light">
                 joyway.in
               </a>
-              . The Website is developed and managed by{" "}
-              <strong>AJS Technologies Pvt Ltd.</strong>
+              . The Website is developed by{" "}
+              <a
+                href={DEVELOPER_SITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-forest hover:text-forest-light"
+              >
+                {DEVELOPER_SITE_LABEL}
+              </a>
+              . All rights in JOYWAY and this Website are reserved by JOYWAY.
             </p>
             <p>
               Cancellation terms can vary by trip. The policy shown on each package detail page and

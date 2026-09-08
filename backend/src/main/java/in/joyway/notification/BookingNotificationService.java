@@ -152,7 +152,7 @@ public class BookingNotificationService {
                 "Refund review required",
                 "Payment received for " + booking.getBookingReference()
                         + " which is " + booking.getStatus().name().replace('_', ' ')
-                        + ". The booking was not confirmed.",
+                        + ". Open the booking in admin and issue a Razorpay refund.",
                 ENTITY_BOOKING,
                 booking.getId()
         );
@@ -162,6 +162,40 @@ public class BookingNotificationService {
                 EmailTemplates.ADMIN_PAYMENT_SUCCESS,
                 mailProperties.getAdminNotificationEmail(),
                 "Refund Review Required — " + booking.getBookingReference(),
+                vars,
+                ENTITY_BOOKING,
+                booking.getId()
+        );
+    }
+
+    public void onRefundProcessed(Booking booking, Payment payment, java.math.BigDecimal refundAmount) {
+        Map<String, String> vars = bookingVars(booking);
+        vars.put("refundAmount", refundAmount != null ? refundAmount.toPlainString() : booking.getTotalAmount().toPlainString());
+        vars.put("refundId", payment.getRazorpayRefundId() != null ? payment.getRazorpayRefundId() : "—");
+        vars.put("paymentStatusLabel", booking.getPaymentStatus().name().replace('_', ' '));
+        vars.put("bookingStatusLabel", booking.getStatus().name().replace('_', ' '));
+
+        emailService.sendTemplateEmailAsync(
+                EmailTemplates.BOOKING_REFUNDED,
+                booking.getCustomer().getEmail(),
+                "Refund processed — JOYWAY " + booking.getBookingReference(),
+                vars,
+                ENTITY_BOOKING,
+                booking.getId()
+        );
+
+        notificationService.notifyAdmins(
+                NotificationType.REFUND_PROCESSED,
+                "Refund processed",
+                booking.getBookingReference() + " — ₹" + vars.get("refundAmount"),
+                ENTITY_BOOKING,
+                booking.getId()
+        );
+
+        emailService.sendTemplateEmailAsync(
+                EmailTemplates.ADMIN_BOOKING_REFUNDED,
+                mailProperties.getAdminNotificationEmail(),
+                "Refund processed — " + booking.getBookingReference(),
                 vars,
                 ENTITY_BOOKING,
                 booking.getId()

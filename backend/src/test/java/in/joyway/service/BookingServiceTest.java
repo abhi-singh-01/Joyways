@@ -17,6 +17,7 @@ import in.joyway.dto.booking.TravellerRequest;
 import in.joyway.exception.InsufficientSeatsException;
 import in.joyway.mapper.BookingMapper;
 import in.joyway.notification.BookingNotificationService;
+import in.joyway.service.operations.OperationsNotificationService;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.util.BookingReferenceGenerator;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,7 @@ class BookingServiceTest {
     @Mock private DocumentStorageService documentStorageService;
     @Mock private BookingNotificationService bookingNotificationService;
     @Mock private BookingProperties bookingProperties;
+    @Mock private OperationsNotificationService operationsNotificationService;
 
     @InjectMocks
     private BookingService bookingService;

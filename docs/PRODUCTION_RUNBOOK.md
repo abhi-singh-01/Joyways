@@ -317,9 +317,9 @@ ORDER BY created_at DESC;
 Resolution order:
 
 1. Confirm the true state in the **Razorpay dashboard** — it is the source of truth for money.
-2. If captured but the booking is cancelled/expired, the system intentionally left the
-   booking alone and raised a "Refund review required" admin notification. Issue the refund
-   through Razorpay.
+2. If captured but the booking is cancelled/expired, the system raised a "Refund review required"
+   admin notification. Open the booking in admin and use **Refund payment** (or refund in Razorpay
+   and let `refund.processed` confirm it).
 3. If captured and the booking is still `PENDING_PAYMENT`, a webhook was missed. Re-deliver
    it from the Razorpay dashboard rather than editing the database.
 4. Only edit data as a last resort, with a second person reviewing.

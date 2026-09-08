@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface DriverRepository extends JpaRepository<Driver, Long> {
@@ -39,4 +40,11 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
 
     @Query("SELECT COUNT(d) FROM Driver d WHERE d.licenseExpiryDate <= :date AND d.status <> in.joyway.domain.enums.DriverStatus.INACTIVE")
     long countWithLicenseExpiringBy(LocalDate date);
+
+    @Query("""
+            SELECT d FROM Driver d
+            WHERE d.licenseExpiryDate <= :date
+            AND d.status <> in.joyway.domain.enums.DriverStatus.INACTIVE
+            """)
+    List<Driver> findActiveWithLicenseExpiringBy(LocalDate date);
 }

@@ -35,7 +35,7 @@ const stats = [
   { value: "5+", label: "Destinations" },
   { value: "Delhi", label: "Departure hub" },
   { value: "Group", label: "Travel style" },
-  { value: "24h", label: "Support response" },
+  { value: "Email", label: "And WhatsApp support" },
 ];
 
 export default function AboutPage() {

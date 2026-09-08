@@ -31,6 +31,10 @@ class BookingQueryServiceTest {
     private PaymentRepository paymentRepository;
     @Mock
     private ReceiptService receiptService;
+    @Mock
+    private ReceiptPdfService receiptPdfService;
+    @Mock
+    private in.joyway.service.operations.CustomerTripInfoService customerTripInfoService;
 
     @InjectMocks
     private BookingQueryService bookingQueryService;

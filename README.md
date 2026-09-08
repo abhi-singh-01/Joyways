@@ -8,7 +8,7 @@ Production group travel booking platform for trips from Delhi and North India.
 |---|---|
 | **Website** | [joyway.in](https://joyway.in) |
 | **API** | [api.joyway.in](https://api.joyway.in) |
-| **Operator** | AJS Technologies Pvt Ltd. |
+| **Operator** | JOYWAY |
 
 ---
 
@@ -198,4 +198,4 @@ Standard response format:
 
 Proprietary — JOYWAY © 2026. All rights reserved.
 
-Developed and managed by **AJS Technologies Pvt Ltd.**
+Developed by [ajswork.space](https://www.ajswork.space/).

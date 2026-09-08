@@ -1,19 +1,44 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { formatDate, formatPrice } from "@/lib/format";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { AdminPackageSummary } from "@/lib/api/adminPackagesApi";
+import {
+  deleteAdminPackage,
+  type AdminPackageSummary,
+} from "@/lib/api/adminPackagesApi";
 
 type PackageTableProps = {
   packages: AdminPackageSummary[];
+  onDeleted?: (id: number) => void;
 };
 
-export function PackageTable({ packages }: PackageTableProps) {
+export function PackageTable({ packages, onDeleted }: PackageTableProps) {
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+
+  async function handleDelete(pkg: AdminPackageSummary) {
+    const confirmed = window.confirm(
+      `Delete “${pkg.title}”? This removes the trip from the website.`
+    );
+    if (!confirmed) return;
+
+    setDeleteError("");
+    setDeletingId(pkg.id);
+    try {
+      await deleteAdminPackage(pkg.id);
+      onDeleted?.(pkg.id);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not delete trip.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
   if (packages.length === 0) {
     return (
       <EmptyState
@@ -27,6 +52,11 @@ export function PackageTable({ packages }: PackageTableProps) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+      {deleteError && (
+        <p className="border-b border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700" role="alert">
+          {deleteError}
+        </p>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[800px] text-left text-sm">
           <thead>
@@ -80,12 +110,25 @@ export function PackageTable({ packages }: PackageTableProps) {
                   <StatusBadge status={pkg.status} />
                 </td>
                 <td className="px-4 py-3">
-                  <Link href={`/admin/packages/${pkg.id}/edit`}>
-                    <Button variant="ghost" size="sm">
-                      <Pencil size={14} className="mr-1" />
-                      Edit
+                  <div className="flex items-center gap-1">
+                    <Link href={`/admin/packages/${pkg.id}/edit`}>
+                      <Button variant="ghost" size="sm">
+                        <Pencil size={14} className="mr-1" />
+                        Edit
+                      </Button>
+                    </Link>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={deletingId === pkg.id}
+                      onClick={() => void handleDelete(pkg)}
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      {deletingId === pkg.id ? "Deleting..." : "Delete"}
                     </Button>
-                  </Link>
+                  </div>
                 </td>
               </motion.tr>
             ))}

@@ -28,6 +28,7 @@ public class AdminVehicleService {
     private final VehicleRepository vehicleRepository;
     private final TripRepository tripRepository;
     private final AuditLogService auditLogService;
+    private final OperationsNotificationService operationsNotificationService;
 
     @Transactional(readOnly = true)
     public PageResponse<VehicleSummaryDto> listVehicles(
@@ -116,6 +117,10 @@ public class AdminVehicleService {
         auditLogService.log("VEHICLE_STATUS_CHANGED", "VEHICLE", vehicle.getId(),
                 "Vehicle " + vehicle.getRegistrationNumber() + " status changed from "
                         + oldStatus + " to " + newStatus + ".");
+        if (newStatus == VehicleStatus.MAINTENANCE || newStatus == VehicleStatus.INACTIVE) {
+            operationsNotificationService.notifyVehicleUnavailable(
+                    vehicle.getRegistrationNumber(), newStatus.name(), vehicle.getId());
+        }
         return toDetail(vehicle);
     }
 

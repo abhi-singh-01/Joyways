@@ -15,4 +15,6 @@ public interface RazorpayGateway {
      * Fetches payment details from Razorpay for server-side amount/order verification.
      */
     Optional<RazorpayPaymentDetails> fetchPayment(String paymentId);
+
+    RazorpayRefundResult createRefund(String paymentId, int amountPaise, String receiptReference);
 }

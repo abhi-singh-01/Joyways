@@ -33,6 +33,13 @@ public class Payment {
     @Column(name = "razorpay_signature", length = 500)
     private String razorpaySignature;
 
+    @Column(name = "razorpay_refund_id", length = 100)
+    private String razorpayRefundId;
+
+    @Column(name = "refunded_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal refundedAmount = BigDecimal.ZERO;
+
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 

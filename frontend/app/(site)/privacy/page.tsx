@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/layout/PageHero";
 import { PUBLIC_EMAILS } from "@/lib/publicEmails";
+import { DEVELOPER_SITE_LABEL, DEVELOPER_SITE_URL } from "@/lib/publicCredits";
 import {
   PUBLIC_CALL_NUMBER,
   formatPhoneDisplay,
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
     "How JOYWAY collects, uses, and protects your personal information when you browse trips or make a group travel booking.",
 };
 
-const lastUpdated = "2 September 2026";
+const lastUpdated = "9 September 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -50,10 +51,18 @@ export default function PrivacyPage() {
               (the &quot;Website&quot;), make a booking, upload traveller documents, or contact us.
             </p>
             <p>
-              The Website is developed and managed by{" "}
-              <strong>AJS Technologies Pvt Ltd.</strong> (&quot;Company&quot;). By using the
-              Website, you agree to the collection and use of information as described in this
-              policy. If you do not agree, please do not use the Website.
+              The Website is developed by{" "}
+              <a
+                href={DEVELOPER_SITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-forest hover:text-forest-light"
+              >
+                {DEVELOPER_SITE_LABEL}
+              </a>
+              . All rights in JOYWAY and this Website are reserved by JOYWAY. By using the Website,
+              you agree to the collection and use of information as described in this policy. If you
+              do not agree, please do not use the Website.
             </p>
           </Section>
 
@@ -108,7 +117,7 @@ export default function PrivacyPage() {
               </li>
               <li>
                 Send booking updates, trip information, and customer support responses by email,
-                phone, SMS, or WhatsApp.
+                phone, or WhatsApp.
               </li>
               <li>Respond to enquiries, complaints, cancellations, and refund requests.</li>
               <li>Maintain records for accounting, audit, and legal compliance.</li>
@@ -284,12 +293,11 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-none space-y-2 pl-0">
               <li>
-                <strong className="text-charcoal">Data fiduciary:</strong> AJS Technologies Pvt Ltd.
-                (operating JOYWAY)
+                <strong className="text-charcoal">Data fiduciary:</strong> JOYWAY
               </li>
               <li>
                 <strong className="text-charcoal">Grievance Officer:</strong> Privacy &amp; Grievance
-                Officer, AJS Technologies Pvt Ltd.
+                Officer, JOYWAY
               </li>
               <li>
                 <strong className="text-charcoal">Grievance email:</strong>{" "}

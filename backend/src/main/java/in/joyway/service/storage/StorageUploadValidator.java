@@ -117,6 +117,7 @@ public final class StorageUploadValidator {
             throw new IllegalArgumentException(typeErrorMessage);
         }
         validateMagicBytes(file, contentType);
+        UploadMalwareScanner.scan(file);
     }
 
     private static void validateMagicBytes(MultipartFile file, String contentType) {

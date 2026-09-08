@@ -29,6 +29,7 @@ public class BookingQueryService {
     private final TravellerRepository travellerRepository;
     private final PaymentRepository paymentRepository;
     private final ReceiptService receiptService;
+    private final ReceiptPdfService receiptPdfService;
     private final CustomerTripInfoService customerTripInfoService;
 
     public BookingDetailResponse getBookingForCustomer(String bookingReference, String customerEmail) {
@@ -40,6 +41,16 @@ public class BookingQueryService {
         Booking booking = findBookingWithAccessCheck(bookingReference, customerEmail);
         Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId()).orElse(null);
         return receiptService.buildReceipt(booking, payment);
+    }
+
+    public byte[] getReceiptPdfForCustomer(String bookingReference, String customerEmail) {
+        Booking booking = findBookingWithAccessCheck(bookingReference, customerEmail);
+        if (booking.getPaymentStatus() != in.joyway.domain.enums.PaymentStatus.PAID
+                && booking.getPaymentStatus() != in.joyway.domain.enums.PaymentStatus.REFUNDED
+                && booking.getPaymentStatus() != in.joyway.domain.enums.PaymentStatus.PARTIALLY_REFUNDED) {
+            throw new IllegalArgumentException("A PDF receipt is available after payment.");
+        }
+        return receiptPdfService.render(getReceiptForCustomer(bookingReference, customerEmail));
     }
 
     Booking findBookingWithAccessCheck(String bookingReference, String customerEmail) {

@@ -6,12 +6,16 @@ import in.joyway.config.RazorpayProperties;
 import in.joyway.domain.entity.Booking;
 import in.joyway.domain.entity.Payment;
 import in.joyway.domain.entity.PaymentWebhookEvent;
+import in.joyway.domain.entity.TravelPackage;
 import in.joyway.domain.enums.BookingStatus;
 import in.joyway.domain.enums.PaymentRecordStatus;
 import in.joyway.domain.enums.PaymentStatus;
 import in.joyway.domain.repository.BookingRepository;
 import in.joyway.domain.repository.PaymentRepository;
 import in.joyway.domain.repository.PaymentWebhookEventRepository;
+import in.joyway.domain.repository.TravelPackageRepository;
+import in.joyway.dto.admin.AdminRefundRequest;
+import in.joyway.dto.admin.AdminRefundResponse;
 import in.joyway.dto.booking.BookingReceiptDto;
 import in.joyway.dto.payment.CreatePaymentOrderRequest;
 import in.joyway.dto.payment.PaymentOrderResponse;
@@ -23,16 +27,21 @@ import in.joyway.notification.BookingNotificationService;
 import in.joyway.observability.WebhookMetricsRecorder;
 import in.joyway.observability.WebhookMetricsRecorder.HandlerBucket;
 import in.joyway.observability.WebhookMetricsRecorder.Outcome;
+import in.joyway.service.audit.AuditLogService;
+import in.joyway.service.operations.ConfirmedBookingTripAssignmentService;
 import in.joyway.service.payment.RazorpayGateway;
 import in.joyway.service.payment.RazorpayGatewayImpl;
 import in.joyway.service.payment.RazorpayOrderResult;
 import in.joyway.service.payment.RazorpayPaymentDetails;
+import in.joyway.service.payment.RazorpayRefundResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -56,6 +65,9 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final BookingNotificationService bookingNotificationService;
     private final WebhookMetricsRecorder webhookMetricsRecorder;
+    private final TravelPackageRepository packageRepository;
+    private final ConfirmedBookingTripAssignmentService tripAssignmentService;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public PaymentOrderResponse createOrder(CreatePaymentOrderRequest request) {
@@ -201,6 +213,8 @@ public class PaymentService {
                         yield WebhookHandlerOutcome.ACKNOWLEDGED;
                     }
                     case "payment.failed" -> handlePaymentFailed(root);
+                    case "refund.processed" -> handleRefundProcessed(root);
+                    case "refund.failed" -> handleRefundFailed(root);
                     default -> {
                         log.info("event=payment.webhook.unhandled handler_bucket=unknown eventType={}", eventType);
                         webhookMetricsRecorder.recordUnknownEvent();
@@ -260,6 +274,7 @@ public class PaymentService {
             case "payment.captured" -> HandlerBucket.PAYMENT_CAPTURED;
             case "payment.failed" -> HandlerBucket.PAYMENT_FAILED;
             case "order.paid" -> HandlerBucket.ORDER_PAID;
+            case "refund.processed", "refund.failed" -> HandlerBucket.REFUND;
             default -> HandlerBucket.UNKNOWN;
         };
     }
@@ -388,6 +403,7 @@ public class PaymentService {
                 booking.getBookingReference(), paymentId);
 
         notifyPaymentSuccessSafely(booking, payment);
+        tryAssignTripSafely(booking);
         return WebhookHandlerOutcome.ACKNOWLEDGED;
     }
 
@@ -533,6 +549,214 @@ public class PaymentService {
                 booking.getBookingReference(), paymentId);
 
         notifyPaymentSuccessSafely(booking, payment);
+        tryAssignTripSafely(booking);
+    }
+
+    @Transactional
+    public AdminRefundResponse refundBooking(Long bookingId, AdminRefundRequest request) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+        booking = bookingRepository.findByBookingReferenceForUpdate(booking.getBookingReference())
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+
+        Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId())
+                .orElseThrow(() -> new IllegalArgumentException("No payment found for this booking."));
+
+        if (payment.getRazorpayPaymentId() == null || payment.getRazorpayPaymentId().isBlank()) {
+            throw new IllegalArgumentException("This booking has no captured Razorpay payment to refund.");
+        }
+        if (payment.getStatus() == PaymentRecordStatus.REFUNDED) {
+            throw new IllegalArgumentException("This payment is already refunded.");
+        }
+        if (payment.getStatus() != PaymentRecordStatus.CAPTURED
+                && payment.getStatus() != PaymentRecordStatus.PARTIALLY_REFUNDED) {
+            throw new IllegalArgumentException("Only captured payments can be refunded.");
+        }
+        if (payment.getRazorpayRefundId() != null
+                && payment.getStatus() == PaymentRecordStatus.CAPTURED
+                && refundedAmountOrZero(payment).compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("A refund is already pending for this payment.");
+        }
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new IllegalArgumentException("Completed trips cannot be refunded from admin. Contact finance.");
+        }
+
+        BigDecimal remaining = payment.getAmount().subtract(refundedAmountOrZero(payment));
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("There is no remaining amount to refund.");
+        }
+
+        BigDecimal requested = request != null && request.getAmount() != null
+                ? request.getAmount().setScale(2, RoundingMode.HALF_UP)
+                : remaining;
+        if (requested.compareTo(remaining) > 0) {
+            throw new IllegalArgumentException("Refund amount exceeds the remaining paid amount.");
+        }
+
+        int amountPaise = RazorpayGatewayImpl.toPaise(requested);
+        RazorpayRefundResult result = razorpayGateway.createRefund(
+                payment.getRazorpayPaymentId(),
+                amountPaise,
+                booking.getBookingReference()
+        );
+
+        String refundState = result.status() == null ? "processed" : result.status().toLowerCase();
+        payment.setRazorpayRefundId(result.refundId());
+
+        if ("failed".equals(refundState)) {
+            paymentRepository.save(payment);
+            throw new IllegalArgumentException("Razorpay declined this refund.");
+        }
+
+        if ("pending".equals(refundState) || "created".equals(refundState)) {
+            paymentRepository.save(payment);
+            auditLogService.log("REFUND_PENDING", "BOOKING", booking.getId(),
+                    "Refund " + result.refundId() + " pending for " + booking.getBookingReference() + ".");
+            log.info("event=payment.refund.pending bookingReference={} refundId={}",
+                    booking.getBookingReference(), result.refundId());
+            return toRefundResponse(booking, payment, "PENDING");
+        }
+
+        applyRefundCapture(booking, payment, requested, result.refundId());
+        auditLogService.log("REFUND_ISSUED", "BOOKING", booking.getId(),
+                "Refund " + result.refundId() + " of " + requested + " " + booking.getCurrency()
+                        + " for " + booking.getBookingReference() + ".");
+        notifyRefundSafely(booking, payment, requested);
+        return toRefundResponse(booking, payment, "PROCESSED");
+    }
+
+    private WebhookHandlerOutcome handleRefundProcessed(JsonNode root) {
+        JsonNode refundNode = root.path("payload").path("refund").path("entity");
+        if (refundNode.isMissingNode()) {
+            log.warn("event=payment.webhook.unrecoverable reason=missing_refund_payload");
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
+        }
+
+        String refundId = refundNode.path("id").asText(null);
+        String paymentId = refundNode.path("payment_id").asText(null);
+        JsonNode amountNode = refundNode.path("amount");
+        if (refundId == null || paymentId == null || amountNode.isMissingNode() || !amountNode.canConvertToLong()) {
+            log.warn("event=payment.webhook.unrecoverable reason=missing_refund_identifiers");
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
+        }
+
+        Payment payment = paymentRepository.findByRazorpayPaymentId(paymentId).orElse(null);
+        if (payment == null) {
+            log.warn("event=payment.webhook.unrecoverable reason=unknown_payment_for_refund paymentId={}", paymentId);
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
+        }
+
+        Booking booking = bookingRepository.findByBookingReferenceForUpdate(
+                payment.getBooking().getBookingReference()
+        ).orElse(null);
+        if (booking == null) {
+            return WebhookHandlerOutcome.RETRYABLE;
+        }
+
+        if (payment.getStatus() == PaymentRecordStatus.REFUNDED
+                && refundId.equals(payment.getRazorpayRefundId())) {
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
+        }
+
+        BigDecimal refundAmount = paiseToInr(amountNode.asLong());
+        applyRefundCapture(booking, payment, refundAmount, refundId);
+        notifyRefundSafely(booking, payment, refundAmount);
+        log.info("event=payment.webhook.refunded bookingReference={} refundId={}",
+                booking.getBookingReference(), refundId);
+        return WebhookHandlerOutcome.ACKNOWLEDGED;
+    }
+
+    private WebhookHandlerOutcome handleRefundFailed(JsonNode root) {
+        JsonNode refundNode = root.path("payload").path("refund").path("entity");
+        String refundId = refundNode.path("id").asText(null);
+        String paymentId = refundNode.path("payment_id").asText(null);
+        if (paymentId == null) {
+            return WebhookHandlerOutcome.ACKNOWLEDGED;
+        }
+        paymentRepository.findByRazorpayPaymentId(paymentId).ifPresent(payment -> {
+            if (refundId != null && refundId.equals(payment.getRazorpayRefundId())
+                    && payment.getStatus() == PaymentRecordStatus.CAPTURED) {
+                payment.setRazorpayRefundId(null);
+                paymentRepository.save(payment);
+                log.warn("event=payment.refund.failed paymentId={} refundId={}", paymentId, refundId);
+            }
+        });
+        return WebhookHandlerOutcome.ACKNOWLEDGED;
+    }
+
+    private void applyRefundCapture(Booking booking, Payment payment, BigDecimal refundAmount, String refundId) {
+        BigDecimal already = refundedAmountOrZero(payment);
+        BigDecimal next = already.add(refundAmount);
+        if (next.compareTo(payment.getAmount()) > 0) {
+            next = payment.getAmount();
+        }
+        payment.setRefundedAmount(next);
+        payment.setRazorpayRefundId(refundId);
+        boolean full = next.compareTo(payment.getAmount()) >= 0;
+        payment.setStatus(full ? PaymentRecordStatus.REFUNDED : PaymentRecordStatus.PARTIALLY_REFUNDED);
+        paymentRepository.save(payment);
+
+        if (full) {
+            restoreSeatsIfHeld(booking);
+            booking.setStatus(BookingStatus.REFUNDED);
+            booking.setPaymentStatus(PaymentStatus.REFUNDED);
+        } else {
+            booking.setPaymentStatus(PaymentStatus.PARTIALLY_REFUNDED);
+        }
+        bookingRepository.save(booking);
+    }
+
+    private void restoreSeatsIfHeld(Booking booking) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED
+                && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            return;
+        }
+        TravelPackage pkg = packageRepository.findByIdForUpdate(booking.getTravelPackage().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found."));
+        pkg.setAvailableSeats(pkg.getAvailableSeats() + booking.getNumberOfTravellers());
+        packageRepository.save(pkg);
+    }
+
+    private static BigDecimal refundedAmountOrZero(Payment payment) {
+        return payment.getRefundedAmount() == null ? BigDecimal.ZERO : payment.getRefundedAmount();
+    }
+
+    private static BigDecimal paiseToInr(long paise) {
+        return BigDecimal.valueOf(paise).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    private AdminRefundResponse toRefundResponse(Booking booking, Payment payment, String refundState) {
+        return AdminRefundResponse.builder()
+                .bookingId(booking.getId())
+                .bookingReference(booking.getBookingReference())
+                .bookingStatus(booking.getStatus().name())
+                .paymentStatus(booking.getPaymentStatus().name())
+                .paymentRecordStatus(payment.getStatus().name())
+                .razorpayRefundId(payment.getRazorpayRefundId())
+                .refundState(refundState)
+                .refundedAmount(refundedAmountOrZero(payment))
+                .totalAmount(booking.getTotalAmount())
+                .build();
+    }
+
+    private void tryAssignTripSafely(Booking booking) {
+        try {
+            tripAssignmentService.assignIfSingleMatchingTrip(booking);
+        } catch (Exception ex) {
+            log.warn("Auto trip assignment skipped for reference={}: {}",
+                    booking.getBookingReference(), ex.getClass().getSimpleName());
+        }
+    }
+
+    private void notifyRefundSafely(Booking booking, Payment payment, BigDecimal refundAmount) {
+        try {
+            bookingRepository.findByIdWithDetails(booking.getId()).ifPresent(fullBooking ->
+                    bookingNotificationService.onRefundProcessed(fullBooking, payment, refundAmount)
+            );
+        } catch (Exception ex) {
+            log.warn("Refund notification failed for reference={}: {}",
+                    booking.getBookingReference(), ex.getClass().getSimpleName());
+        }
     }
 
     private void notifyPaymentSuccessSafely(Booking booking, Payment payment) {

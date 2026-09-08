@@ -7,6 +7,7 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.models.UserDelegationKey;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.azure.storage.common.StorageSharedKeyCredential;
@@ -27,8 +28,6 @@ import java.util.UUID;
 
 /**
  * Azure Blob Storage implementation for production.
- *
- * <p>TODO: Integrate malware scanning before files become available to users.
  */
 @Slf4j
 public class AzureBlobStorageService implements DocumentStorageService {
@@ -36,15 +35,29 @@ public class AzureBlobStorageService implements DocumentStorageService {
     private final StorageProperties properties;
     private final BlobContainerClient containerClient;
     private final StorageSharedKeyCredential sharedKeyCredential;
+    private final BlobServiceClient blobServiceClient;
 
     public AzureBlobStorageService(StorageProperties properties) {
-        this(properties, buildContainerClient(properties));
+        this(properties, buildServiceClient(properties));
+    }
+
+    private AzureBlobStorageService(StorageProperties properties, BlobServiceClient serviceClient) {
+        this(properties, serviceClient.getBlobContainerClient(properties.getContainerName()), serviceClient);
     }
 
     /** Package-private for unit tests with a mocked {@link BlobContainerClient}. */
     AzureBlobStorageService(StorageProperties properties, BlobContainerClient containerClient) {
+        this(properties, containerClient, null);
+    }
+
+    AzureBlobStorageService(
+            StorageProperties properties,
+            BlobContainerClient containerClient,
+            BlobServiceClient blobServiceClient
+    ) {
         this.properties = properties;
         this.containerClient = containerClient;
+        this.blobServiceClient = blobServiceClient;
         this.sharedKeyCredential = properties.isUseManagedIdentity()
                 ? null
                 : buildSharedKeyCredential(properties);
@@ -134,13 +147,11 @@ public class AzureBlobStorageService implements DocumentStorageService {
     @Override
     public Optional<String> getReadAccessUrl(String storageKey) {
         StorageKeyValidator.validate(storageKey);
-        if (sharedKeyCredential == null) {
-            // Managed Identity deployments should stream through the backend or use
-            // user-delegation SAS in a future iteration.
+        if (sharedKeyCredential == null && blobServiceClient == null) {
             return Optional.empty();
         }
         BlobClient blobClient = containerClient.getBlobClient(storageKey);
-        if (!blobClient.exists()) {
+        if (blobClient == null || !blobClient.exists()) {
             return Optional.empty();
         }
 
@@ -149,25 +160,36 @@ public class AzureBlobStorageService implements DocumentStorageService {
         BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiry, permission)
                 .setProtocol(SasProtocol.HTTPS_ONLY);
 
-        String sas = blobClient.generateSas(values);
-        return Optional.of(blobClient.getBlobUrl() + "?" + sas);
+        try {
+            if (sharedKeyCredential != null) {
+                String sas = blobClient.generateSas(values);
+                return Optional.of(blobClient.getBlobUrl() + "?" + sas);
+            }
+            if (blobServiceClient != null) {
+                OffsetDateTime start = OffsetDateTime.now().minusMinutes(5);
+                UserDelegationKey key = blobServiceClient.getUserDelegationKey(start, expiry);
+                String sas = blobClient.generateUserDelegationSas(values, key);
+                return Optional.of(blobClient.getBlobUrl() + "?" + sas);
+            }
+        } catch (RuntimeException ex) {
+            log.warn("event=storage.sas.failed provider=azure reason={}", ex.getClass().getSimpleName());
+            return Optional.empty();
+        }
+        return Optional.empty();
     }
 
-    private static BlobContainerClient buildContainerClient(StorageProperties properties) {
-        BlobServiceClient serviceClient;
+    private static BlobServiceClient buildServiceClient(StorageProperties properties) {
         if (properties.isUseManagedIdentity()) {
-            serviceClient = new BlobServiceClientBuilder()
+            return new BlobServiceClientBuilder()
                     .endpoint(requireEndpoint(properties))
                     .credential(new DefaultAzureCredentialBuilder().build())
                     .buildClient();
-        } else {
-            StorageSharedKeyCredential credential = buildSharedKeyCredential(properties);
-            serviceClient = new BlobServiceClientBuilder()
-                    .endpoint(requireEndpoint(properties))
-                    .credential(credential)
-                    .buildClient();
         }
-        return serviceClient.getBlobContainerClient(properties.getContainerName());
+        StorageSharedKeyCredential credential = buildSharedKeyCredential(properties);
+        return new BlobServiceClientBuilder()
+                .endpoint(requireEndpoint(properties))
+                .credential(credential)
+                .buildClient();
     }
 
     private static StorageSharedKeyCredential buildSharedKeyCredential(StorageProperties properties) {

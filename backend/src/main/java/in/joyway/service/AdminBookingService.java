@@ -79,8 +79,12 @@ public class AdminBookingService {
                 .paymentStatus(booking.getPaymentStatus().name())
                 .razorpayOrderId(payment != null ? payment.getRazorpayOrderId() : null)
                 .razorpayPaymentId(payment != null ? payment.getRazorpayPaymentId() : null)
+                .razorpayRefundId(payment != null ? payment.getRazorpayRefundId() : null)
+                .paymentRecordStatus(payment != null ? payment.getStatus().name() : null)
+                .refundedAmount(payment != null && payment.getRefundedAmount() != null
+                        ? payment.getRefundedAmount() : java.math.BigDecimal.ZERO)
                 .signatureVerified(payment != null && Boolean.TRUE.equals(payment.getSignatureVerified()))
-                .paymentDate(payment != null && payment.getStatus() == PaymentRecordStatus.CAPTURED
+                .paymentDate(payment != null && isCapturedOrRefunded(payment.getStatus())
                         ? payment.getUpdatedAt() : null)
                 .createdAt(booking.getCreatedAt())
                 .travellers(travellers.stream()
@@ -90,5 +94,11 @@ public class AdminBookingService {
                                 .build())
                         .toList())
                 .build();
+    }
+
+    private static boolean isCapturedOrRefunded(PaymentRecordStatus status) {
+        return status == PaymentRecordStatus.CAPTURED
+                || status == PaymentRecordStatus.PARTIALLY_REFUNDED
+                || status == PaymentRecordStatus.REFUNDED;
     }
 }

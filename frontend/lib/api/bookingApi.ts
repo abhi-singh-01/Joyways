@@ -161,6 +161,41 @@ export async function getBookingReceipt(
   return response.data;
 }
 
+export async function downloadBookingReceiptPdf(
+  bookingReference: string,
+  email: string
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}/api/bookings/receipt.pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reference: bookingReference, email }),
+    });
+  } catch {
+    throw new Error("Unable to reach the server. Please try again.");
+  }
+  if (!response.ok) {
+    let message = "Unable to download receipt.";
+    try {
+      const json = (await response.json()) as { message?: string };
+      if (json.message) message = json.message;
+    } catch {
+      // keep default
+    }
+    throw new Error(message);
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `joyway-receipt-${bookingReference}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function cancelBooking(
   bookingReference: string,
   email: string

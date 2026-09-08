@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/layout/PageHero";
 import { PUBLIC_EMAILS } from "@/lib/publicEmails";
+import { DEVELOPER_SITE_LABEL, DEVELOPER_SITE_URL } from "@/lib/publicCredits";
 import {
   PUBLIC_CALL_NUMBER,
   formatPhoneDisplay,
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
     "Terms and conditions for using JOYWAY — group travel packages, bookings, and payments on joyway.in.",
 };
 
-const lastUpdated = "1 September 2026";
+const lastUpdated = "9 September 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -50,9 +51,18 @@ export default function TermsPage() {
               (the &quot;Website&quot;) and any bookings made through it.
             </p>
             <p>
-              The Website is developed and managed by <strong>AJS Technologies Pvt Ltd.</strong>{" "}
-              By using the Website, creating a booking, or making a payment, you agree to be bound
-              by these Terms. If you do not agree, please do not use the Website.
+              The Website is developed by{" "}
+              <a
+                href={DEVELOPER_SITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-forest hover:text-forest-light"
+              >
+                {DEVELOPER_SITE_LABEL}
+              </a>
+              . All rights in JOYWAY and this Website are reserved by JOYWAY. By using the Website,
+              creating a booking, or making a payment, you agree to be bound by these Terms. If you
+              do not agree, please do not use the Website.
             </p>
           </Section>
 
@@ -86,8 +96,8 @@ export default function TermsPage() {
               <li>Valid government-issued ID details where requested for travel compliance</li>
             </ul>
             <p>
-              A booking is confirmed only after successful payment (or partial payment, where
-              applicable) and receipt of a booking confirmation from JOYWAY by email. We reserve the
+              A booking is confirmed only after successful payment of the full trip amount and
+              receipt of a booking confirmation from JOYWAY by email. We reserve the
               right to decline or cancel a booking if information is incorrect, incomplete, or if
               the trip cannot be fulfilled.
             </p>
@@ -170,8 +180,8 @@ export default function TermsPage() {
 
           <Section title="10. Limitation of liability">
             <p>
-              To the fullest extent permitted by applicable law, JOYWAY and AJS Technologies Pvt
-              Ltd. shall not be liable for indirect, incidental, or consequential losses, including
+              To the fullest extent permitted by applicable law, JOYWAY shall not be liable for
+              indirect, incidental, or consequential losses, including
               loss of enjoyment, missed connections, or personal belongings left unattended during
               a trip.
             </p>

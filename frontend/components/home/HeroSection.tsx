@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, useScroll } from "framer-motion";
 import { ArrowRight, Bus, MapPin, Shield, Sparkles } from "lucide-react";
 import { MovingBorder } from "@/components/effects/MovingBorder";
+import { HeroAtmosphere } from "@/components/home/HeroAtmosphere";
 import { HeroLandscape } from "@/components/home/HeroLandscape";
 import { TripSearchBar } from "@/components/home/TripSearchBar";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -55,10 +56,11 @@ export function HeroSection() {
   });
 
   return (
-    <section ref={heroRef} className="relative overflow-x-hidden lg:min-h-[92vh]">
+    <section ref={heroRef} className="relative overflow-x-clip lg:min-h-[92vh]">
       <HeroLandscape scrollYProgress={scrollYProgress} />
+      <HeroAtmosphere />
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-10 px-4 pb-10 pt-20 sm:gap-12 sm:px-6 lg:min-h-[92vh] lg:justify-center lg:gap-10 lg:pb-16 lg:px-8">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-10 px-4 pb-14 pt-20 sm:gap-12 sm:px-6 lg:min-h-[92vh] lg:justify-center lg:gap-10 lg:pb-20 lg:px-8">
         <motion.div
           variants={heroCardVariants}
           initial="hidden"

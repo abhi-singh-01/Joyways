@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getBooking, getBookingReceipt, cancelBooking, type BookingDetail, type BookingReceipt } from "@/lib/api/bookingApi";
+import { getBooking, getBookingReceipt, downloadBookingReceiptPdf, cancelBooking, type BookingDetail, type BookingReceipt } from "@/lib/api/bookingApi";
 import { PaymentCheckout } from "@/components/booking/PaymentCheckout";
 import { formatDateRange, formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +19,8 @@ async function fetchBookingAndReceipt(reference: string, email: string) {
   const detail = await getBooking(reference.trim(), email.trim());
   const receipt =
     detail.paymentStatus === "PAID"
+    || detail.paymentStatus === "REFUNDED"
+    || detail.paymentStatus === "PARTIALLY_REFUNDED"
       ? await getBookingReceipt(reference.trim(), email.trim())
       : null;
   return { detail, receipt };
@@ -37,6 +39,7 @@ function BookingLookupContent({ initialReference }: { initialReference: string }
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   async function lookup(ref = reference, em = email) {
     const validation = bookingLookupSchema.safeParse({
@@ -156,6 +159,20 @@ function BookingLookupContent({ initialReference }: { initialReference: string }
                   <span className="text-charcoal-muted">Payment ID:</span> {receipt.razorpayPaymentId}
                 </p>
               )}
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4"
+                disabled={downloadingPdf}
+                onClick={() => {
+                  setDownloadingPdf(true);
+                  downloadBookingReceiptPdf(booking.bookingReference, email.trim())
+                    .catch((err) => setError(err instanceof Error ? err.message : "Download failed"))
+                    .finally(() => setDownloadingPdf(false));
+                }}
+              >
+                {downloadingPdf ? "Preparing PDF..." : "Download PDF receipt"}
+              </Button>
             </div>
           )}
 

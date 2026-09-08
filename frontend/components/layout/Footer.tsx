@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { PUBLIC_EMAILS } from "@/lib/publicEmails";
+import { DEVELOPER_SITE_LABEL, DEVELOPER_SITE_URL } from "@/lib/publicCredits";
 import {
   PUBLIC_CALL_NUMBER,
   formatPhoneDisplay,
@@ -166,7 +167,15 @@ export function Footer() {
             &copy; {new Date().getFullYear()} JOYWAY. All rights reserved.
           </p>
           <p className="mt-2 text-sm text-white/60">
-            Developed and managed by AJS Technologies Pvt Ltd.
+            Developed by{" "}
+            <a
+              href={DEVELOPER_SITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/80 underline-offset-2 transition-colors hover:text-white hover:underline"
+            >
+              {DEVELOPER_SITE_LABEL}
+            </a>
           </p>
         </div>
       </div>

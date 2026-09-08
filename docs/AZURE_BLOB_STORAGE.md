@@ -155,9 +155,9 @@ In Azure Portal:
 ## Security
 
 - Container remains private; public access only through controlled backend routes.
-- Upload validation is shared across providers (`StorageUploadValidator`).
+- Upload validation is shared across providers (`StorageUploadValidator` plus `UploadMalwareScanner`).
 - Keys validated against traversal (`StorageKeyValidator`).
-- TODO: malware scanning hook before wider document access.
+- Managed Identity read URLs use user-delegation SAS when the storage client is available.
 
 ## Related files
 

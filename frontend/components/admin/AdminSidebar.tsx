@@ -11,6 +11,8 @@ import {
   Bus,
   UserCircle,
   Route,
+  ScrollText,
+  Mail,
 } from "lucide-react";
 import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,8 @@ const navItems = [
   { href: "/admin/trips", label: "Trips", icon: Route },
   { href: "/admin/vehicles", label: "Vehicles", icon: Bus },
   { href: "/admin/drivers", label: "Drivers", icon: UserCircle },
+  { href: "/admin/audit-logs", label: "Audit log", icon: ScrollText },
+  { href: "/admin/email-logs", label: "Email log", icon: Mail },
 ];
 
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {

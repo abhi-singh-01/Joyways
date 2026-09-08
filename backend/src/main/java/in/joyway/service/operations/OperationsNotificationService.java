@@ -70,4 +70,24 @@ public class OperationsNotificationService {
                 driverId
         );
     }
+
+    public void notifyDocumentUploaded(String bookingReference, Long bookingId) {
+        notificationService.notifyAdmins(
+                NotificationType.DOCUMENT_UPLOADED,
+                "Traveller documents uploaded",
+                bookingReference,
+                "BOOKING",
+                bookingId
+        );
+    }
+
+    public void notifyVehicleUnavailable(String registration, String status, Long vehicleId) {
+        notificationService.notifyAdmins(
+                NotificationType.VEHICLE_UNAVAILABLE,
+                "Vehicle unavailable",
+                registration + " is now " + status,
+                "VEHICLE",
+                vehicleId
+        );
+    }
 }

@@ -37,6 +37,7 @@ public class EmailPreviewController {
         templates.put("payment-failed", EmailTemplates.PAYMENT_FAILED);
         templates.put("booking-confirmed", EmailTemplates.BOOKING_CONFIRMED);
         templates.put("booking-cancelled", EmailTemplates.BOOKING_CANCELLED);
+        templates.put("booking-refunded", EmailTemplates.BOOKING_REFUNDED);
         templates.put("trip-reminder-7", EmailTemplates.TRIP_REMINDER_7);
         templates.put("trip-reminder-1", EmailTemplates.TRIP_REMINDER_1);
         return ApiResponse.success(templates);
@@ -67,6 +68,8 @@ public class EmailPreviewController {
         vars.put("bookingUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
         vars.put("cancellationDate", "27 Aug 2026");
         vars.put("refundNote", "If a refund applies, our team will process it separately and confirm by email.");
+        vars.put("refundAmount", "12000.00");
+        vars.put("refundId", "rfnd_sample123");
         vars.put("reminderMessage", "Your JOYWAY trip is coming up in 7 days.");
         vars.put("daysBefore", "7");
         vars.put("receiptTitle", "Travel Booking Receipt");

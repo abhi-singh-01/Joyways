@@ -4,6 +4,7 @@ import com.razorpay.Order;
 import com.razorpay.Payment;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
+import com.razorpay.Refund;
 import com.razorpay.Utils;
 import in.joyway.config.RazorpayProperties;
 import in.joyway.exception.RazorpayApiException;
@@ -103,6 +104,45 @@ public class RazorpayGatewayImpl implements RazorpayGateway {
         } catch (RazorpayException ex) {
             log.warn("Razorpay payment fetch failed for paymentId={}", paymentId);
             return Optional.empty();
+        }
+    }
+
+    @Override
+    public RazorpayRefundResult createRefund(String paymentId, int amountPaise, String receiptReference) {
+        if (!razorpayProperties.isConfigured()) {
+            throw new IllegalStateException("Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.");
+        }
+        if (amountPaise < MIN_AMOUNT_PAISE) {
+            throw new IllegalArgumentException("Refund amount must be at least ₹1.00.");
+        }
+
+        try {
+            RazorpayClient client = new RazorpayClient(
+                    razorpayProperties.getKeyId(),
+                    razorpayProperties.getKeySecret()
+            );
+
+            JSONObject options = new JSONObject();
+            options.put("amount", amountPaise);
+            options.put("speed", "normal");
+            if (receiptReference != null && !receiptReference.isBlank()) {
+                options.put("receipt", receiptReference);
+            }
+
+            Refund refund = client.payments.refund(paymentId, options);
+            String refundId = refund.get("id");
+            String status = refund.has("status") ? refund.get("status") : "processed";
+            Object amount = refund.get("amount");
+            long returnedPaise = amount instanceof Number number
+                    ? number.longValue()
+                    : Long.parseLong(amount.toString());
+            return new RazorpayRefundResult(refundId, returnedPaise, status);
+        } catch (RazorpayException ex) {
+            log.error("Razorpay refund failed for paymentId={}", paymentId);
+            if (isAuthFailure(ex)) {
+                throw new RazorpayApiException("Razorpay authentication failed.", 401);
+            }
+            throw new RazorpayApiException("Unable to process refund. Please try again.", 502);
         }
     }
 

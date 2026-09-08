@@ -38,6 +38,18 @@ class AdminOperationsSecurityTest {
     }
 
     @Test
+    void auditLogsEndpoint_requiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/admin/audit-logs"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void emailLogsEndpoint_requiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/admin/email-logs"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void createVehicle_requiresAuthentication() throws Exception {
         mockMvc.perform(post("/api/admin/vehicles")
                         .contentType("application/json")

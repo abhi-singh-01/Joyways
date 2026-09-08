@@ -15,6 +15,7 @@ import in.joyway.exception.InsufficientSeatsException;
 import in.joyway.exception.ResourceNotFoundException;
 import in.joyway.mapper.BookingMapper;
 import in.joyway.notification.BookingNotificationService;
+import in.joyway.service.operations.OperationsNotificationService;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.util.BookingReferenceGenerator;
 import in.joyway.util.IdDocumentReferenceValidator;
@@ -53,6 +54,7 @@ public class BookingService {
     private final DocumentStorageService documentStorageService;
     private final BookingNotificationService bookingNotificationService;
     private final BookingProperties bookingProperties;
+    private final OperationsNotificationService operationsNotificationService;
 
     @Transactional(readOnly = true)
     public BookingReviewDto previewBooking(CreateBookingRequest request) {
@@ -154,6 +156,12 @@ public class BookingService {
         log.info("event=booking.created bookingReference={} packageId={} travellers={}",
                 reference, pkg.getId(), request.getNumberOfTravellers());
 
+        boolean uploadedDocuments = savedTravellers.stream()
+                .anyMatch(t -> t.getPrivateDocumentStorageKey() != null);
+        if (uploadedDocuments) {
+            operationsNotificationService.notifyDocumentUploaded(reference, booking.getId());
+        }
+
         try {
             bookingNotificationService.onBookingCreated(booking);
         } catch (Exception ex) {
@@ -248,7 +256,7 @@ public class BookingService {
         if (booking.getPaymentStatus() == PaymentStatus.PAID
                 || booking.getStatus() == BookingStatus.CONFIRMED) {
             throw new IllegalArgumentException(
-                    "Paid bookings cannot be cancelled here. Contact support for a refund.");
+                    "Paid bookings cannot be cancelled here. Issue a refund from this booking instead.");
         }
 
         TravelPackage pkg = packageRepository.findByIdForUpdate(booking.getTravelPackage().getId())

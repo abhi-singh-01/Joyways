@@ -40,6 +40,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -67,6 +68,12 @@ class PaymentServiceTest {
     private BookingNotificationService bookingNotificationService;
     @Mock
     private WebhookMetricsRecorder webhookMetricsRecorder;
+    @Mock
+    private in.joyway.domain.repository.TravelPackageRepository packageRepository;
+    @Mock
+    private in.joyway.service.operations.ConfirmedBookingTripAssignmentService tripAssignmentService;
+    @Mock
+    private in.joyway.service.audit.AuditLogService auditLogService;
 
     private PaymentService paymentService;
 
@@ -88,7 +95,10 @@ class PaymentServiceTest {
                 receiptService,
                 objectMapper,
                 bookingNotificationService,
-                webhookMetricsRecorder
+                webhookMetricsRecorder,
+                packageRepository,
+                tripAssignmentService,
+                auditLogService
         );
 
         customer = Customer.builder()
@@ -995,5 +1005,102 @@ class PaymentServiceTest {
 
         verify(razorpayGateway, never()).fetchPayment(any());
         verify(bookingNotificationService, never()).onPaymentSuccess(any(), any());
+    }
+
+    @Test
+    void refundBooking_fullRefundRestoresSeatsAndMarksRefunded() {
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setPaymentStatus(PaymentStatus.PAID);
+        travelPackage.setAvailableSeats(8);
+
+        Payment payment = Payment.builder()
+                .id(1L)
+                .booking(booking)
+                .razorpayPaymentId("pay_test456")
+                .amount(new BigDecimal("10000.00"))
+                .currency("INR")
+                .status(PaymentRecordStatus.CAPTURED)
+                .refundedAmount(BigDecimal.ZERO)
+                .build();
+
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00001"))
+                .thenReturn(Optional.of(booking));
+        when(paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(100L))
+                .thenReturn(Optional.of(payment));
+        when(razorpayGateway.createRefund("pay_test456", 1000000, "JW-2026-00001"))
+                .thenReturn(new in.joyway.service.payment.RazorpayRefundResult("rfnd_1", 1000000, "processed"));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(packageRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(travelPackage));
+        when(bookingRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(booking));
+
+        var response = paymentService.refundBooking(100L, new in.joyway.dto.admin.AdminRefundRequest());
+
+        assertThat(response.refundState()).isEqualTo("PROCESSED");
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.REFUNDED);
+        assertThat(booking.getPaymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(payment.getStatus()).isEqualTo(PaymentRecordStatus.REFUNDED);
+        assertThat(travelPackage.getAvailableSeats()).isEqualTo(10);
+        verify(bookingNotificationService).onRefundProcessed(eq(booking), eq(payment), any());
+    }
+
+    @Test
+    void refundBooking_rejectsUncapturedPayment() {
+        Payment payment = Payment.builder()
+                .id(1L)
+                .booking(booking)
+                .status(PaymentRecordStatus.CREATED)
+                .amount(new BigDecimal("10000.00"))
+                .build();
+
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00001"))
+                .thenReturn(Optional.of(booking));
+        when(paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(100L))
+                .thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.refundBooking(100L, new in.joyway.dto.admin.AdminRefundRequest()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no captured Razorpay payment");
+        verify(razorpayGateway, never()).createRefund(any(), anyInt(), any());
+    }
+
+    @Test
+    void webhook_refundProcessed_marksBookingRefunded() {
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setPaymentStatus(PaymentStatus.PAID);
+        travelPackage.setAvailableSeats(8);
+
+        Payment payment = Payment.builder()
+                .id(1L)
+                .booking(booking)
+                .razorpayPaymentId("pay_test456")
+                .amount(new BigDecimal("10000.00"))
+                .currency("INR")
+                .status(PaymentRecordStatus.CAPTURED)
+                .refundedAmount(BigDecimal.ZERO)
+                .build();
+
+        String payload = """
+                {"event":"refund.processed","payload":{"refund":{"entity":
+                {"id":"rfnd_1","payment_id":"pay_test456","amount":1000000,"status":"processed"}}}}""";
+
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_refund")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentRepository.findByRazorpayPaymentId("pay_test456")).thenReturn(Optional.of(payment));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00001"))
+                .thenReturn(Optional.of(booking));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(packageRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(travelPackage));
+        when(bookingRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(booking));
+
+        paymentService.processWebhook(payload, "sig", "evt_refund");
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.REFUNDED);
+        assertThat(payment.getStatus()).isEqualTo(PaymentRecordStatus.REFUNDED);
+        verify(webhookMetricsRecorder).recordSuccess();
     }
 }

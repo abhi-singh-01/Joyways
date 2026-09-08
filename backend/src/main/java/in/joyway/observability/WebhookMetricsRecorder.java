@@ -25,6 +25,7 @@ public class WebhookMetricsRecorder {
         PAYMENT_CAPTURED("payment_captured"),
         PAYMENT_FAILED("payment_failed"),
         ORDER_PAID("order_paid"),
+        REFUND("refund"),
         UNKNOWN("unknown"),
         NONE("none");
 
