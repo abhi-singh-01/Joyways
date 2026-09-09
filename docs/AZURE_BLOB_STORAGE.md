@@ -100,9 +100,9 @@ Do **not** embed connection strings or account keys in the frontend, Docker imag
 
 ## Serving files
 
-- **Package images:** still served through the backend at `{PUBLIC_API_BASE_URL}/api/files/package-images/{filename}`. Works with both local and Azure storage.
+- **Package images:** served through the backend at `/api/files/package-images/{filename}`. Public URLs use `PACKAGE_IMAGE_CDN_BASE_URL` when set (Azure Front Door), otherwise `PUBLIC_API_BASE_URL`. The blob container stays private; the CDN caches the backend response.
 - **Traveller documents:** stored privately; stream via admin APIs using `DocumentStorageService.retrieve()` (no public URL).
-- **SAS URLs:** `getReadAccessUrl()` returns short-lived read SAS when using shared-key auth. With Managed Identity, return empty and stream through the backend (user-delegation SAS can be added later).
+- **SAS URLs:** `getReadAccessUrl()` can mint a short-lived HTTPS-only read SAS (shared key or Managed Identity user-delegation). Current product paths stream files through the backend instead of exposing SAS links.
 
 ## One-off migration (local → Azure)
 
@@ -139,7 +139,7 @@ In Azure Portal:
 ## Cost notes
 
 - Charges depend on stored GB, transactions, and egress.
-- Package images are read on every listing/detail view; consider CDN in a future phase.
+- Package images are read on listing/detail views. Production uses Azure Front Door profile `joyway-afd-prod` (endpoint `joyway-images-prod`) in front of `api.joyway.in` for `/api/files/package-images/*`. Set `PACKAGE_IMAGE_CDN_BASE_URL` to the Front Door hostname after the frontend CSP/image allowlist is deployed.
 - Private traveller documents have lower read volume.
 
 ## Troubleshooting
@@ -157,7 +157,7 @@ In Azure Portal:
 - Container remains private; public access only through controlled backend routes.
 - Upload validation is shared across providers (`StorageUploadValidator` plus `UploadMalwareScanner`).
 - Keys validated against traversal (`StorageKeyValidator`).
-- Managed Identity read URLs use user-delegation SAS when the storage client is available.
+- `getReadAccessUrl()` can issue user-delegation SAS under Managed Identity; public and admin file access still streams through the backend.
 
 ## Related files
 

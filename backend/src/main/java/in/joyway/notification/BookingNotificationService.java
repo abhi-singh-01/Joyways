@@ -9,6 +9,8 @@ import in.joyway.service.ReceiptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Locale;
@@ -19,7 +21,12 @@ import java.util.Map;
 public class BookingNotificationService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
     private static final String ENTITY_BOOKING = "BOOKING";
+    private static final String VAR_PAYMENT_STATUS_LABEL = "paymentStatusLabel";
+    private static final String VAR_BOOKING_STATUS_LABEL = "bookingStatusLabel";
+    private static final String VAR_CONTINUE_PAYMENT_URL = "continuePaymentUrl";
+    private static final String VAR_PAYMENT_ID = "paymentId";
 
     private final EmailService emailService;
     private final NotificationService notificationService;
@@ -43,12 +50,12 @@ public class BookingNotificationService {
 
     public void onBookingCreated(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("paymentStatusLabel", booking.getPaymentStatus().name().replace('_', ' '));
-        vars.put("bookingStatusLabel", booking.getStatus().name().replace('_', ' '));
+        vars.put(VAR_PAYMENT_STATUS_LABEL, booking.getPaymentStatus().name().replace('_', ' '));
+        vars.put(VAR_BOOKING_STATUS_LABEL, booking.getStatus().name().replace('_', ' '));
         vars.put("paymentPendingNote", booking.getPaymentStatus() == PaymentStatus.PENDING
                 ? "Payment is pending. Please complete payment to confirm your seats."
                 : "");
-        vars.put("continuePaymentUrl", lookupUrl(booking));
+        vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
 
         emailService.sendTemplateEmailAsync(
                 EmailTemplates.BOOKING_CREATED,
@@ -86,8 +93,9 @@ public class BookingNotificationService {
 
     public void onPaymentSuccess(Booking booking, Payment payment) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("paymentId", payment.getRazorpayPaymentId() != null ? payment.getRazorpayPaymentId() : "—");
-        vars.put("paymentDate", payment.getUpdatedAt() != null ? DATE_FMT.format(payment.getUpdatedAt().atZone(java.time.ZoneId.of("Asia/Kolkata"))) : "—");
+        vars.put(VAR_PAYMENT_ID, payment.getRazorpayPaymentId() != null ? payment.getRazorpayPaymentId() : "—");
+        vars.put("paymentDate", payment.getUpdatedAt() != null
+                ? DATE_FMT.format(payment.getUpdatedAt().atZone(BUSINESS_ZONE)) : "—");
         vars.put("amountPaid", booking.getTotalAmount().toPlainString());
 
         emailService.sendTemplateEmailAsync(
@@ -111,7 +119,7 @@ public class BookingNotificationService {
         var receipt = receiptService.buildReceipt(booking, payment);
         Map<String, String> receiptVars = bookingVars(booking);
         receiptVars.put("receiptTitle", receipt.title());
-        receiptVars.put("paymentId", receipt.razorpayPaymentId() != null ? receipt.razorpayPaymentId() : "—");
+        receiptVars.put(VAR_PAYMENT_ID, receipt.razorpayPaymentId() != null ? receipt.razorpayPaymentId() : "—");
         emailService.sendTemplateEmailAsync(
                 EmailTemplates.BOOKING_RECEIPT,
                 booking.getCustomer().getEmail(),
@@ -130,7 +138,7 @@ public class BookingNotificationService {
         );
 
         Map<String, String> adminVars = bookingVars(booking);
-        adminVars.put("paymentId", payment.getRazorpayPaymentId() != null ? payment.getRazorpayPaymentId() : "—");
+        adminVars.put(VAR_PAYMENT_ID, payment.getRazorpayPaymentId() != null ? payment.getRazorpayPaymentId() : "—");
         emailService.sendTemplateEmailAsync(
                 EmailTemplates.ADMIN_PAYMENT_SUCCESS,
                 mailProperties.getAdminNotificationEmail(),
@@ -172,8 +180,8 @@ public class BookingNotificationService {
         Map<String, String> vars = bookingVars(booking);
         vars.put("refundAmount", refundAmount != null ? refundAmount.toPlainString() : booking.getTotalAmount().toPlainString());
         vars.put("refundId", payment.getRazorpayRefundId() != null ? payment.getRazorpayRefundId() : "—");
-        vars.put("paymentStatusLabel", booking.getPaymentStatus().name().replace('_', ' '));
-        vars.put("bookingStatusLabel", booking.getStatus().name().replace('_', ' '));
+        vars.put(VAR_PAYMENT_STATUS_LABEL, booking.getPaymentStatus().name().replace('_', ' '));
+        vars.put(VAR_BOOKING_STATUS_LABEL, booking.getStatus().name().replace('_', ' '));
 
         emailService.sendTemplateEmailAsync(
                 EmailTemplates.BOOKING_REFUNDED,
@@ -204,8 +212,8 @@ public class BookingNotificationService {
 
     public void onPaymentFailed(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("continuePaymentUrl", lookupUrl(booking));
-        vars.put("paymentStatusLabel", "FAILED");
+        vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
+        vars.put(VAR_PAYMENT_STATUS_LABEL, "FAILED");
 
         emailService.sendTemplateEmailAsync(
                 EmailTemplates.PAYMENT_FAILED,
@@ -236,7 +244,7 @@ public class BookingNotificationService {
 
     public void onBookingCancelled(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("cancellationDate", DATE_FMT.format(java.time.LocalDate.now()));
+        vars.put("cancellationDate", DATE_FMT.format(LocalDate.now(BUSINESS_ZONE)));
         vars.put("refundNote", "If a refund applies, our team will process it separately. Contact "
                 + mailProperties.getSupportFrom() + " for refund assistance.");
 
@@ -287,28 +295,28 @@ public class BookingNotificationService {
 
     public Map<String, String> buildBookingCreatedVars(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("paymentStatusLabel", booking.getPaymentStatus().name().replace('_', ' '));
-        vars.put("bookingStatusLabel", booking.getStatus().name().replace('_', ' '));
+        vars.put(VAR_PAYMENT_STATUS_LABEL, booking.getPaymentStatus().name().replace('_', ' '));
+        vars.put(VAR_BOOKING_STATUS_LABEL, booking.getStatus().name().replace('_', ' '));
         vars.put("paymentPendingNote", booking.getPaymentStatus() == PaymentStatus.PENDING
                 ? "Payment is pending. Please complete payment to confirm your seats."
                 : "");
-        vars.put("continuePaymentUrl", lookupUrl(booking));
+        vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
         return vars;
     }
 
     public Map<String, String> buildPaymentSuccessVars(Booking booking, Payment payment) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("paymentId", payment != null && payment.getRazorpayPaymentId() != null ? payment.getRazorpayPaymentId() : "—");
+        vars.put(VAR_PAYMENT_ID, payment != null && payment.getRazorpayPaymentId() != null ? payment.getRazorpayPaymentId() : "—");
         vars.put("paymentDate", payment != null && payment.getUpdatedAt() != null
-                ? DATE_FMT.format(payment.getUpdatedAt().atZone(java.time.ZoneId.of("Asia/Kolkata"))) : "—");
+                ? DATE_FMT.format(payment.getUpdatedAt().atZone(BUSINESS_ZONE)) : "—");
         vars.put("amountPaid", booking.getTotalAmount().toPlainString());
         return vars;
     }
 
     public Map<String, String> buildPaymentFailedVars(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("continuePaymentUrl", lookupUrl(booking));
-        vars.put("paymentStatusLabel", "FAILED");
+        vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
+        vars.put(VAR_PAYMENT_STATUS_LABEL, "FAILED");
         return vars;
     }
 
@@ -318,7 +326,7 @@ public class BookingNotificationService {
 
     public Map<String, String> buildBookingCancelledVars(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("cancellationDate", DATE_FMT.format(java.time.LocalDate.now()));
+        vars.put("cancellationDate", DATE_FMT.format(LocalDate.now(BUSINESS_ZONE)));
         vars.put("refundNote", "If a refund applies, our team will process it separately. Contact "
                 + mailProperties.getSupportFrom() + " for refund assistance.");
         return vars;
@@ -328,7 +336,7 @@ public class BookingNotificationService {
         var receipt = receiptService.buildReceipt(booking, payment);
         Map<String, String> receiptVars = bookingVars(booking);
         receiptVars.put("receiptTitle", receipt.title());
-        receiptVars.put("paymentId", receipt.razorpayPaymentId() != null ? receipt.razorpayPaymentId() : "—");
+        receiptVars.put(VAR_PAYMENT_ID, receipt.razorpayPaymentId() != null ? receipt.razorpayPaymentId() : "—");
         return receiptVars;
     }
 
@@ -361,8 +369,8 @@ public class BookingNotificationService {
         vars.put("travellerCount", String.valueOf(booking.getNumberOfTravellers()));
         vars.put("amount", booking.getTotalAmount().toPlainString());
         vars.put("currency", booking.getCurrency());
-        vars.put("bookingStatusLabel", booking.getStatus().name().replace('_', ' '));
-        vars.put("paymentStatusLabel", booking.getPaymentStatus().name().replace('_', ' '));
+        vars.put(VAR_BOOKING_STATUS_LABEL, booking.getStatus().name().replace('_', ' '));
+        vars.put(VAR_PAYMENT_STATUS_LABEL, booking.getPaymentStatus().name().replace('_', ' '));
         return vars;
     }
 

@@ -11,6 +11,7 @@ import in.joyway.domain.repository.BookingRepository;
 import in.joyway.domain.repository.CustomerRepository;
 import in.joyway.domain.repository.TravellerRepository;
 import in.joyway.domain.repository.TravelPackageRepository;
+import in.joyway.dto.booking.BookingResponse;
 import in.joyway.dto.booking.CreateBookingRequest;
 import in.joyway.dto.booking.CustomerRequest;
 import in.joyway.dto.booking.TravellerRequest;
@@ -32,8 +33,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -146,5 +151,78 @@ class BookingServiceTest {
                 bookingService.cancelBookingByCustomer("JW-2026-00050", "john@example.com"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Paid bookings cannot be cancelled");
+    }
+
+    @Test
+    void cancelBookingByAdmin_cancelsUnpaidBooking() {
+        Customer customer = Customer.builder()
+                .id(1L)
+                .fullName("John Doe")
+                .email("john@example.com")
+                .mobile("9876543210")
+                .build();
+        Booking booking = Booking.builder()
+                .id(50L)
+                .bookingReference("JW-2026-00050")
+                .customer(customer)
+                .travelPackage(pkg)
+                .numberOfTravellers(1)
+                .status(BookingStatus.PENDING_PAYMENT)
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+        when(bookingRepository.findById(50L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00050"))
+                .thenReturn(Optional.of(booking));
+        when(packageRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pkg));
+        when(travellerRepository.findByBookingId(50L)).thenReturn(List.of());
+        BookingResponse response = mock(BookingResponse.class);
+        when(bookingMapper.toResponse(eq(booking), any())).thenReturn(response);
+
+        bookingService.cancelBookingByAdmin(50L);
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+    }
+
+    @Test
+    void expireStalePendingPaymentBookings_expiresUnpaidAndReleasesSeats() {
+        Booking stale = Booking.builder()
+                .id(10L)
+                .bookingReference("JW-2026-00010")
+                .travelPackage(pkg)
+                .numberOfTravellers(2)
+                .status(BookingStatus.PENDING_PAYMENT)
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+        when(bookingRepository.findStalePendingPaymentBookings(any())).thenReturn(List.of(stale));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00010"))
+                .thenReturn(Optional.of(stale));
+        when(packageRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pkg));
+
+        int expired = bookingService.expireStalePendingPaymentBookings();
+
+        assertThat(expired).isEqualTo(1);
+        assertThat(stale.getStatus()).isEqualTo(BookingStatus.EXPIRED);
+        assertThat(pkg.getAvailableSeats()).isEqualTo(4);
+    }
+
+    @Test
+    void expireStalePendingPaymentBookings_skipsWhenNoLongerPending() {
+        Booking paid = Booking.builder()
+                .id(11L)
+                .bookingReference("JW-2026-00011")
+                .travelPackage(pkg)
+                .numberOfTravellers(2)
+                .status(BookingStatus.CONFIRMED)
+                .paymentStatus(PaymentStatus.PAID)
+                .build();
+        when(bookingRepository.findStalePendingPaymentBookings(any())).thenReturn(List.of(paid));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00011"))
+                .thenReturn(Optional.of(paid));
+
+        int expired = bookingService.expireStalePendingPaymentBookings();
+
+        assertThat(expired).isEqualTo(0);
+        assertThat(pkg.getAvailableSeats()).isEqualTo(2);
+        assertThat(paid.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
     }
 }

@@ -13,10 +13,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -110,8 +108,9 @@ class AdminOperationsServiceTest {
 
         AssignDriverRequest assignDriver = new AssignDriverRequest();
         assignDriver.setDriverId(driver.id());
+        Long tripId = trip.id();
 
-        assertThatThrownBy(() -> tripService.assignDriver(trip.id(), assignDriver))
+        assertThatThrownBy(() -> tripService.assignDriver(tripId, assignDriver))
                 .isInstanceOf(OperationConflictException.class)
                 .hasMessageContaining("license has expired");
     }
@@ -129,10 +128,13 @@ class AdminOperationsServiceTest {
 
         assertThat(tripService.getTrip(tripA.id()).status()).isEqualTo("ASSIGNED");
 
-        assertThatThrownBy(() -> tripService.assignVehicle(tripB.id(), vehicleRequest(vehicle.id())))
+        AssignVehicleRequest assignVehicleB = vehicleRequest(vehicle.id());
+        Long tripBId = tripB.id();
+        assertThatThrownBy(() -> tripService.assignVehicle(tripBId, assignVehicleB))
                 .isInstanceOf(OperationConflictException.class);
 
-        assertThatThrownBy(() -> tripService.assignDriver(tripB.id(), driverRequest(driver.id())))
+        AssignDriverRequest assignDriverB = driverRequest(driver.id());
+        assertThatThrownBy(() -> tripService.assignDriver(tripBId, assignDriverB))
                 .isInstanceOf(OperationConflictException.class);
 
         Booking mediumBooking = bookingRepository.save(Booking.builder()
@@ -147,7 +149,7 @@ class AdminOperationsServiceTest {
 
         assignBooking(tripA.id(), mediumBooking.getId());
         assertThat(tripService.getTrip(tripA.id()).totalTravellers()).isEqualTo(17);
-        assertThat(tripService.getTrip(tripA.id()).remainingCapacity()).isEqualTo(0);
+        assertThat(tripService.getTrip(tripA.id()).remainingCapacity()).isZero();
 
         Booking overflow = bookingRepository.save(Booking.builder()
                 .bookingReference("JW-2026-TEST3")
@@ -161,7 +163,8 @@ class AdminOperationsServiceTest {
 
         AssignBookingToTripRequest addBooking = new AssignBookingToTripRequest();
         addBooking.setBookingId(overflow.getId());
-        assertThatThrownBy(() -> tripService.addBooking(tripA.id(), addBooking))
+        Long tripAId = tripA.id();
+        assertThatThrownBy(() -> tripService.addBooking(tripAId, addBooking))
                 .isInstanceOf(OperationConflictException.class);
     }
 
@@ -203,8 +206,9 @@ class AdminOperationsServiceTest {
         TripDetailDto trip = createTrip();
         UpdateTripStatusRequest completed = new UpdateTripStatusRequest();
         completed.setStatus("COMPLETED");
+        Long tripId = trip.id();
 
-        assertThatThrownBy(() -> tripService.updateStatus(trip.id(), completed))
+        assertThatThrownBy(() -> tripService.updateStatus(tripId, completed))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -218,6 +222,68 @@ class AdminOperationsServiceTest {
         assertThat(driverService.listDrivers("", null, null, 0, 20).content()).isNotEmpty();
         assertThat(tripService.listTrips(null, null, null, null, null, 0, 20).content()).isNotEmpty();
         assertThat(vehicleService.listVehicles("DL05", null, null, null, 0, 20).content()).isNotEmpty();
+        assertThat(tripService.listUpcomingTrips(0)).isNotNull();
+    }
+
+    @Test
+    void vehicleAndDriver_updateAndStatusChange() {
+        VehicleDetailDto vehicle = createVehicle("DL06LM1111", 12);
+        UpdateVehicleRequest vehicleUpdate = new UpdateVehicleRequest();
+        vehicleUpdate.setRegistrationNumber("DL06LM1111");
+        vehicleUpdate.setVehicleType("SUV");
+        vehicleUpdate.setSeatingCapacity(12);
+        vehicleUpdate.setOwnershipType("OWNED");
+        vehicleUpdate.setBrandModel("Innova");
+        assertThat(vehicleService.updateVehicle(vehicle.id(), vehicleUpdate).vehicleType()).isEqualTo("SUV");
+
+        UpdateVehicleStatusRequest vehicleStatus = new UpdateVehicleStatusRequest();
+        vehicleStatus.setStatus("MAINTENANCE");
+        assertThat(vehicleService.updateStatus(vehicle.id(), vehicleStatus).status()).isEqualTo("MAINTENANCE");
+
+        DriverDetailDto driver = createDriver("Kiran", LocalDate.now(IST).plusYears(1));
+        UpdateDriverRequest driverUpdate = new UpdateDriverRequest();
+        driverUpdate.setName("Kiran Singh");
+        driverUpdate.setPhone("8888777766");
+        driverUpdate.setLicenseNumber("DL-KIRAN");
+        driverUpdate.setLicenseExpiryDate(LocalDate.now(IST).plusYears(1));
+        assertThat(driverService.updateDriver(driver.id(), driverUpdate).name()).isEqualTo("Kiran Singh");
+
+        UpdateDriverStatusRequest driverStatus = new UpdateDriverStatusRequest();
+        driverStatus.setStatus("INACTIVE");
+        assertThat(driverService.updateStatus(driver.id(), driverStatus).status()).isEqualTo("INACTIVE");
+    }
+
+    @Test
+    void updateTrip_savesPlannedTripEdits() {
+        TripDetailDto trip = createTrip();
+        UpdateTripRequest update = new UpdateTripRequest();
+        update.setPackageId(travelPackage.getId());
+        update.setTravelDate(trip.travelDate());
+        update.setStartAt(trip.startAt());
+        update.setEndAt(trip.endAt());
+        update.setPickupLocation("ISBT Kashmere Gate");
+        update.setDropLocation(trip.dropLocation());
+        update.setNotes("Updated pickup");
+
+        assertThat(tripService.updateTrip(trip.id(), update).pickupLocation())
+                .isEqualTo("ISBT Kashmere Gate");
+    }
+
+    @Test
+    void updateVehicleStatus_rejectsMaintenanceWhileAssigned() {
+        VehicleDetailDto vehicle = createVehicle("DL07NP2222", 17);
+        DriverDetailDto driver = createDriver("Ravi", LocalDate.now(IST).plusYears(1));
+        TripDetailDto trip = createTrip();
+        assignBooking(trip.id(), confirmedBooking.getId());
+        tripService.assignVehicle(trip.id(), vehicleRequest(vehicle.id()));
+        tripService.assignDriver(trip.id(), driverRequest(driver.id()));
+
+        UpdateVehicleStatusRequest vehicleStatus = new UpdateVehicleStatusRequest();
+        vehicleStatus.setStatus("MAINTENANCE");
+        Long vehicleId = vehicle.id();
+        assertThatThrownBy(() -> vehicleService.updateStatus(vehicleId, vehicleStatus))
+                .isInstanceOf(OperationConflictException.class)
+                .hasMessageContaining("assigned to an active trip");
     }
 
     private TripDetailDto createTrip() {

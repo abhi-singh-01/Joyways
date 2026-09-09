@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.InputStream;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -110,8 +109,9 @@ class AzureBlobStorageServiceTest {
         when(containerClient.exists()).thenReturn(true);
 
         AzureBlobStorageService service = new AzureBlobStorageService(managedIdentityProperties(), containerClient);
+        var file = jpegFile();
 
-        assertThrows(IllegalArgumentException.class, () -> service.store(jpegFile(), "../secrets"));
+        assertThrows(IllegalArgumentException.class, () -> service.store(file, "../secrets"));
     }
 
     @Test

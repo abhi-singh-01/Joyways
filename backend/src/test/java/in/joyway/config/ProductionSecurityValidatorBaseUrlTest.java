@@ -1,9 +1,10 @@
 package in.joyway.config;
 
-import in.joyway.config.RateLimitProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
@@ -62,32 +63,64 @@ class ProductionSecurityValidatorBaseUrlTest {
         assertDoesNotThrow(this::invokeValidation);
     }
 
-    @Test
-    void rejectsLocalhostFallback() {
-        when(environment.getProperty(PROPERTY)).thenReturn("http://localhost:8080");
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
+            "http://api.joyway.in",
+            ""
+    })
+    void rejectsInvalidPublicApiBaseUrl(String value) {
+        when(environment.getProperty(PROPERTY)).thenReturn(value);
 
         assertThrows(IllegalStateException.class, this::invokeValidation);
     }
 
     @Test
-    void rejectsLoopbackAddress() {
-        when(environment.getProperty(PROPERTY)).thenReturn("http://127.0.0.1:8080");
-
-        assertThrows(IllegalStateException.class, this::invokeValidation);
+    void rejectsHttpCorsOrigin() {
+        when(corsProperties.getAllowedOrigins()).thenReturn("http://joyway.in");
+        assertThrows(IllegalStateException.class, this::invokeCorsValidation);
     }
 
     @Test
-    void rejectsPlainHttp() {
-        when(environment.getProperty(PROPERTY)).thenReturn("http://api.joyway.in");
-
-        assertThrows(IllegalStateException.class, this::invokeValidation);
+    void rejectsHttpFrontendBaseUrl() {
+        MailProperties mail = new MailProperties();
+        mail.setFrontendBaseUrl("http://joyway.in");
+        validator = new ProductionSecurityValidator(
+                environment,
+                jwtProperties,
+                corsProperties,
+                adminBootstrapProperties,
+                razorpayProperties,
+                new StorageProperties(),
+                new RateLimitProperties(),
+                mail
+        );
+        assertThrows(IllegalStateException.class, this::invokeFrontendValidation);
     }
 
-    @Test
-    void rejectsBlankValue() {
-        when(environment.getProperty(PROPERTY)).thenReturn("");
+    private void invokeCorsValidation() {
+        invokeNamed("validateCors");
+    }
 
-        assertThrows(IllegalStateException.class, this::invokeValidation);
+    private void invokeFrontendValidation() {
+        invokeNamed("validateFrontendBaseUrl");
+    }
+
+    private void invokeNamed(String name) {
+        try {
+            Method method = ProductionSecurityValidator.class.getDeclaredMethod(name);
+            method.setAccessible(true);
+            method.invoke(validator);
+        } catch (InvocationTargetException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new RuntimeException(cause);
+        } catch (ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private void invokeValidation() {

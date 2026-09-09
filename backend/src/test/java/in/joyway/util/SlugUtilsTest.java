@@ -8,6 +8,7 @@ class SlugUtilsTest {
 
     @Test
     void toSlug_normalizesTitle() {
+        assertThat(SlugUtils.toSlug("-Nainital Weekend-")).isEqualTo("nainital-weekend");
         assertThat(SlugUtils.toSlug("Nainital Weekend Escape (DEMO)"))
                 .isEqualTo("nainital-weekend-escape-demo");
     }

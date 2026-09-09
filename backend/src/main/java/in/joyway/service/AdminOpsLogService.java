@@ -22,12 +22,12 @@ public class AdminOpsLogService {
     private final EmailLogRepository emailLogRepository;
 
     public PageResponse<AdminAuditLogDto> listAuditLogs(int page, int size) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, 100));
         return PageResponse.of(auditLogRepository.findAllByOrderByCreatedAtDesc(pageable).map(this::toAuditDto));
     }
 
     public PageResponse<AdminEmailLogDto> listEmailLogs(int page, int size) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, 100));
         return PageResponse.of(emailLogRepository.findAllByOrderByCreatedAtDesc(pageable).map(this::toEmailDto));
     }
 

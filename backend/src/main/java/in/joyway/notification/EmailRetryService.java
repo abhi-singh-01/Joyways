@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,41 +41,49 @@ public class EmailRetryService {
         int retried = 0;
         int deferred = 0;
         for (EmailLog emailLog : pending) {
-            if (emailLog.getStatus() == EmailStatus.SENT) {
-                continue;
-            }
-            if (!EmailRetryBackoff.isDue(
-                    emailLog.getLastAttemptedAt(),
-                    emailLog.getAttemptCount(),
-                    baseDelay,
-                    now)) {
+            RetryAction action = classify(emailLog, now, baseDelay);
+            if (action == RetryAction.DEFER) {
                 deferred++;
-                continue;
+            } else if (action == RetryAction.RETRY) {
+                Optional<Map<String, String>> variables = resolveVariables(emailLog);
+                if (variables.isEmpty()) {
+                    log.warn("event=email.retry.skipped reason=unresolved_variables logId={}", emailLog.getId());
+                } else {
+                    emailService.retryEmail(emailLog, variables.get());
+                    retried++;
+                }
             }
-            Map<String, String> variables = resolveVariables(emailLog);
-            if (variables == null) {
-                log.warn("event=email.retry.skipped reason=unresolved_variables logId={}", emailLog.getId());
-                continue;
-            }
-            emailService.retryEmail(emailLog, variables);
-            retried++;
         }
         if (retried > 0 || deferred > 0) {
             log.info("event=email.retry.cycle retried={} deferred={}", retried, deferred);
         }
     }
 
-    private Map<String, String> resolveVariables(EmailLog emailLog) {
+    private static RetryAction classify(EmailLog emailLog, Instant now, Duration baseDelay) {
+        if (emailLog.getStatus() == EmailStatus.SENT) {
+            return RetryAction.SKIP;
+        }
+        if (!EmailRetryBackoff.isDue(
+                emailLog.getLastAttemptedAt(),
+                emailLog.getAttemptCount(),
+                baseDelay,
+                now)) {
+            return RetryAction.DEFER;
+        }
+        return RetryAction.RETRY;
+    }
+
+    private Optional<Map<String, String>> resolveVariables(EmailLog emailLog) {
         if (!"BOOKING".equals(emailLog.getRelatedEntityType()) || emailLog.getRelatedEntityId() == null) {
-            return null;
+            return Optional.empty();
         }
         Booking booking = bookingRepository.findByIdWithDetails(emailLog.getRelatedEntityId()).orElse(null);
         if (booking == null) {
-            return null;
+            return Optional.empty();
         }
         Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId()).orElse(null);
         String template = emailLog.getTemplate();
-        return switch (template) {
+        return Optional.ofNullable(switch (template) {
             case EmailTemplates.BOOKING_CREATED -> bookingNotificationService.buildBookingCreatedVars(booking);
             case EmailTemplates.PAYMENT_SUCCESS -> bookingNotificationService.buildPaymentSuccessVars(booking, payment);
             case EmailTemplates.PAYMENT_FAILED -> bookingNotificationService.buildPaymentFailedVars(booking);
@@ -88,6 +97,10 @@ public class EmailRetryService {
                  EmailTemplates.ADMIN_PAYMENT_FAILED,
                  EmailTemplates.ADMIN_BOOKING_CANCELLED -> bookingNotificationService.buildBookingCreatedVars(booking);
             default -> null;
-        };
+        });
+    }
+
+    private enum RetryAction {
+        SKIP, DEFER, RETRY
     }
 }

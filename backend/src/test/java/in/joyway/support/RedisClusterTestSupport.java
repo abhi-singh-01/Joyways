@@ -43,7 +43,6 @@ public final class RedisClusterTestSupport implements AutoCloseable {
     private final List<GenericContainer<?>> masters;
     private final GenericContainer<?> clusterCreator;
     private final String dockerHost;
-    private final Map<String, Integer> containerAddressToMappedPort;
     private final ClientResources clientResources;
 
     private RedisClusterTestSupport(
@@ -56,7 +55,6 @@ public final class RedisClusterTestSupport implements AutoCloseable {
         this.masters = masters;
         this.clusterCreator = clusterCreator;
         this.dockerHost = masters.getFirst().getHost();
-        this.containerAddressToMappedPort = containerAddressToMappedPort;
         this.clientResources = DefaultClientResources.builder()
                 .socketAddressResolver(MappingSocketAddressResolver.create(
                         (HostAndPort hostAndPort) -> {
@@ -114,25 +112,21 @@ public final class RedisClusterTestSupport implements AutoCloseable {
     }
 
     private static void waitForClusterReady(GenericContainer<?> master) {
-        for (int attempt = 0; attempt < 30; attempt++) {
-            try {
-                org.testcontainers.containers.Container.ExecResult result = master.execInContainer(
-                        "redis-cli", "-p", String.valueOf(REDIS_PORT), "cluster", "info"
-                );
-                if (result.getStdout().contains("cluster_state:ok")) {
-                    return;
-                }
-            } catch (Exception ignored) {
-                // retry until cluster settles
-            }
-            try {
-                Thread.sleep(500L);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while waiting for Redis cluster", ex);
-            }
+        org.testcontainers.shaded.org.awaitility.Awaitility.await()
+                .atMost(Duration.ofSeconds(15))
+                .pollInterval(Duration.ofMillis(500))
+                .until(() -> clusterStateOk(master));
+    }
+
+    private static boolean clusterStateOk(GenericContainer<?> master) {
+        try {
+            org.testcontainers.containers.Container.ExecResult result = master.execInContainer(
+                    "redis-cli", "-p", String.valueOf(REDIS_PORT), "cluster", "info"
+            );
+            return result.getStdout().contains("cluster_state:ok");
+        } catch (Exception ignored) {
+            return false;
         }
-        throw new IllegalStateException("Redis cluster did not reach cluster_state:ok");
     }
 
     public int seedPort() {

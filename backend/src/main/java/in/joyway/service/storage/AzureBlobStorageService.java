@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -96,7 +97,7 @@ public class AzureBlobStorageService implements DocumentStorageService {
     public Optional<InputStream> retrieve(String storageKey) throws IOException {
         StorageKeyValidator.validate(storageKey);
         BlobClient blobClient = containerClient.getBlobClient(storageKey);
-        if (!blobClient.exists()) {
+        if (!Boolean.TRUE.equals(blobClient.exists())) {
             return Optional.empty();
         }
         try {
@@ -156,7 +157,7 @@ public class AzureBlobStorageService implements DocumentStorageService {
         }
 
         BlobSasPermission permission = new BlobSasPermission().setReadPermission(true);
-        OffsetDateTime expiry = OffsetDateTime.now().plusMinutes(properties.getSasExpiryMinutes());
+        OffsetDateTime expiry = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(properties.getSasExpiryMinutes());
         BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiry, permission)
                 .setProtocol(SasProtocol.HTTPS_ONLY);
 
@@ -166,7 +167,7 @@ public class AzureBlobStorageService implements DocumentStorageService {
                 return Optional.of(blobClient.getBlobUrl() + "?" + sas);
             }
             if (blobServiceClient != null) {
-                OffsetDateTime start = OffsetDateTime.now().minusMinutes(5);
+                OffsetDateTime start = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(5);
                 UserDelegationKey key = blobServiceClient.getUserDelegationKey(start, expiry);
                 String sas = blobClient.generateUserDelegationSas(values, key);
                 return Optional.of(blobClient.getBlobUrl() + "?" + sas);

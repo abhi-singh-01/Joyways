@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { mkdir, readdir } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const publicDir = path.join(process.cwd(), "public");

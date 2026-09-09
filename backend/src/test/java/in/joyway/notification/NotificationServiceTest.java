@@ -65,7 +65,7 @@ class NotificationServiceTest {
 
         long count = notificationService.unreadCountForCurrentAdmin();
 
-        org.assertj.core.api.Assertions.assertThat(count).isEqualTo(3L);
+        assertThat(count).isEqualTo(3L);
     }
 
     @Test

@@ -9,13 +9,29 @@ export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<AdminAuditLog[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    listAdminAuditLogs()
-      .then((page) => setLogs(page.content))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load audit logs"))
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+    listAdminAuditLogs(page)
+      .then((result) => {
+        if (cancelled) return;
+        setLogs(result.content);
+        setTotalPages(result.totalPages);
+        setError("");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load audit logs");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
 
   if (loading) return <p className="text-charcoal-muted">Loading audit logs...</p>;
   if (error) return <ErrorState title="Unable to load audit logs" message={error} />;
@@ -60,6 +76,36 @@ export default function AdminAuditLogsPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => {
+              setLoading(true);
+              setPage((p) => p - 1);
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-charcoal-muted">
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page + 1 >= totalPages}
+            onClick={() => {
+              setLoading(true);
+              setPage((p) => p + 1);
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

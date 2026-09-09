@@ -1,20 +1,17 @@
 package in.joyway.config;
 
-import in.joyway.config.RateLimitProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProductionSecurityValidatorStorageTest {
@@ -75,6 +72,17 @@ class ProductionSecurityValidatorStorageTest {
         storageProperties.setProvider("azure");
         storageProperties.setEndpoint("https://joywayprod.blob.core.windows.net");
         storageProperties.setContainer("joyway-documents");
+        storageProperties.setUseManagedIdentity(false);
+
+        assertThrows(IllegalStateException.class, this::invokeStorageValidation);
+    }
+
+    @Test
+    void validateStorageConfiguration_requiresSecretKeyWhenAccessKeyPresent() {
+        storageProperties.setProvider("azure");
+        storageProperties.setEndpoint("https://joywayprod.blob.core.windows.net");
+        storageProperties.setContainer("joyway-documents");
+        storageProperties.setAccessKey("account-key");
         storageProperties.setUseManagedIdentity(false);
 
         assertThrows(IllegalStateException.class, this::invokeStorageValidation);

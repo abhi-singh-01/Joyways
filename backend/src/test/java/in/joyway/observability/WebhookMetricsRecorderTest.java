@@ -66,10 +66,11 @@ class WebhookMetricsRecorderTest {
                 .map(tag -> tag.getKey() + "=" + tag.getValue())
                 .collect(Collectors.toSet());
 
-        assertThat(tagKeys).containsExactly("outcome=success");
-        assertThat(tagKeys).noneMatch(tag -> tag.startsWith("event_id="));
-        assertThat(tagKeys).noneMatch(tag -> tag.startsWith("order_id="));
-        assertThat(tagKeys).noneMatch(tag -> tag.startsWith("payment_id="));
+        assertThat(tagKeys)
+                .containsExactly("outcome=success")
+                .noneMatch(tag -> tag.startsWith("event_id="))
+                .noneMatch(tag -> tag.startsWith("order_id="))
+                .noneMatch(tag -> tag.startsWith("payment_id="));
     }
 
     @Test

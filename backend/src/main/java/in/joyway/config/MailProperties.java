@@ -8,14 +8,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Getter
 @Setter
 public class MailProperties {
-    /** Legacy fallback; mirrors general sender. */
-    private String from = "hello@joyway.in";
-    private String fromName = "JOYWAY";
-    private String replyTo = "hello@joyway.in";
 
-    private String generalFrom = "hello@joyway.in";
-    private String generalFromName = "JOYWAY";
-    private String generalReplyTo = "hello@joyway.in";
+    private static final String DEFAULT_HELLO_EMAIL = "hello@joyway.in";
+    private static final String DEFAULT_BRAND_NAME = "JOYWAY";
+
+    /** Legacy fallback; mirrors general sender. */
+    private String from = DEFAULT_HELLO_EMAIL;
+    private String fromName = DEFAULT_BRAND_NAME;
+    private String replyTo = DEFAULT_HELLO_EMAIL;
+
+    private String generalFrom = DEFAULT_HELLO_EMAIL;
+    private String generalFromName = DEFAULT_BRAND_NAME;
+    private String generalReplyTo = DEFAULT_HELLO_EMAIL;
 
     private String bookingsFrom = "bookings@joyway.in";
     private String bookingsFromName = "JOYWAY Bookings";
@@ -26,10 +30,10 @@ public class MailProperties {
     private String supportReplyTo = "support@joyway.in";
 
     private String noreplyFrom = "noreply@joyway.in";
-    private String noreplyFromName = "JOYWAY";
+    private String noreplyFromName = DEFAULT_BRAND_NAME;
     private String noreplyReplyTo = "noreply@joyway.in";
 
-    private String adminNotificationEmail = "hello@joyway.in";
+    private String adminNotificationEmail = DEFAULT_HELLO_EMAIL;
     private String frontendBaseUrl = "http://localhost:3000";
     private boolean enabled = true;
     private boolean previewEnabled = false;

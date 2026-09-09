@@ -11,6 +11,16 @@ const scriptSrc = isProd
 
 const nextConfig = {
   output: "standalone",
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.joyway.in" }],
+        destination: "https://joyway.in/:path*",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     // Cap generated widths below 3840 — full-bleed hero rarely needs larger delivery.
@@ -20,6 +30,14 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "api.joyway.in",
+      },
+      {
+        protocol: "https",
+        hostname: "*.azurefd.net",
+      },
+      {
+        protocol: "https",
+        hostname: "joyway-images-prod-gye6a8dff4dgfub3.z03.azurefd.net",
       },
     ],
   },
@@ -38,7 +56,7 @@ const nextConfig = {
               "default-src 'self'",
               `script-src ${scriptSrc}`,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://api.joyway.in https://*.blob.core.windows.net",
+              "img-src 'self' data: blob: https://api.joyway.in https://*.azurefd.net https://*.blob.core.windows.net",
               `connect-src ${connectSrc}`,
               "frame-src https://api.razorpay.com https://checkout.razorpay.com",
               "font-src 'self'",

@@ -1,6 +1,5 @@
 package in.joyway.util;
 
-import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**

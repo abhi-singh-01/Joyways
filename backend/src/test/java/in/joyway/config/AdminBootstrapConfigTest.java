@@ -116,7 +116,7 @@ class AdminBootstrapConfigTest {
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> runner.run()
+                runner::run
         );
         assertTrue(ex.getMessage().contains("ADMIN_BOOTSTRAP_PASSWORD is required"));
     }
@@ -134,7 +134,7 @@ class AdminBootstrapConfigTest {
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> runner.run()
+                runner::run
         );
         assertTrue(ex.getMessage().contains("ROLE_ADMIN not found"));
     }

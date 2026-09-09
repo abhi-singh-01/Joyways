@@ -48,8 +48,10 @@ class SecurityConfigTest {
     }
 
     @Test
-    void adminDashboard_requiresAuthentication() throws Exception {
-        mockMvc.perform(get("/api/admin/dashboard"))
-                .andExpect(status().isUnauthorized());
+    void adminMutations_withoutCsrfToken_areForbidden() throws Exception {
+        mockMvc.perform(post("/api/admin/packages")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isForbidden());
     }
 }

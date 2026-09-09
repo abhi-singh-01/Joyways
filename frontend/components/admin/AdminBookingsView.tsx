@@ -12,10 +12,22 @@ export function AdminBookingsView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     listAdminBookings()
-      .then(setBookings)
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load bookings"))
-      .finally(() => setLoading(false));
+      .then((result) => {
+        if (!cancelled) setBookings(result);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load bookings");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {

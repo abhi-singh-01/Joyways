@@ -45,7 +45,7 @@ public class AdminPackageImageService {
                 "Package images must be uploaded as JPEG, JPG, or WebP files under 2MB. Image URLs are not allowed.");
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public PackageImageDto uploadImage(Long packageId, MultipartFile file, String altText) throws IOException {
         TravelPackage pkg = findPackageOrThrow(packageId);
         StorageUploadValidator.validatePackageImage(file);
@@ -77,7 +77,7 @@ public class AdminPackageImageService {
         return adminMapper.toImageDtos(List.of(image)).getFirst();
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteImage(Long packageId, Long imageId) throws IOException {
         PackageImage image = findImageOrThrow(packageId, imageId);
 

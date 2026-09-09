@@ -68,7 +68,7 @@ class RedisRateLimitBackendTest {
     }
 
     @Test
-    void concurrentIncrementsRemainWithinLimit() throws Exception {
+    void concurrentIncrementsRemainWithinLimit() {
         RedisRateLimitBackend backend = backend();
         Instant now = Instant.parse("2026-09-02T12:02:00Z");
         int limit = 20;

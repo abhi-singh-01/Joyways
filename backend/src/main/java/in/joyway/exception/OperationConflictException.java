@@ -4,13 +4,13 @@ import org.springframework.http.HttpStatus;
 
 public class OperationConflictException extends RuntimeException {
 
-    private final HttpStatus status = HttpStatus.CONFLICT;
+    private static final HttpStatus STATUS = HttpStatus.CONFLICT;
 
     public OperationConflictException(String message) {
         super(message);
     }
 
     public HttpStatus getStatus() {
-        return status;
+        return STATUS;
     }
 }

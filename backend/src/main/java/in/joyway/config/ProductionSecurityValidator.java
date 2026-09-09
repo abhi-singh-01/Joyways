@@ -32,6 +32,8 @@ public class ProductionSecurityValidator {
             "placeholder"
     );
 
+    private static final String HTTPS_PREFIX = "https://";
+
     private static final Pattern LOCALHOST_PATTERN = Pattern.compile(
             "localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0",
             Pattern.CASE_INSENSITIVE
@@ -138,7 +140,7 @@ public class ProductionSecurityValidator {
                         throw new IllegalStateException(
                                 "CORS_ALLOWED_ORIGINS must not include localhost in production: " + origin);
                     }
-                    if (!origin.startsWith("https://")) {
+                    if (!origin.startsWith(HTTPS_PREFIX)) {
                         throw new IllegalStateException(
                                 "Production CORS origins should use HTTPS: " + origin);
                     }
@@ -180,7 +182,7 @@ public class ProductionSecurityValidator {
             throw new IllegalStateException(
                     "PUBLIC_API_BASE_URL must not point to localhost in production: " + baseUrl);
         }
-        if (!baseUrl.startsWith("https://")) {
+        if (!baseUrl.startsWith(HTTPS_PREFIX)) {
             throw new IllegalStateException(
                     "PUBLIC_API_BASE_URL must use HTTPS in production: " + baseUrl);
         }
@@ -217,7 +219,7 @@ public class ProductionSecurityValidator {
             throw new IllegalStateException(
                     "FRONTEND_BASE_URL must not point to localhost in production: " + baseUrl);
         }
-        if (!baseUrl.startsWith("https://")) {
+        if (!baseUrl.startsWith(HTTPS_PREFIX)) {
             throw new IllegalStateException(
                     "FRONTEND_BASE_URL must use HTTPS in production: " + baseUrl);
         }
@@ -275,13 +277,12 @@ public class ProductionSecurityValidator {
         if (!StringUtils.hasText(storageProperties.getContainerName())) {
             throw new IllegalStateException("STORAGE_CONTAINER (or STORAGE_BUCKET) must be set in production.");
         }
-        if (!storageProperties.isUseManagedIdentity()) {
-            if (!StringUtils.hasText(storageProperties.getAccessKey())
-                    || !StringUtils.hasText(storageProperties.getSecretKey())) {
-                throw new IllegalStateException(
-                        "STORAGE_ACCESS_KEY and STORAGE_SECRET_KEY are required in production when "
-                                + "STORAGE_USE_MANAGED_IDENTITY=false. Prefer Managed Identity.");
-            }
+        if (!storageProperties.isUseManagedIdentity()
+                && (!StringUtils.hasText(storageProperties.getAccessKey())
+                || !StringUtils.hasText(storageProperties.getSecretKey()))) {
+            throw new IllegalStateException(
+                    "STORAGE_ACCESS_KEY and STORAGE_SECRET_KEY are required in production when "
+                            + "STORAGE_USE_MANAGED_IDENTITY=false. Prefer Managed Identity.");
         }
     }
 }

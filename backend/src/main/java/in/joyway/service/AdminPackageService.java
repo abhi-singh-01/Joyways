@@ -18,6 +18,8 @@ import java.util.List;
 @Transactional
 public class AdminPackageService {
 
+    private static final String PACKAGE_NOT_FOUND = "Package not found.";
+
     private final TravelPackageRepository packageRepository;
     private final AdminMapper adminMapper;
 
@@ -31,18 +33,16 @@ public class AdminPackageService {
 
     @Transactional(readOnly = true)
     public AdminPackageDetailDto getPackageById(Long id) {
-        TravelPackage pkg = packageRepository.findByIdWithImages(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Package not found."));
-        return adminMapper.toDetailDto(pkg);
+        return adminMapper.toDetailDto(requirePackageWithImages(id));
     }
 
     public AdminPackageDetailDto createPackage(CreatePackageRequest request) {
         validateDates(request.getStartDate(), request.getEndDate());
 
-        String baseSlug = request.getSlug() != null && !request.getSlug().isBlank()
-                ? SlugUtils.toSlug(request.getSlug())
-                : SlugUtils.toSlug(request.getTitle());
-        String slug = SlugUtils.ensureUnique(baseSlug, packageRepository::existsBySlug);
+        String slugSource = request.getSlug() != null && !request.getSlug().isBlank()
+                ? request.getSlug()
+                : request.getTitle();
+        String slug = SlugUtils.ensureUnique(SlugUtils.toSlug(slugSource), packageRepository::existsBySlug);
 
         TravelPackage pkg = TravelPackage.builder()
                 .title(request.getTitle())
@@ -73,9 +73,40 @@ public class AdminPackageService {
     }
 
     public AdminPackageDetailDto updatePackage(Long id, UpdatePackageRequest request) {
-        TravelPackage pkg = packageRepository.findByIdWithImages(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Package not found."));
+        TravelPackage pkg = requirePackageWithImages(id);
+        applyIdentity(pkg, request);
+        applyCopy(pkg, request);
+        applyScheduleAndPricing(pkg, request);
+        applyContent(pkg, request);
+        return adminMapper.toDetailDto(packageRepository.save(pkg));
+    }
 
+    public AdminPackageDetailDto updateStatus(Long id, UpdatePackageStatusRequest request) {
+        TravelPackage pkg = requirePackageWithImages(id);
+
+        PackageStatus newStatus = request.getStatus();
+        validateStatusTransition(pkg.getStatus(), newStatus);
+
+        pkg.setStatus(newStatus);
+        pkg = packageRepository.save(pkg);
+        return adminMapper.toDetailDto(pkg);
+    }
+
+    public void deletePackage(Long id) {
+        packageRepository.delete(requirePackage(id));
+    }
+
+    private TravelPackage requirePackage(Long id) {
+        return packageRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(PACKAGE_NOT_FOUND));
+    }
+
+    private TravelPackage requirePackageWithImages(Long id) {
+        return packageRepository.findByIdWithImages(id)
+                .orElseThrow(() -> new ResourceNotFoundException(PACKAGE_NOT_FOUND));
+    }
+
+    private void applyIdentity(TravelPackage pkg, UpdatePackageRequest request) {
         if (request.getTitle() != null) {
             pkg.setTitle(request.getTitle());
         }
@@ -89,6 +120,9 @@ public class AdminPackageService {
         if (request.getDestination() != null) {
             pkg.setDestination(request.getDestination());
         }
+    }
+
+    private void applyCopy(TravelPackage pkg, UpdatePackageRequest request) {
         if (request.getShortDescription() != null) {
             pkg.setShortDescription(request.getShortDescription());
         }
@@ -101,6 +135,9 @@ public class AdminPackageService {
         if (request.getPickupPoints() != null) {
             pkg.setPickupPoints(request.getPickupPoints());
         }
+    }
+
+    private void applyScheduleAndPricing(TravelPackage pkg, UpdatePackageRequest request) {
         if (request.getStartDate() != null) {
             pkg.setStartDate(request.getStartDate());
         }
@@ -116,6 +153,10 @@ public class AdminPackageService {
         if (request.getPricePerPerson() != null) {
             pkg.setPricePerPerson(request.getPricePerPerson());
         }
+        applySeatCounts(pkg, request);
+    }
+
+    private void applySeatCounts(TravelPackage pkg, UpdatePackageRequest request) {
         int booked = Math.max(0, pkg.getTotalSeats() - pkg.getAvailableSeats());
         if (request.getTotalSeats() != null) {
             if (request.getTotalSeats() < booked) {
@@ -124,12 +165,17 @@ public class AdminPackageService {
             }
             pkg.setTotalSeats(request.getTotalSeats());
             pkg.setAvailableSeats(request.getTotalSeats() - booked);
-        } else if (request.getAvailableSeats() != null) {
+            return;
+        }
+        if (request.getAvailableSeats() != null) {
             if (request.getAvailableSeats() > pkg.getTotalSeats()) {
                 throw new IllegalArgumentException("Available seats cannot exceed total seats.");
             }
             pkg.setAvailableSeats(request.getAvailableSeats());
         }
+    }
+
+    private void applyContent(TravelPackage pkg, UpdatePackageRequest request) {
         if (request.getHotelName() != null) {
             pkg.setHotelName(request.getHotelName());
         }
@@ -151,27 +197,6 @@ public class AdminPackageService {
         if (request.getCancellationPolicy() != null) {
             pkg.setCancellationPolicy(request.getCancellationPolicy());
         }
-
-        pkg = packageRepository.save(pkg);
-        return adminMapper.toDetailDto(pkg);
-    }
-
-    public AdminPackageDetailDto updateStatus(Long id, UpdatePackageStatusRequest request) {
-        TravelPackage pkg = packageRepository.findByIdWithImages(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Package not found."));
-
-        PackageStatus newStatus = request.getStatus();
-        validateStatusTransition(pkg.getStatus(), newStatus);
-
-        pkg.setStatus(newStatus);
-        pkg = packageRepository.save(pkg);
-        return adminMapper.toDetailDto(pkg);
-    }
-
-    public void deletePackage(Long id) {
-        TravelPackage pkg = packageRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Package not found."));
-        packageRepository.delete(pkg);
     }
 
     private void validateDates(java.time.LocalDate start, java.time.LocalDate end) {
@@ -185,7 +210,7 @@ public class AdminPackageService {
             return;
         }
         // Allow all reasonable admin transitions for MVP
-        if (current == PackageStatus.CANCELLED && next != PackageStatus.CANCELLED) {
+        if (current == PackageStatus.CANCELLED) {
             throw new IllegalArgumentException("Cancelled packages cannot change status.");
         }
     }

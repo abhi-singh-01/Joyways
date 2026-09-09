@@ -25,6 +25,9 @@ import java.util.List;
 @Transactional
 public class AdminVehicleService {
 
+    private static final String ENTITY_VEHICLE = "VEHICLE";
+    private static final String VEHICLE_LABEL = "Vehicle ";
+
     private final VehicleRepository vehicleRepository;
     private final TripRepository tripRepository;
     private final AuditLogService auditLogService;
@@ -72,8 +75,8 @@ public class AdminVehicleService {
                 .build();
 
         vehicle = vehicleRepository.save(vehicle);
-        auditLogService.log("VEHICLE_CREATED", "VEHICLE", vehicle.getId(),
-                "Vehicle " + vehicle.getRegistrationNumber() + " created.");
+        auditLogService.log("VEHICLE_CREATED", ENTITY_VEHICLE, vehicle.getId(),
+                VEHICLE_LABEL + vehicle.getRegistrationNumber() + " created.");
         return toDetail(vehicle);
     }
 
@@ -95,8 +98,8 @@ public class AdminVehicleService {
         vehicle.setNotes(trimToNull(request.getNotes()));
 
         vehicle = vehicleRepository.save(vehicle);
-        auditLogService.log("VEHICLE_UPDATED", "VEHICLE", vehicle.getId(),
-                "Vehicle " + vehicle.getRegistrationNumber() + " updated.");
+        auditLogService.log("VEHICLE_UPDATED", ENTITY_VEHICLE, vehicle.getId(),
+                VEHICLE_LABEL + vehicle.getRegistrationNumber() + " updated.");
         return toDetail(vehicle);
     }
 
@@ -105,17 +108,16 @@ public class AdminVehicleService {
         VehicleStatus newStatus = parseStatusRequired(request.getStatus());
         VehicleStatus oldStatus = vehicle.getStatus();
 
-        if (oldStatus == VehicleStatus.ASSIGNED || oldStatus == VehicleStatus.ON_TRIP) {
-            if (newStatus == VehicleStatus.INACTIVE || newStatus == VehicleStatus.MAINTENANCE) {
-                throw new OperationConflictException(
-                        "Cannot deactivate or send to maintenance a vehicle that is assigned to an active trip.");
-            }
+        if ((oldStatus == VehicleStatus.ASSIGNED || oldStatus == VehicleStatus.ON_TRIP)
+                && (newStatus == VehicleStatus.INACTIVE || newStatus == VehicleStatus.MAINTENANCE)) {
+            throw new OperationConflictException(
+                    "Cannot deactivate or send to maintenance a vehicle that is assigned to an active trip.");
         }
 
         vehicle.setStatus(newStatus);
         vehicle = vehicleRepository.save(vehicle);
-        auditLogService.log("VEHICLE_STATUS_CHANGED", "VEHICLE", vehicle.getId(),
-                "Vehicle " + vehicle.getRegistrationNumber() + " status changed from "
+        auditLogService.log("VEHICLE_STATUS_CHANGED", ENTITY_VEHICLE, vehicle.getId(),
+                VEHICLE_LABEL + vehicle.getRegistrationNumber() + " status changed from "
                         + oldStatus + " to " + newStatus + ".");
         if (newStatus == VehicleStatus.MAINTENANCE || newStatus == VehicleStatus.INACTIVE) {
             operationsNotificationService.notifyVehicleUnavailable(
@@ -211,7 +213,7 @@ public class AdminVehicleService {
 
     private static Pageable pageable(int page, int size) {
         int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 100);
+        int safeSize = Math.clamp(size, 1, 100);
         return PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 }

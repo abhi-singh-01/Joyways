@@ -101,7 +101,7 @@ class RedisClusterRateLimitIntegrationTest {
     }
 
     @Test
-    void concurrentIncrementsRemainWithinLimitOnCluster() throws Exception {
+    void concurrentIncrementsRemainWithinLimitOnCluster() {
         RateLimitProperties properties = cluster.clusterProperties("joyway:rl:cluster-concurrent");
         RedisRateLimitBackend backend = backend(properties);
         Instant now = Instant.parse("2026-09-02T13:02:00Z");

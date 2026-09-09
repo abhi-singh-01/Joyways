@@ -41,6 +41,8 @@ public class AdminTripService {
             TripStatus.ASSIGNED,
             TripStatus.READY
     );
+    private static final String TRIP_LABEL = "Trip ";
+    private static final String ASSIGNED_TO = " assigned to ";
 
     private static final Pageable SINGLE_RESULT = PageRequest.of(0, 1);
 
@@ -95,7 +97,7 @@ public class AdminTripService {
 
     @Transactional(readOnly = true)
     public List<TripSummaryDto> listUpcomingTrips(int limit) {
-        int safeLimit = Math.min(Math.max(limit, 1), 20);
+        int safeLimit = Math.clamp(limit, 1, 20);
         LocalDate today = LicenseStatusHelper.businessToday();
         return tripRepository.findUpcoming(today, PageRequest.of(0, safeLimit))
                 .stream()
@@ -130,7 +132,7 @@ public class AdminTripService {
 
         trip = tripRepository.save(trip);
         auditLogService.log("TRIP_CREATED", "TRIP", trip.getId(),
-                "Trip " + trip.getTripReference() + " created for " + trip.getDestination() + ".");
+                TRIP_LABEL + trip.getTripReference() + " created for " + trip.getDestination() + ".");
         operationsNotificationService.notifyTripCreated(
                 trip.getTripReference(), trip.getDestination(), trip.getId());
         return toDetail(findTripWithDetails(trip.getId()));
@@ -158,7 +160,7 @@ public class AdminTripService {
 
         trip = tripRepository.save(trip);
         auditLogService.log("TRIP_UPDATED", "TRIP", trip.getId(),
-                "Trip " + trip.getTripReference() + " updated.");
+                TRIP_LABEL + trip.getTripReference() + " updated.");
         return toDetail(findTripWithDetails(trip.getId()));
     }
 
@@ -213,7 +215,7 @@ public class AdminTripService {
         trip = tripRepository.save(trip);
 
         auditLogService.log("VEHICLE_ASSIGNED", "TRIP", trip.getId(),
-                "Vehicle " + vehicle.getRegistrationNumber() + " assigned to " + trip.getTripReference() + ".");
+                "Vehicle " + vehicle.getRegistrationNumber() + ASSIGNED_TO + trip.getTripReference() + ".");
         operationsNotificationService.notifyVehicleAssigned(
                 trip.getTripReference(), vehicle.getRegistrationNumber(), trip.getId());
         return toDetail(findTripWithDetails(trip.getId()));
@@ -252,7 +254,7 @@ public class AdminTripService {
         trip = tripRepository.save(trip);
 
         auditLogService.log("DRIVER_ASSIGNED", "TRIP", trip.getId(),
-                "Driver " + driver.getName() + " assigned to " + trip.getTripReference() + ".");
+                "Driver " + driver.getName() + ASSIGNED_TO + trip.getTripReference() + ".");
         operationsNotificationService.notifyDriverAssigned(
                 trip.getTripReference(), driver.getName(), trip.getId());
         return toDetail(findTripWithDetails(trip.getId()));
@@ -293,7 +295,7 @@ public class AdminTripService {
         tripBookingRepository.save(tripBooking);
 
         auditLogService.log("BOOKING_ASSIGNED", "TRIP", trip.getId(),
-                "Booking " + booking.getBookingReference() + " assigned to " + trip.getTripReference() + ".");
+                "Booking " + booking.getBookingReference() + ASSIGNED_TO + trip.getTripReference() + ".");
         return toDetail(findTripWithDetails(trip.getId()));
     }
 
@@ -352,7 +354,7 @@ public class AdminTripService {
         }
 
         auditLogService.log("TRIP_STATUS_CHANGED", "TRIP", trip.getId(),
-                "Trip " + trip.getTripReference() + " status changed from "
+                TRIP_LABEL + trip.getTripReference() + " status changed from "
                         + oldStatus + " to " + newStatus + ".");
         return toDetail(findTripWithDetails(trip.getId()));
     }
@@ -448,41 +450,6 @@ public class AdminTripService {
                 driverRepository.save(driver);
             }
             trip.setDriver(null);
-        }
-    }
-
-    private void releasePrimaryVehicle(Trip trip, boolean clearAssignment) {
-        if (!clearAssignment) {
-            tripVehicleRepository.findPrimaryVehicle(trip.getId()).ifPresent(tv -> {
-                trip.getTripVehicles().remove(tv);
-                tripVehicleRepository.delete(tv);
-            });
-            return;
-        }
-        tripVehicleRepository.findPrimaryVehicle(trip.getId()).ifPresent(tv -> {
-            Vehicle vehicle = vehicleRepository.findByIdForUpdate(tv.getVehicle().getId()).orElseThrow();
-            if (!tripRepository.hasOtherActiveTripsForVehicle(vehicle.getId(), trip.getId())) {
-                vehicle.setStatus(VehicleStatus.AVAILABLE);
-                vehicleRepository.save(vehicle);
-            }
-            trip.getTripVehicles().remove(tv);
-            tripVehicleRepository.delete(tv);
-        });
-    }
-
-    private void releaseDriver(Driver driver, Trip trip, boolean clearAssignment) {
-        if (driver == null) {
-            return;
-        }
-        if (clearAssignment) {
-            Driver locked = driverRepository.findByIdForUpdate(driver.getId()).orElseThrow();
-            if (!tripRepository.hasOtherActiveTripsForDriver(locked.getId(), trip.getId())) {
-                locked.setStatus(DriverStatus.AVAILABLE);
-                driverRepository.save(locked);
-            }
-            if (trip.getDriver() != null && trip.getDriver().getId().equals(driver.getId())) {
-                trip.setDriver(null);
-            }
         }
     }
 
@@ -624,7 +591,7 @@ public class AdminTripService {
 
     private static Pageable pageable(int page, int size) {
         int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 100);
+        int safeSize = Math.clamp(size, 1, 100);
         return PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "startAt"));
     }
 }

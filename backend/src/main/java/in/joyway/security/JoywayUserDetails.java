@@ -11,7 +11,9 @@ import java.util.Collection;
 @Getter
 public class JoywayUserDetails implements UserDetails {
 
-    private final User user;
+    private static final long serialVersionUID = 1L;
+
+    private final transient User user;
 
     public JoywayUserDetails(User user) {
         this.user = user;

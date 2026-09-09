@@ -6,14 +6,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.ByteArrayInputStream;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -27,18 +26,18 @@ class PublicFileControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private DocumentStorageService documentStorageService;
 
-    @MockBean
+    @MockitoBean
     private in.joyway.security.JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @MockBean
+    @MockitoBean
     private in.joyway.security.JwtTokenProvider jwtTokenProvider;
 
     @Test
     void serveFile_returnsImageFromStorage() throws Exception {
-        when(documentStorageService.retrieve(eq("package-images/photo.jpg")))
+        when(documentStorageService.retrieve("package-images/photo.jpg"))
                 .thenReturn(Optional.of(new ByteArrayInputStream(new byte[]{(byte) 0xFF, (byte) 0xD8})));
 
         mockMvc.perform(get("/api/files/package-images/photo.jpg"))

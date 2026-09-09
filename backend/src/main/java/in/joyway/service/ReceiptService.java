@@ -3,7 +3,6 @@ package in.joyway.service;
 import in.joyway.domain.entity.Booking;
 import in.joyway.domain.entity.Payment;
 import in.joyway.domain.enums.PaymentRecordStatus;
-import in.joyway.domain.enums.PaymentStatus;
 import in.joyway.dto.booking.BookingReceiptDto;
 import org.springframework.stereotype.Service;
 

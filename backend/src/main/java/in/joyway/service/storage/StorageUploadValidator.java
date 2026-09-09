@@ -17,26 +17,31 @@ public final class StorageUploadValidator {
     public static final String PACKAGE_IMAGES_CATEGORY = "package-images";
     public static final String TRAVELLER_DOCUMENTS_CATEGORY = "traveller-documents";
 
+    private static final String MIME_JPEG = "image/jpeg";
+    private static final String MIME_PNG = "image/png";
+    private static final String MIME_WEBP = "image/webp";
+    private static final String MIME_PDF = "application/pdf";
+
     private static final Set<String> TRAVELLER_DOCUMENT_CONTENT_TYPES = Set.of(
-            "image/jpeg", "application/pdf"
+            MIME_JPEG, MIME_PDF
     );
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/webp", "application/pdf"
+            MIME_JPEG, MIME_PNG, MIME_WEBP, MIME_PDF
     );
     private static final Set<String> PACKAGE_IMAGE_CONTENT_TYPES = Set.of(
-            "image/jpeg", "image/webp"
+            MIME_JPEG, MIME_WEBP
     );
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
             ".jpg", ".jpeg", ".png", ".webp", ".pdf"
     );
     private static final Map<String, String> CONTENT_TYPE_TO_EXTENSION = Map.of(
-            "image/jpeg", ".jpg",
-            "image/png", ".png",
-            "image/webp", ".webp",
-            "application/pdf", ".pdf"
+            MIME_JPEG, ".jpg",
+            MIME_PNG, ".png",
+            MIME_WEBP, ".webp",
+            MIME_PDF, ".pdf"
     );
-    private static final long MAX_TRAVELLER_DOCUMENT_BYTES = 2 * 1024 * 1024;
-    private static final long MAX_PACKAGE_IMAGE_BYTES = 2 * 1024 * 1024;
+    private static final long MAX_TRAVELLER_DOCUMENT_BYTES = 2L * 1024 * 1024;
+    private static final long MAX_PACKAGE_IMAGE_BYTES = 2L * 1024 * 1024;
 
     private StorageUploadValidator() {
     }
@@ -133,21 +138,21 @@ public final class StorageUploadValidator {
 
     private static boolean matchesContentType(byte[] header, String contentType) {
         return switch (contentType.toLowerCase(Locale.ROOT)) {
-            case "image/jpeg" -> header.length >= 3
+            case MIME_JPEG -> header.length >= 3
                     && (header[0] & 0xFF) == 0xFF
                     && (header[1] & 0xFF) == 0xD8
                     && (header[2] & 0xFF) == 0xFF;
-            case "image/png" -> header.length >= 8
+            case MIME_PNG -> header.length >= 8
                     && header[0] == (byte) 0x89
                     && header[1] == 0x50
                     && header[2] == 0x4E
                     && header[3] == 0x47;
-            case "application/pdf" -> header.length >= 4
+            case MIME_PDF -> header.length >= 4
                     && header[0] == 0x25
                     && header[1] == 0x50
                     && header[2] == 0x44
                     && header[3] == 0x46;
-            case "image/webp" -> header.length >= 12
+            case MIME_WEBP -> header.length >= 12
                     && header[0] == 0x52
                     && header[1] == 0x49
                     && header[2] == 0x46
@@ -178,7 +183,7 @@ public final class StorageUploadValidator {
         }
         String lower = contentType.toLowerCase(Locale.ROOT);
         if ("image/jpg".equals(lower) || "image/pjpeg".equals(lower)) {
-            return "image/jpeg";
+            return MIME_JPEG;
         }
         return lower;
     }

@@ -22,6 +22,8 @@ import java.util.Optional;
 @Slf4j
 public class RazorpayGatewayImpl implements RazorpayGateway {
 
+    private static final String JSON_AMOUNT = "amount";
+    private static final String JSON_STATUS = "status";
     private static final int MIN_AMOUNT_PAISE = 100;
 
     private final RazorpayProperties razorpayProperties;
@@ -45,7 +47,7 @@ public class RazorpayGatewayImpl implements RazorpayGateway {
             );
 
             JSONObject options = new JSONObject();
-            options.put("amount", amountPaise);
+            options.put(JSON_AMOUNT, amountPaise);
             options.put("currency", currency);
             options.put("receipt", receiptReference);
             options.put("payment_capture", 1);
@@ -93,13 +95,13 @@ public class RazorpayGatewayImpl implements RazorpayGateway {
                     razorpayProperties.getKeySecret()
             );
             Payment payment = client.payments.fetch(paymentId);
-            Object amount = payment.get("amount");
+            Object amount = payment.get(JSON_AMOUNT);
             if (amount == null) {
                 return Optional.empty();
             }
             long amountPaise = amount instanceof Number number ? number.longValue() : Long.parseLong(amount.toString());
             String orderId = payment.has("order_id") ? payment.get("order_id") : null;
-            String status = payment.has("status") ? payment.get("status") : null;
+            String status = payment.has(JSON_STATUS) ? payment.get(JSON_STATUS) : null;
             return Optional.of(new RazorpayPaymentDetails(paymentId, orderId, amountPaise, status));
         } catch (RazorpayException ex) {
             log.warn("Razorpay payment fetch failed for paymentId={}", paymentId);
@@ -123,7 +125,7 @@ public class RazorpayGatewayImpl implements RazorpayGateway {
             );
 
             JSONObject options = new JSONObject();
-            options.put("amount", amountPaise);
+            options.put(JSON_AMOUNT, amountPaise);
             options.put("speed", "normal");
             if (receiptReference != null && !receiptReference.isBlank()) {
                 options.put("receipt", receiptReference);
@@ -131,8 +133,8 @@ public class RazorpayGatewayImpl implements RazorpayGateway {
 
             Refund refund = client.payments.refund(paymentId, options);
             String refundId = refund.get("id");
-            String status = refund.has("status") ? refund.get("status") : "processed";
-            Object amount = refund.get("amount");
+            String status = refund.has(JSON_STATUS) ? refund.get(JSON_STATUS) : "processed";
+            Object amount = refund.get(JSON_AMOUNT);
             long returnedPaise = amount instanceof Number number
                     ? number.longValue()
                     : Long.parseLong(amount.toString());

@@ -32,10 +32,11 @@ class EmailTemplateServiceTest {
 
         String html = service.render(EmailTemplates.BOOKING_CREATED, vars);
 
-        assertThat(html).contains("JOYWAY");
-        assertThat(html).contains("JW-2026-00001");
-        assertThat(html).contains("Asha");
-        assertThat(html).contains("support@joyway.in");
+        assertThat(html)
+                .contains("JOYWAY")
+                .contains("JW-2026-00001")
+                .contains("Asha")
+                .contains("support@joyway.in");
     }
 
     @ParameterizedTest
@@ -46,10 +47,11 @@ class EmailTemplateServiceTest {
 
         String html = service.render(EmailTemplates.BOOKING_CREATED, vars);
 
-        assertThat(html).doesNotContain("<script>");
-        assertThat(html).doesNotContain("<img src=x");
-        assertThat(html).doesNotContain("<a href=\"https://evil.example\">");
-        assertThat(html).contains(EmailTemplateService.escapeHtml(maliciousValue));
+        assertThat(html)
+                .doesNotContain("<script>")
+                .doesNotContain("<img src=x")
+                .doesNotContain("<a href=\"https://evil.example\">")
+                .contains(EmailTemplateService.escapeHtml(maliciousValue));
     }
 
     @Test
@@ -67,8 +69,9 @@ class EmailTemplateServiceTest {
 
         String html = service.render(EmailTemplates.BOOKING_CREATED, vars);
 
-        assertThat(html).contains("Tom &amp; &quot;Jerry&quot;");
-        assertThat(html).doesNotContain("Tom & \"Jerry\"");
+        assertThat(html)
+                .contains("Tom &amp; &quot;Jerry&quot;")
+                .doesNotContain("Tom & \"Jerry\"");
     }
 
     @Test

@@ -34,6 +34,7 @@ import java.time.Instant;
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @Slf4j
+@SuppressWarnings("java:S1075")
 public class RateLimitFilter extends OncePerRequestFilter {
 
     static final String LOGIN_PATH = "/api/admin/auth/login";

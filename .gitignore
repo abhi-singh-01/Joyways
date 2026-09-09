@@ -95,3 +95,6 @@ frontend/coverage/
 
 # Local performance dumps (do not commit)
 lighthouse*.json
+
+# Machine-local Compose overrides (ports, host networking) — never commit
+docker-compose.override.yml

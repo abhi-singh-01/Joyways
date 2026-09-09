@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,7 @@ public class BookingService {
             "AADHAAR", "PASSPORT", "DRIVING_LICENCE", "OTHER"
     );
     private static final String TRAVELLER_DOC_CATEGORY = "traveller-documents";
+    private static final String BOOKING_NOT_FOUND = "Booking not found.";
 
     private final TravelPackageRepository packageRepository;
     private final CustomerRepository customerRepository;
@@ -83,7 +85,7 @@ public class BookingService {
                 .build();
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BookingResponse createBooking(CreateBookingRequest request, List<MultipartFile> documents)
             throws IOException {
         if (!request.isConsentAccepted()) {
@@ -220,7 +222,7 @@ public class BookingService {
     @Transactional
     public BookingResponse cancelBookingByCustomer(String bookingReference, String customerEmail) {
         Booking booking = bookingRepository.findByBookingReferenceForUpdate(bookingReference)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(BOOKING_NOT_FOUND));
 
         String normalizedEmail = customerEmail.trim().toLowerCase();
         if (!booking.getCustomer().getEmail().equalsIgnoreCase(normalizedEmail)) {
@@ -235,9 +237,9 @@ public class BookingService {
     @Transactional
     public BookingResponse cancelBookingByAdmin(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(BOOKING_NOT_FOUND));
         booking = bookingRepository.findByBookingReferenceForUpdate(booking.getBookingReference())
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(BOOKING_NOT_FOUND));
         cancelBookingInternal(booking);
         List<Traveller> travellers = travellerRepository.findByBookingId(booking.getId());
         return bookingMapper.toResponse(booking, travellers);
@@ -324,7 +326,7 @@ public class BookingService {
         if (pkg.getStatus() != PackageStatus.PUBLISHED) {
             throw new IllegalArgumentException("This trip is not available for booking.");
         }
-        if (pkg.getStartDate().isBefore(LocalDate.now())) {
+        if (pkg.getStartDate().isBefore(LocalDate.now(ZoneId.of("Asia/Kolkata")))) {
             throw new IllegalArgumentException("This trip date has passed.");
         }
         if (pkg.getAvailableSeats() < travellers) {

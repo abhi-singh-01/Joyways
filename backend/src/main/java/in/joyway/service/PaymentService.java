@@ -55,6 +55,14 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PaymentService {
 
+    private static final String BOOKING_NOT_FOUND = "Booking not found.";
+    private static final String JSON_PAYLOAD = "payload";
+    private static final String JSON_ORDER = "order";
+    private static final String JSON_ENTITY = "entity";
+    private static final String JSON_ORDER_ID = "order_id";
+    private static final String JSON_PAYMENT = "payment";
+    private static final String JSON_REFUND = "refund";
+
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentWebhookEventRepository webhookEventRepository;
@@ -79,7 +87,7 @@ public class PaymentService {
         );
 
         Booking booking = bookingRepository.findByBookingReferenceForUpdate(request.getBookingReference())
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(BOOKING_NOT_FOUND));
 
         if (booking.getStatus() == BookingStatus.CONFIRMED
                 || booking.getPaymentStatus() == PaymentStatus.PAID) {
@@ -140,7 +148,7 @@ public class PaymentService {
     @Transactional
     public VerifyPaymentResponse verifyPayment(VerifyPaymentRequest request) {
         Booking booking = bookingRepository.findByBookingReferenceForUpdate(request.getBookingReference())
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(BOOKING_NOT_FOUND));
 
         bookingQueryService.findBookingWithAccessCheck(
                 request.getBookingReference(),
@@ -169,8 +177,6 @@ public class PaymentService {
     public void processWebhook(String payload, String signature, String eventId) {
         long startNanos = System.nanoTime();
         Outcome timerOutcome = Outcome.FAILED;
-        HandlerBucket handlerBucket = HandlerBucket.NONE;
-        String eventType = "";
 
         log.info("event=payment.webhook.received eventId={}", eventId);
         webhookMetricsRecorder.recordReceived();
@@ -190,82 +196,79 @@ public class PaymentService {
                 throw new PaymentVerificationException("Invalid webhook signature.");
             }
 
-            try {
-                JsonNode root = objectMapper.readTree(payload);
-                eventType = root.path("event").asText("");
-                String payloadHash = sha256(payload);
-
-                PaymentWebhookEvent webhookEvent = acquireWebhookEvent(eventId, eventType, payloadHash);
-
-                if (Boolean.TRUE.equals(webhookEvent.getProcessed())) {
-                    log.info("event=payment.webhook.duplicate eventId={}", eventId);
-                    webhookMetricsRecorder.recordDuplicate();
-                    timerOutcome = Outcome.DUPLICATE;
-                    return;
-                }
-
-                handlerBucket = handlerBucketForEventType(eventType);
-
-                WebhookHandlerOutcome outcome = switch (eventType) {
-                    case "payment.captured" -> handlePaymentSuccess(root);
-                    case "order.paid" -> {
-                        handleOrderPaidInformational(root);
-                        yield WebhookHandlerOutcome.ACKNOWLEDGED;
-                    }
-                    case "payment.failed" -> handlePaymentFailed(root);
-                    case "refund.processed" -> handleRefundProcessed(root);
-                    case "refund.failed" -> handleRefundFailed(root);
-                    default -> {
-                        log.info("event=payment.webhook.unhandled handler_bucket=unknown eventType={}", eventType);
-                        webhookMetricsRecorder.recordUnknownEvent();
-                        handlerBucket = HandlerBucket.UNKNOWN;
-                        yield WebhookHandlerOutcome.ACKNOWLEDGED;
-                    }
-                };
-
-                if (outcome == WebhookHandlerOutcome.RETRYABLE) {
-                    log.warn("event=payment.webhook.retryable eventId={} eventType={}", eventId, eventType);
-                    webhookMetricsRecorder.recordBookingNotFound();
-                    webhookMetricsRecorder.recordRetryableFailure();
-                    timerOutcome = Outcome.RETRYABLE;
-                    throw new IllegalStateException("Webhook processing incomplete.");
-                }
-
-                webhookEvent.setProcessed(true);
-                webhookEventRepository.save(webhookEvent);
-                webhookMetricsRecorder.recordSuccess();
-                timerOutcome = Outcome.SUCCESS;
-                log.info(
-                        "event=payment.webhook.processed outcome=success handler_bucket={} eventId={} eventType={} durationMs={}",
-                        handlerBucket.tagValue(),
-                        eventId,
-                        eventType,
-                        durationMillis(startNanos)
-                );
-            } catch (PaymentVerificationException ex) {
-                webhookMetricsRecorder.recordFailure();
-                timerOutcome = Outcome.FAILED;
-                throw ex;
-            } catch (IllegalStateException ex) {
-                if ("Webhook processing incomplete.".equals(ex.getMessage())) {
-                    throw ex;
-                }
-                log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
-                        eventId, ex.getClass().getSimpleName());
-                webhookMetricsRecorder.recordFailure();
-                timerOutcome = Outcome.FAILED;
-                throw new IllegalStateException("Webhook processing failed.");
-            } catch (Exception ex) {
-                log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
-                        eventId, ex.getClass().getSimpleName());
-                webhookMetricsRecorder.recordFailure();
-                timerOutcome = Outcome.FAILED;
-                throw new IllegalStateException("Webhook processing failed.");
-            }
-        } catch (PaymentVerificationException ex) {
-            throw ex;
+            timerOutcome = processVerifiedWebhook(payload, eventId, startNanos);
         } finally {
             webhookMetricsRecorder.recordProcessingDuration(startNanos, timerOutcome);
+        }
+    }
+
+    private Outcome processVerifiedWebhook(String payload, String eventId, long startNanos) {
+        try {
+            JsonNode root = objectMapper.readTree(payload);
+            String eventType = root.path("event").asText("");
+            String payloadHash = sha256(payload);
+
+            PaymentWebhookEvent webhookEvent = acquireWebhookEvent(eventId, eventType, payloadHash);
+
+            if (Boolean.TRUE.equals(webhookEvent.getProcessed())) {
+                log.info("event=payment.webhook.duplicate eventId={}", eventId);
+                webhookMetricsRecorder.recordDuplicate();
+                return Outcome.DUPLICATE;
+            }
+
+            HandlerBucket handlerBucket = handlerBucketForEventType(eventType);
+
+            WebhookHandlerOutcome outcome = switch (eventType) {
+                case "payment.captured" -> handlePaymentSuccess(root);
+                case "order.paid" -> {
+                    handleOrderPaidInformational(root);
+                    yield WebhookHandlerOutcome.ACKNOWLEDGED;
+                }
+                case "payment.failed" -> handlePaymentFailed(root);
+                case "refund.processed" -> handleRefundProcessed(root);
+                case "refund.failed" -> handleRefundFailed(root);
+                default -> {
+                    log.info("event=payment.webhook.unhandled handler_bucket=unknown eventType={}", eventType);
+                    webhookMetricsRecorder.recordUnknownEvent();
+                    handlerBucket = HandlerBucket.UNKNOWN;
+                    yield WebhookHandlerOutcome.ACKNOWLEDGED;
+                }
+            };
+
+            if (outcome == WebhookHandlerOutcome.RETRYABLE) {
+                log.warn("event=payment.webhook.retryable eventId={} eventType={}", eventId, eventType);
+                webhookMetricsRecorder.recordBookingNotFound();
+                webhookMetricsRecorder.recordRetryableFailure();
+                throw new IllegalStateException("Webhook processing incomplete.");
+            }
+
+            webhookEvent.setProcessed(true);
+            webhookEventRepository.save(webhookEvent);
+            webhookMetricsRecorder.recordSuccess();
+            log.info(
+                    "event=payment.webhook.processed outcome=success handler_bucket={} eventId={} eventType={} durationMs={}",
+                    handlerBucket.tagValue(),
+                    eventId,
+                    eventType,
+                    durationMillis(startNanos)
+            );
+            return Outcome.SUCCESS;
+        } catch (PaymentVerificationException ex) {
+            webhookMetricsRecorder.recordFailure();
+            throw ex;
+        } catch (IllegalStateException ex) {
+            if ("Webhook processing incomplete.".equals(ex.getMessage())) {
+                throw ex;
+            }
+            log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
+                    eventId, ex.getClass().getSimpleName());
+            webhookMetricsRecorder.recordFailure();
+            throw new IllegalStateException("Webhook processing failed.");
+        } catch (Exception ex) {
+            log.error("event=payment.webhook.failed reason=processing_error eventId={} type={}",
+                    eventId, ex.getClass().getSimpleName());
+            webhookMetricsRecorder.recordFailure();
+            throw new IllegalStateException("Webhook processing failed.");
         }
     }
 
@@ -312,7 +315,7 @@ public class PaymentService {
     }
 
     private void handleOrderPaidInformational(JsonNode root) {
-        JsonNode orderEntity = root.path("payload").path("order").path("entity");
+        JsonNode orderEntity = payloadEntity(root, JSON_ORDER);
         String orderId = orderEntity.path("id").asText(null);
         log.info(
                 "event=payment.webhook.order_paid_informational orderId={} (booking confirmation uses payment.captured only)",
@@ -338,7 +341,7 @@ public class PaymentService {
             return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
-        String orderId = paymentNode.path("order_id").asText(null);
+        String orderId = paymentNode.path(JSON_ORDER_ID).asText(null);
         String paymentId = paymentNode.path("id").asText(null);
         if (orderId == null || paymentId == null) {
             log.warn("event=payment.webhook.unrecoverable reason=missing_payment_identifiers");
@@ -445,7 +448,7 @@ public class PaymentService {
             return WebhookHandlerOutcome.ACKNOWLEDGED;
         }
 
-        String orderId = paymentNode.path("order_id").asText(null);
+        String orderId = paymentNode.path(JSON_ORDER_ID).asText(null);
         if (orderId == null) {
             log.warn("event=payment.webhook.unrecoverable reason=missing_order_id eventType=payment.failed");
             return WebhookHandlerOutcome.ACKNOWLEDGED;
@@ -466,22 +469,26 @@ public class PaymentService {
     }
 
     private JsonNode extractPaymentNode(JsonNode root) {
-        JsonNode paymentEntity = root.path("payload").path("payment").path("entity");
-        if (!paymentEntity.isMissingNode() && paymentEntity.has("order_id")) {
+        JsonNode paymentEntity = payloadEntity(root, JSON_PAYMENT);
+        if (!paymentEntity.isMissingNode() && paymentEntity.has(JSON_ORDER_ID)) {
             return paymentEntity;
         }
-        JsonNode orderPayments = root.path("payload").path("order").path("entity").path("payments");
+        JsonNode orderPayments = payloadEntity(root, JSON_ORDER).path("payments");
         if (orderPayments.isArray() && !orderPayments.isEmpty()) {
             String paymentId = orderPayments.get(0).asText();
             JsonNode node = objectMapper.createObjectNode();
             ((com.fasterxml.jackson.databind.node.ObjectNode) node).put("id", paymentId);
             ((com.fasterxml.jackson.databind.node.ObjectNode) node).put(
-                    "order_id",
-                    root.path("payload").path("order").path("entity").path("id").asText()
+                    JSON_ORDER_ID,
+                    payloadEntity(root, JSON_ORDER).path("id").asText()
             );
             return node;
         }
         return null;
+    }
+
+    private static JsonNode payloadEntity(JsonNode root, String type) {
+        return root.path(JSON_PAYLOAD).path(type).path(JSON_ENTITY);
     }
 
     private void confirmPayment(Booking booking, Payment payment, String paymentId, String signature) {
@@ -555,31 +562,13 @@ public class PaymentService {
     @Transactional
     public AdminRefundResponse refundBooking(Long bookingId, AdminRefundRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(BOOKING_NOT_FOUND));
         booking = bookingRepository.findByBookingReferenceForUpdate(booking.getBookingReference())
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(BOOKING_NOT_FOUND));
 
         Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId())
                 .orElseThrow(() -> new IllegalArgumentException("No payment found for this booking."));
-
-        if (payment.getRazorpayPaymentId() == null || payment.getRazorpayPaymentId().isBlank()) {
-            throw new IllegalArgumentException("This booking has no captured Razorpay payment to refund.");
-        }
-        if (payment.getStatus() == PaymentRecordStatus.REFUNDED) {
-            throw new IllegalArgumentException("This payment is already refunded.");
-        }
-        if (payment.getStatus() != PaymentRecordStatus.CAPTURED
-                && payment.getStatus() != PaymentRecordStatus.PARTIALLY_REFUNDED) {
-            throw new IllegalArgumentException("Only captured payments can be refunded.");
-        }
-        if (payment.getRazorpayRefundId() != null
-                && payment.getStatus() == PaymentRecordStatus.CAPTURED
-                && refundedAmountOrZero(payment).compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("A refund is already pending for this payment.");
-        }
-        if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new IllegalArgumentException("Completed trips cannot be refunded from admin. Contact finance.");
-        }
+        validateRefundable(booking, payment);
 
         BigDecimal remaining = payment.getAmount().subtract(refundedAmountOrZero(payment));
         if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
@@ -625,8 +614,29 @@ public class PaymentService {
         return toRefundResponse(booking, payment, "PROCESSED");
     }
 
+    private void validateRefundable(Booking booking, Payment payment) {
+        if (payment.getRazorpayPaymentId() == null || payment.getRazorpayPaymentId().isBlank()) {
+            throw new IllegalArgumentException("This booking has no captured Razorpay payment to refund.");
+        }
+        if (payment.getStatus() == PaymentRecordStatus.REFUNDED) {
+            throw new IllegalArgumentException("This payment is already refunded.");
+        }
+        if (payment.getStatus() != PaymentRecordStatus.CAPTURED
+                && payment.getStatus() != PaymentRecordStatus.PARTIALLY_REFUNDED) {
+            throw new IllegalArgumentException("Only captured payments can be refunded.");
+        }
+        if (payment.getRazorpayRefundId() != null
+                && payment.getStatus() == PaymentRecordStatus.CAPTURED
+                && refundedAmountOrZero(payment).compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("A refund is already pending for this payment.");
+        }
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new IllegalArgumentException("Completed trips cannot be refunded from admin. Contact finance.");
+        }
+    }
+
     private WebhookHandlerOutcome handleRefundProcessed(JsonNode root) {
-        JsonNode refundNode = root.path("payload").path("refund").path("entity");
+        JsonNode refundNode = payloadEntity(root, JSON_REFUND);
         if (refundNode.isMissingNode()) {
             log.warn("event=payment.webhook.unrecoverable reason=missing_refund_payload");
             return WebhookHandlerOutcome.ACKNOWLEDGED;
@@ -667,7 +677,7 @@ public class PaymentService {
     }
 
     private WebhookHandlerOutcome handleRefundFailed(JsonNode root) {
-        JsonNode refundNode = root.path("payload").path("refund").path("entity");
+        JsonNode refundNode = payloadEntity(root, JSON_REFUND);
         String refundId = refundNode.path("id").asText(null);
         String paymentId = refundNode.path("payment_id").asText(null);
         if (paymentId == null) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.joyway.config.CorsProperties;
 import in.joyway.config.JwtProperties;
 import in.joyway.util.CookieDomainNormalizer;
+import in.joyway.util.CorsOriginExpander;
 import in.joyway.dto.ApiResponse;
 import in.joyway.observability.RequestCorrelationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -46,7 +48,13 @@ public class SecurityConfig {
     private final ObjectMapper objectMapper;
     private final Environment environment;
 
+    /**
+     * CSRF is enabled for cookie-authenticated admin mutations via
+     * {@link #adminStateChangingCsrfMatcher()}. It is not applied to public JSON
+     * or the Razorpay webhook, which cannot send an {@code XSRF-TOKEN} cookie.
+     */
     @Bean
+    @SuppressWarnings("java:S4502")
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             CookieCsrfTokenRepository csrfTokenRepository
@@ -57,19 +65,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(csrfRequestHandler)
-                        .ignoringRequestMatchers(
-                                "/api/payments/webhook",
-                                "/api/bookings/**",
-                                "/api/payments/**",
-                                "/api/create-order",
-                                "/api/verify-payment",
-                                "/api/health",
-                                "/api/health/**",
-                                "/api/packages/**",
-                                "/api/files/**",
-                                "/api/contact/**",
-                                "/api/admin/auth/login"
-                        ))
+                        .requireCsrfProtectionMatcher(adminStateChangingCsrfMatcher()))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .headers(headers -> headers
                         .contentTypeOptions(contentType -> {})
@@ -124,11 +120,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(corsProperties.getAllowedOrigins().split(","))
-                .map(String::trim)
-                .filter(origin -> !origin.isEmpty())
-                .toList();
-        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOrigins(CorsOriginExpander.expand(corsProperties.getAllowedOrigins()));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
                 "Authorization",
@@ -166,7 +158,42 @@ public class SecurityConfig {
                         || profile.equalsIgnoreCase("development"));
     }
 
+    /**
+     * CSRF is required only for cookie-authenticated admin mutations. Public JSON
+     * (bookings, Razorpay, contact) and the Razorpay webhook cannot send an
+     * {@code XSRF-TOKEN} cookie: the site calls {@code api.joyway.in} without
+     * credentials, and Razorpay is server-to-server (HMAC). Login issues the
+     * CSRF cookie and therefore cannot require it.
+     */
+    static RequestMatcher adminStateChangingCsrfMatcher() {
+        return request -> {
+            String method = request.getMethod();
+            if (method == null
+                    || "GET".equalsIgnoreCase(method)
+                    || "HEAD".equalsIgnoreCase(method)
+                    || "TRACE".equalsIgnoreCase(method)
+                    || "OPTIONS".equalsIgnoreCase(method)) {
+                return false;
+            }
+            String path = request.getServletPath();
+            if (path == null || path.isBlank()) {
+                path = request.getRequestURI();
+            }
+            if (path == null) {
+                return false;
+            }
+            return path.startsWith("/api/admin/")
+                    && !path.equals("/api/admin/auth/login")
+                    && !path.startsWith("/api/admin/auth/login/");
+        };
+    }
+
+    /**
+     * The SPA reads {@code XSRF-TOKEN} in JavaScript and copies it to
+     * {@code X-XSRF-TOKEN}. HttpOnly would block that and disable CSRF for admin.
+     */
     @Bean
+    @SuppressWarnings("java:S3330")
     public CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         repository.setCookiePath("/");

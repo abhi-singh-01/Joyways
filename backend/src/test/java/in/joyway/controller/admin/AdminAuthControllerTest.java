@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -34,21 +34,22 @@ class AdminAuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private AdminAuthService adminAuthService;
 
-    @MockBean
+    @MockitoBean
     private in.joyway.security.JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @MockBean
+    @MockitoBean
     private in.joyway.security.JwtTokenProvider jwtTokenProvider;
 
-    @MockBean
+    @MockitoBean
     private CsrfTokenRepository csrfTokenRepository;
 
     @Test
     void login_success() throws Exception {
-        when(csrfTokenRepository.generateToken(any())).thenReturn(mock(CsrfToken.class));
+        CsrfToken csrfToken = mock(CsrfToken.class);
+        when(csrfTokenRepository.generateToken(any())).thenReturn(csrfToken);
         when(adminAuthService.login(any(LoginRequest.class), any(HttpServletResponse.class)))
                 .thenReturn(AdminProfileDto.builder()
                         .id(1L)

@@ -1,6 +1,7 @@
 package in.joyway.service;
 
 import in.joyway.config.JwtProperties;
+import in.joyway.domain.entity.Role;
 import in.joyway.domain.entity.User;
 import in.joyway.domain.repository.UserRepository;
 import in.joyway.dto.admin.AdminProfileDto;
@@ -62,7 +63,7 @@ public class AdminAuthService {
             throw new BadCredentialsException("Invalid email or password.");
         }
 
-        List<String> roles = user.getRoles().stream().map(r -> r.getName()).toList();
+        List<String> roles = user.getRoles().stream().map(Role::getName).toList();
         String token = jwtTokenProvider.generateToken(user.getEmail(), roles);
 
         ResponseCookie cookie = buildTokenCookie(token, Duration.ofMillis(jwtProperties.getExpirationMs()));

@@ -21,7 +21,7 @@ public final class SlugUtils {
         normalized = WHITESPACE.matcher(normalized).replaceAll("-");
         normalized = NON_LATIN.matcher(normalized).replaceAll("");
         normalized = MULTIPLE_DASHES.matcher(normalized).replaceAll("-");
-        normalized = normalized.replaceAll("^-|-$", "");
+        normalized = normalized.replaceAll("(^-)|(-$)", "");
         return normalized.toLowerCase(Locale.ENGLISH);
     }
 

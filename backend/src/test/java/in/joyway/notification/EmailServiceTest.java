@@ -2,6 +2,7 @@ package in.joyway.notification;
 
 import in.joyway.config.MailProperties;
 import in.joyway.domain.entity.EmailLog;
+import in.joyway.domain.enums.EmailCategory;
 import in.joyway.domain.enums.EmailStatus;
 import in.joyway.domain.repository.EmailLogRepository;
 import org.junit.jupiter.api.Test;
@@ -98,6 +99,35 @@ class EmailServiceTest {
     }
 
     @Test
+    void sendTemplateEmail_usesCategoryOverrideWhenDelivering() {
+        when(mailProperties.isEnabled()).thenReturn(true);
+        when(emailSenderResolver.resolve(EmailCategory.SUPPORT))
+                .thenReturn(new EmailSenderProfile("support@joyway.in", "JOYWAY Support", "support@joyway.in"));
+        when(emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
+                any(), any(), any(), any(), eq(EmailStatus.SENT)
+        )).thenReturn(false);
+        when(emailLogRepository.save(any(EmailLog.class))).thenAnswer(inv -> {
+            EmailLog log = inv.getArgument(0);
+            log.setId(1L);
+            return log;
+        });
+        when(emailTemplateService.render(any(), any())).thenReturn("<p>Hi</p>");
+        when(mailSender.createMimeMessage()).thenThrow(new IllegalStateException("SMTP down"));
+
+        emailService.sendTemplateEmail(
+                EmailTemplates.WELCOME,
+                "customer@example.com",
+                "Subject",
+                Map.of(),
+                "CUSTOMER",
+                3L,
+                EmailCategory.SUPPORT
+        );
+
+        verify(emailSenderResolver).resolve(EmailCategory.SUPPORT);
+    }
+
+    @Test
     void sendTemplateEmail_respectsDisabledFlag() {
         when(mailProperties.isEnabled()).thenReturn(false);
 
@@ -109,6 +139,22 @@ class EmailServiceTest {
                 "CUSTOMER",
                 null
         );
+
+        verify(emailLogRepository, never()).save(any());
+    }
+
+    @Test
+    void sendOverloads_skipWhenMailDisabled() {
+        when(mailProperties.isEnabled()).thenReturn(false);
+
+        emailService.sendTemplateEmailAsync(
+                EmailTemplates.WELCOME, "customer@example.com", "Welcome", Map.of(), "CUSTOMER", null);
+        emailService.sendTemplateEmailWithReplyTo(
+                EmailTemplates.CONTACT_ENQUIRY, "hello@joyway.in", "Enquiry", Map.of(),
+                "CONTACT", 1L, "guest@example.com");
+        emailService.sendTemplateEmail(
+                EmailTemplates.BOOKING_CREATED, "customer@example.com", "Created", Map.of(),
+                "BOOKING", 1L, EmailCategory.BOOKING);
 
         verify(emailLogRepository, never()).save(any());
     }

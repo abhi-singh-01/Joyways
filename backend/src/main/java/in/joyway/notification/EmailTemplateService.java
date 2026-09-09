@@ -9,6 +9,8 @@ import org.springframework.web.util.HtmlUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Year;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,7 +32,7 @@ public class EmailTemplateService {
                 "tagline", "Travel made simple.",
                 "supportEmail", mailProperties.getSupportFrom(),
                 "bookingsEmail", mailProperties.getBookingsFrom(),
-                "year", String.valueOf(java.time.Year.now().getValue())
+                "year", String.valueOf(Year.now(ZoneId.of("Asia/Kolkata")).getValue())
         ), LAYOUT_RAW_HTML_KEYS);
     }
 

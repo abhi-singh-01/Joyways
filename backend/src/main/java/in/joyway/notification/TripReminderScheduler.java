@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +25,7 @@ public class TripReminderScheduler {
             return;
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
         LocalDate sevenDaysAhead = today.plusDays(notificationProperties.getTripReminderDaysBefore());
         bookingRepository.findConfirmedBookingsStartingOn(sevenDaysAhead).forEach(booking ->
                 bookingNotificationService.onTripReminder(booking, notificationProperties.getTripReminderDaysBefore())

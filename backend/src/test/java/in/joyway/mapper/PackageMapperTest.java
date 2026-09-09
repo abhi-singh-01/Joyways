@@ -25,6 +25,7 @@ class PackageMapperTest {
     void setUp() {
         PackageImageUrlService urlService = new PackageImageUrlService();
         ReflectionTestUtils.setField(urlService, "publicApiBaseUrl", "https://api.joyway.in");
+        ReflectionTestUtils.setField(urlService, "packageImageCdnBaseUrl", "");
         mapper = new PackageMapper(urlService);
 
         PackageImage image = PackageImage.builder()

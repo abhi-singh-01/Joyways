@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -46,20 +46,28 @@ function Hills() {
   );
 }
 
+function createMoteField(count: number, seed: number) {
+  let state = seed >>> 0;
+  const next = () => {
+    state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  const positions = new Float32Array(count * 3);
+  const speeds = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (next() - 0.5) * 10;
+    positions[i * 3 + 1] = next() * 4 - 0.4;
+    positions[i * 3 + 2] = (next() - 0.5) * 5;
+    speeds[i] = 0.08 + next() * 0.18;
+  }
+  return { positions, speeds };
+}
+
+const MOTE_FIELD = createMoteField(70, 20260909);
+
 function Motes() {
   const points = useRef<THREE.Points>(null);
-  const { positions, speeds } = useMemo(() => {
-    const count = 70;
-    const positions = new Float32Array(count * 3);
-    const speeds = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 10;
-      positions[i * 3 + 1] = Math.random() * 4 - 0.4;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 5;
-      speeds[i] = 0.08 + Math.random() * 0.18;
-    }
-    return { positions, speeds };
-  }, []);
+  const { positions, speeds } = MOTE_FIELD;
 
   useFrame((state, delta) => {
     const mesh = points.current;

@@ -44,14 +44,14 @@ class StorageUploadValidatorTest {
     @Test
     void validateTravellerDocument_rejectsPngAndWebp() {
         byte[] png = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validateTravellerDocument(
-                new MockMultipartFile("file", "id.png", "image/png", png)));
+        MockMultipartFile pngFile = new MockMultipartFile("file", "id.png", "image/png", png);
+        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validateTravellerDocument(pngFile));
 
         byte[] webp = new byte[]{
                 0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50
         };
-        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validateTravellerDocument(
-                new MockMultipartFile("file", "id.webp", "image/webp", webp)));
+        MockMultipartFile webpFile = new MockMultipartFile("file", "id.webp", "image/webp", webp);
+        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validateTravellerDocument(webpFile));
     }
 
     @Test
@@ -77,11 +77,11 @@ class StorageUploadValidatorTest {
     @Test
     void validatePackageImage_rejectsPngAndPdf() {
         byte[] png = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validatePackageImage(
-                new MockMultipartFile("file", "hero.png", "image/png", png)));
+        MockMultipartFile pngFile = new MockMultipartFile("file", "hero.png", "image/png", png);
+        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validatePackageImage(pngFile));
 
         byte[] pdf = new byte[]{0x25, 0x50, 0x44, 0x46, 0x2D};
-        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validatePackageImage(
-                new MockMultipartFile("file", "hero.pdf", "application/pdf", pdf)));
+        MockMultipartFile pdfFile = new MockMultipartFile("file", "hero.pdf", "application/pdf", pdf);
+        assertThrows(IllegalArgumentException.class, () -> StorageUploadValidator.validatePackageImage(pdfFile));
     }
 }

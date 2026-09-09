@@ -15,7 +15,6 @@ import in.joyway.domain.repository.PaymentRepository;
 import in.joyway.domain.repository.PaymentWebhookEventRepository;
 import in.joyway.dto.payment.CreatePaymentOrderRequest;
 import in.joyway.dto.payment.VerifyPaymentRequest;
-import in.joyway.exception.AccessDeniedBookingException;
 import in.joyway.exception.PaymentVerificationException;
 import in.joyway.notification.BookingNotificationService;
 import in.joyway.observability.WebhookMetricsRecorder;
@@ -505,16 +504,6 @@ class PaymentServiceTest {
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setPaymentStatus(PaymentStatus.PAID);
 
-        Payment payment = Payment.builder()
-                .id(1L)
-                .booking(booking)
-                .razorpayOrderId("order_test123")
-                .razorpayPaymentId("pay_test456")
-                .amount(new BigDecimal("10000.00"))
-                .currency("INR")
-                .status(PaymentRecordStatus.CAPTURED)
-                .build();
-
         String payload = """
                 {"event":"payment.captured","payload":{"payment":{"entity":
                 {"id":"pay_test456","order_id":"order_test123","amount":1000000}}}}""";
@@ -925,15 +914,6 @@ class PaymentServiceTest {
 
     @Test
     void processWebhook_orderPaidIsInformationalOnly() {
-        Payment payment = Payment.builder()
-                .id(1L)
-                .booking(booking)
-                .razorpayOrderId("order_test123")
-                .amount(new BigDecimal("10000.00"))
-                .currency("INR")
-                .status(PaymentRecordStatus.CREATED)
-                .build();
-
         String payload = """
                 {"event":"order.paid","payload":{"order":{"entity":
                 {"id":"order_test123","amount":1000000,"payments":["pay_test456"]}}}}""";
@@ -1059,8 +1039,10 @@ class PaymentServiceTest {
                 .thenReturn(Optional.of(booking));
         when(paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(100L))
                 .thenReturn(Optional.of(payment));
+        Long bookingId = 100L;
+        var refundRequest = new in.joyway.dto.admin.AdminRefundRequest();
 
-        assertThatThrownBy(() -> paymentService.refundBooking(100L, new in.joyway.dto.admin.AdminRefundRequest()))
+        assertThatThrownBy(() -> paymentService.refundBooking(bookingId, refundRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("no captured Razorpay payment");
         verify(razorpayGateway, never()).createRefund(any(), anyInt(), any());
@@ -1102,5 +1084,112 @@ class PaymentServiceTest {
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.REFUNDED);
         assertThat(payment.getStatus()).isEqualTo(PaymentRecordStatus.REFUNDED);
         verify(webhookMetricsRecorder).recordSuccess();
+    }
+
+    @Test
+    void processWebhook_unknownEventIsAcknowledged() {
+        String payload = """
+                {"event":"invoice.paid","payload":{}}""";
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_unknown_type")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.processWebhook(payload, "sig", "evt_unknown_type");
+
+        verify(webhookMetricsRecorder).recordUnknownEvent();
+        verify(webhookMetricsRecorder).recordSuccess();
+    }
+
+    @Test
+    void processWebhook_invalidJsonIsWrapped() {
+        String payload = "{not-json";
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+
+        assertThatThrownBy(() -> paymentService.processWebhook(payload, "sig", "evt_bad_json"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Webhook processing failed.");
+        verify(webhookMetricsRecorder).recordFailure();
+    }
+
+    @Test
+    void processWebhook_paymentFailedWithoutOrderIdIsAcknowledged() {
+        String payload = """
+                {"event":"payment.failed","payload":{"payment":{"entity":{"id":"pay_x","order_id":null}}}}""";
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_fail_no_order")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.processWebhook(payload, "sig", "evt_fail_no_order");
+
+        verify(paymentRepository, never()).save(any(Payment.class));
+        verify(webhookMetricsRecorder).recordSuccess();
+    }
+
+    @Test
+    void processWebhook_refundFailedClearsPendingRefundId() {
+        Payment payment = Payment.builder()
+                .id(1L)
+                .booking(booking)
+                .razorpayPaymentId("pay_test456")
+                .razorpayRefundId("rfnd_1")
+                .amount(new BigDecimal("10000.00"))
+                .status(PaymentRecordStatus.CAPTURED)
+                .build();
+        String payload = """
+                {"event":"refund.failed","payload":{"refund":{"entity":
+                {"id":"rfnd_1","payment_id":"pay_test456"}}}}""";
+        when(razorpayGateway.verifyWebhookSignature(payload, "sig")).thenReturn(true);
+        when(webhookEventRepository.findByEventIdForUpdate("evt_rfnd_fail")).thenReturn(Optional.empty());
+        when(webhookEventRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentRepository.findByRazorpayPaymentId("pay_test456")).thenReturn(Optional.of(payment));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.processWebhook(payload, "sig", "evt_rfnd_fail");
+
+        assertThat(payment.getRazorpayRefundId()).isNull();
+        verify(webhookMetricsRecorder).recordSuccess();
+    }
+
+    @Test
+    void refundBooking_rejectsAlreadyRefundedPendingAndCompleted() {
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00001"))
+                .thenReturn(Optional.of(booking));
+
+        Payment refunded = Payment.builder()
+                .razorpayPaymentId("pay_1")
+                .status(PaymentRecordStatus.REFUNDED)
+                .amount(new BigDecimal("10000.00"))
+                .build();
+        var refundRequest = new in.joyway.dto.admin.AdminRefundRequest();
+        Long bookingId = 100L;
+        when(paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(100L)).thenReturn(Optional.of(refunded));
+        assertThatThrownBy(() -> paymentService.refundBooking(bookingId, refundRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("already refunded");
+
+        Payment pending = Payment.builder()
+                .razorpayPaymentId("pay_1")
+                .razorpayRefundId("rfnd_pending")
+                .status(PaymentRecordStatus.CAPTURED)
+                .refundedAmount(BigDecimal.ZERO)
+                .amount(new BigDecimal("10000.00"))
+                .build();
+        when(paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(100L)).thenReturn(Optional.of(pending));
+        assertThatThrownBy(() -> paymentService.refundBooking(bookingId, refundRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("already pending");
+
+        booking.setStatus(BookingStatus.COMPLETED);
+        Payment captured = Payment.builder()
+                .razorpayPaymentId("pay_1")
+                .status(PaymentRecordStatus.CAPTURED)
+                .refundedAmount(BigDecimal.ZERO)
+                .amount(new BigDecimal("10000.00"))
+                .build();
+        when(paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(100L)).thenReturn(Optional.of(captured));
+        assertThatThrownBy(() -> paymentService.refundBooking(bookingId, refundRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Completed trips");
     }
 }

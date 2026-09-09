@@ -15,6 +15,7 @@ class PackageImageUrlServiceTest {
     void setUp() {
         service = new PackageImageUrlService();
         ReflectionTestUtils.setField(service, "publicApiBaseUrl", "https://api.joyway.in");
+        ReflectionTestUtils.setField(service, "packageImageCdnBaseUrl", "");
     }
 
     @Test
@@ -52,5 +53,16 @@ class PackageImageUrlServiceTest {
                 .build();
 
         assertThat(service.resolvePublicUrl(image)).isNull();
+    }
+
+    @Test
+    void resolvePublicUrl_prefersCdnBaseWhenConfigured() {
+        ReflectionTestUtils.setField(service, "packageImageCdnBaseUrl", "https://joyway-images-prod.azurefd.net/");
+        PackageImage image = PackageImage.builder()
+                .privateStorageKey("package-images/abc123.jpg")
+                .build();
+
+        assertThat(service.resolvePublicUrl(image))
+                .isEqualTo("https://joyway-images-prod.azurefd.net/api/files/package-images/abc123.jpg");
     }
 }

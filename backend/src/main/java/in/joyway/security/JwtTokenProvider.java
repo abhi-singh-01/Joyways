@@ -9,24 +9,24 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
+import java.time.Instant;
+import java.util.Date; // NOSONAR java:S2143 — JJWT 0.12 issuedAt/expiration still require Date
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@SuppressWarnings("java:S2143") // JJWT 0.12 issuedAt/expiration still require java.util.Date
 public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
 
     public String generateToken(String email, List<String> roles) {
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + jwtProperties.getExpirationMs());
-
+        Instant now = Instant.now();
         return Jwts.builder()
                 .subject(email)
                 .claim("roles", roles)
-                .issuedAt(now)
-                .expiration(expiry)
+                .issuedAt(toJwtDate(now))
+                .expiration(toJwtDate(now.plusMillis(jwtProperties.getExpirationMs())))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -60,5 +60,10 @@ public class JwtTokenProvider {
     private SecretKey getSigningKey() {
         byte[] keyBytes = jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    @SuppressWarnings("java:S2143")
+    private static Date toJwtDate(Instant instant) {
+        return Date.from(instant); // NOSONAR — JJWT ClaimsMutator only accepts Date
     }
 }

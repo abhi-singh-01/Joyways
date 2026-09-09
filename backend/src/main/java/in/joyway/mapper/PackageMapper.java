@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Component
@@ -91,6 +92,6 @@ public class PackageMapper {
     private boolean isBookable(TravelPackage pkg) {
         return pkg.getStatus() == PackageStatus.PUBLISHED
                 && pkg.getAvailableSeats() > 0
-                && !pkg.getStartDate().isBefore(LocalDate.now());
+                && !pkg.getStartDate().isBefore(LocalDate.now(ZoneId.of("Asia/Kolkata")));
     }
 }

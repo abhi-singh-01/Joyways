@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * The admin UI (joyway.in) and the API (api.joyway.in) are different hosts of the same site,
@@ -63,7 +65,7 @@ class AdminAuthServiceCookieDomainTest {
 
     @Test
     void login_setsCookieWithConfiguredDomain() {
-        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
 
         LoginRequest request = new LoginRequest();
         request.setEmail(ADMIN_EMAIL);
@@ -79,7 +81,7 @@ class AdminAuthServiceCookieDomainTest {
 
     @Test
     void logout_clearsCookieWithSameDomain() {
-        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
 
         adminAuthService.logout(response);
 
@@ -90,7 +92,7 @@ class AdminAuthServiceCookieDomainTest {
 
     private String captureSetCookie(HttpServletResponse response) {
         ArgumentCaptor<String> value = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(response).addHeader(Mockito.eq(HttpHeaders.SET_COOKIE), value.capture());
+        verify(response).addHeader(eq(HttpHeaders.SET_COOKIE), value.capture());
         return value.getValue();
     }
 }

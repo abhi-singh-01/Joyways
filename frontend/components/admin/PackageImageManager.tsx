@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Trash2, Upload } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import {

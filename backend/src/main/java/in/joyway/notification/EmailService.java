@@ -8,6 +8,8 @@ import in.joyway.domain.repository.EmailLogRepository;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -28,6 +30,13 @@ public class EmailService {
     private final EmailLogRepository emailLogRepository;
     private final EmailTemplateService emailTemplateService;
     private final EmailSenderResolver emailSenderResolver;
+    private EmailService self = this;
+
+    @Autowired
+    @Lazy
+    void setSelf(EmailService self) {
+        this.self = self;
+    }
 
     @Async
     public void sendTemplateEmailAsync(
@@ -38,7 +47,7 @@ public class EmailService {
             String relatedEntityType,
             Long relatedEntityId
     ) {
-        sendTemplateEmail(template, recipient, subject, variables, relatedEntityType, relatedEntityId);
+        self.sendTemplateEmail(template, recipient, subject, variables, relatedEntityType, relatedEntityId);
     }
 
     /**
@@ -54,16 +63,8 @@ public class EmailService {
             Long relatedEntityId,
             String replyTo
     ) {
-        sendTemplateEmail(
-                template,
-                recipient,
-                subject,
-                variables,
-                relatedEntityType,
-                relatedEntityId,
-                null,
-                replyTo
-        );
+        dispatchSend(new EmailSendRequest(
+                template, recipient, subject, variables, relatedEntityType, relatedEntityId, null, replyTo));
     }
 
     @Transactional
@@ -75,7 +76,8 @@ public class EmailService {
             String relatedEntityType,
             Long relatedEntityId
     ) {
-        sendTemplateEmail(template, recipient, subject, variables, relatedEntityType, relatedEntityId, null, null);
+        dispatchSend(new EmailSendRequest(
+                template, recipient, subject, variables, relatedEntityType, relatedEntityId, null, null));
     }
 
     @Transactional
@@ -88,55 +90,43 @@ public class EmailService {
             Long relatedEntityId,
             EmailCategory categoryOverride
     ) {
-        sendTemplateEmail(
-                template,
-                recipient,
-                subject,
-                variables,
-                relatedEntityType,
-                relatedEntityId,
-                categoryOverride,
-                null
-        );
+        dispatchSend(new EmailSendRequest(
+                template, recipient, subject, variables, relatedEntityType, relatedEntityId, categoryOverride, null));
     }
 
-    @Transactional
-    public void sendTemplateEmail(
-            String template,
-            String recipient,
-            String subject,
-            Map<String, String> variables,
-            String relatedEntityType,
-            Long relatedEntityId,
-            EmailCategory categoryOverride,
-            String replyToOverride
-    ) {
+    private void dispatchSend(EmailSendRequest request) {
         if (!mailProperties.isEnabled()) {
-            log.info("Email disabled; skipping template={} recipient={}", template, maskEmail(recipient));
+            log.info("Email disabled; skipping template={} recipient={}",
+                    request.template(), maskEmail(request.recipient()));
             return;
         }
 
         if (emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
-                template, recipient, relatedEntityType, relatedEntityId, EmailStatus.SENT)) {
-            log.info("Duplicate email skipped: template={} recipient={}", template, maskEmail(recipient));
+                request.template(),
+                request.recipient(),
+                request.relatedEntityType(),
+                request.relatedEntityId(),
+                EmailStatus.SENT)) {
+            log.info("Duplicate email skipped: template={} recipient={}",
+                    request.template(), maskEmail(request.recipient()));
             return;
         }
 
         EmailLog emailLog = EmailLog.builder()
-                .recipient(recipient)
-                .subject(subject)
-                .template(template)
+                .recipient(request.recipient())
+                .subject(request.subject())
+                .template(request.template())
                 .status(EmailStatus.PENDING)
-                .relatedEntityType(relatedEntityType)
-                .relatedEntityId(relatedEntityId)
+                .relatedEntityType(request.relatedEntityType())
+                .relatedEntityId(request.relatedEntityId())
                 .attemptCount(0)
                 .build();
         emailLog = emailLogRepository.save(emailLog);
 
-        EmailCategory category = categoryOverride != null
-                ? categoryOverride
-                : EmailTemplateCategoryResolver.resolve(template);
-        deliver(emailLog, variables, category, replyToOverride);
+        EmailCategory category = request.categoryOverride() != null
+                ? request.categoryOverride()
+                : EmailTemplateCategoryResolver.resolve(request.template());
+        deliver(emailLog, request.variables(), category, request.replyToOverride());
     }
 
     @Transactional
@@ -199,5 +189,17 @@ public class EmailService {
         }
         int at = email.indexOf('@');
         return email.charAt(0) + "***" + email.substring(at);
+    }
+
+    private record EmailSendRequest(
+            String template,
+            String recipient,
+            String subject,
+            Map<String, String> variables,
+            String relatedEntityType,
+            Long relatedEntityId,
+            EmailCategory categoryOverride,
+            String replyToOverride
+    ) {
     }
 }

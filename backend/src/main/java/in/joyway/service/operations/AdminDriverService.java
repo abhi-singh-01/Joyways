@@ -26,6 +26,9 @@ import java.util.Locale;
 @Transactional
 public class AdminDriverService {
 
+    private static final String ENTITY_DRIVER = "DRIVER";
+    private static final String DRIVER_LABEL = "Driver ";
+
     private final DriverRepository driverRepository;
     private final TripRepository tripRepository;
     private final AuditLogService auditLogService;
@@ -71,8 +74,8 @@ public class AdminDriverService {
                 .build();
 
         driver = driverRepository.save(driver);
-        auditLogService.log("DRIVER_CREATED", "DRIVER", driver.getId(),
-                "Driver " + driver.getName() + " created.");
+        auditLogService.log("DRIVER_CREATED", ENTITY_DRIVER, driver.getId(),
+                DRIVER_LABEL + driver.getName() + " created.");
         notifyIfLicenseExpiring(driver);
         return toDetail(driver);
     }
@@ -94,8 +97,8 @@ public class AdminDriverService {
         driver.setNotes(trimToNull(request.getNotes()));
 
         driver = driverRepository.save(driver);
-        auditLogService.log("DRIVER_UPDATED", "DRIVER", driver.getId(),
-                "Driver " + driver.getName() + " updated.");
+        auditLogService.log("DRIVER_UPDATED", ENTITY_DRIVER, driver.getId(),
+                DRIVER_LABEL + driver.getName() + " updated.");
         notifyIfLicenseExpiring(driver);
         return toDetail(driver);
     }
@@ -113,8 +116,8 @@ public class AdminDriverService {
 
         driver.setStatus(newStatus);
         driver = driverRepository.save(driver);
-        auditLogService.log("DRIVER_STATUS_CHANGED", "DRIVER", driver.getId(),
-                "Driver " + driver.getName() + " status changed from "
+        auditLogService.log("DRIVER_STATUS_CHANGED", ENTITY_DRIVER, driver.getId(),
+                DRIVER_LABEL + driver.getName() + " status changed from "
                         + oldStatus + " to " + newStatus + ".");
         return toDetail(driver);
     }
@@ -210,7 +213,7 @@ public class AdminDriverService {
 
     private static Pageable pageable(int page, int size) {
         int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 100);
+        int safeSize = Math.clamp(size, 1, 100);
         return PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 }

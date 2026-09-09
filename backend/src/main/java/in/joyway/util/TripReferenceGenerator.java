@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,7 +18,7 @@ public class TripReferenceGenerator {
     private final TripRepository tripRepository;
 
     public synchronized String generateNext() {
-        int year = Year.now().getValue();
+        int year = Year.now(ZoneId.of("Asia/Kolkata")).getValue();
         String prefix = "JW-TRIP-" + year + "-";
 
         int maxSequence = tripRepository

@@ -155,6 +155,11 @@ Use this checklist before going live. Do not commit real secrets to Git.
 - Live mode keys in production env
 - Webhook URL: `https://api.joyway.in/api/payments/webhook`
 - Webhook events: `payment.captured`, `payment.failed`, `refund.processed`, `refund.failed`
+- Dashboard: Account & Settings → Webhooks → edit the `api.joyway.in` webhook → enable **refund.processed** and **refund.failed** (keep the existing secret). Do not create a second webhook.
+
+### Azure Front Door (package images)
+- Profile `joyway-afd-prod` caches `/api/files/package-images/*` from `api.joyway.in`
+- After deploying a frontend that allows `*.azurefd.net` images, set backend `PACKAGE_IMAGE_CDN_BASE_URL` to the Front Door hostname
 
 ### SMTP (Hostinger)
 - SPF/DKIM configured for `joyway.in`
@@ -162,8 +167,9 @@ Use this checklist before going live. Do not commit real secrets to Git.
 
 ### DNS / reverse proxy (recommended)
 - `joyway.in` → frontend
+- `www.joyway.in` → CNAME to `joyway.in`, plus Hostinger TXT `asuid.www.joyway.in` = Azure domain verification hash, then bind `www.joyway.in` on the frontend Container App. App redirects www → `https://joyway.in` (308)
 - `api.joyway.in` → backend
-- HTTPS/TLS certificates installed
+- HTTPS/TLS certificates installed for apex and www
 
 ## Post-deploy verification
 

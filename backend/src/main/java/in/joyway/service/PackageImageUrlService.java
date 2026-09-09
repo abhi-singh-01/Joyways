@@ -15,6 +15,13 @@ public class PackageImageUrlService {
     @Value("${joyway.public-api-base-url:http://localhost:8080}")
     private String publicApiBaseUrl;
 
+    /**
+     * Optional Azure Front Door (or other CDN) base URL for package images.
+     * When empty, images are served from {@link #publicApiBaseUrl}.
+     */
+    @Value("${joyway.package-image-cdn-base-url:}")
+    private String packageImageCdnBaseUrl;
+
     public String resolvePublicUrl(PackageImage image) {
         if (image == null) {
             return null;
@@ -31,9 +38,12 @@ public class PackageImageUrlService {
         if (!storageKey.startsWith("package-images/")) {
             return null;
         }
-        String base = publicApiBaseUrl.endsWith("/")
-                ? publicApiBaseUrl.substring(0, publicApiBaseUrl.length() - 1)
+        String rawBase = (packageImageCdnBaseUrl != null && !packageImageCdnBaseUrl.isBlank())
+                ? packageImageCdnBaseUrl
                 : publicApiBaseUrl;
+        String base = rawBase.endsWith("/")
+                ? rawBase.substring(0, rawBase.length() - 1)
+                : rawBase;
         return base + "/api/files/" + storageKey;
     }
 }

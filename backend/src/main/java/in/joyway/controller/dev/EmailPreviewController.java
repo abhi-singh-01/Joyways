@@ -25,7 +25,7 @@ public class EmailPreviewController {
         if (!mailProperties.isPreviewEnabled()) {
             return "<p>Email preview is disabled. Set MAIL_PREVIEW_ENABLED=true</p>";
         }
-        return emailTemplateService.preview(template, sampleVariables(template));
+        return emailTemplateService.preview(template, sampleVariables());
     }
 
     @GetMapping("/templates")
@@ -43,32 +43,36 @@ public class EmailPreviewController {
         return ApiResponse.success(templates);
     }
 
-    private Map<String, String> sampleVariables(String template) {
+    private static final String BOOKING_LOOKUP_PATH = "/bookings/lookup";
+    private static final String SAMPLE_AMOUNT = "12000.00";
+
+    private Map<String, String> sampleVariables() {
+        String lookupUrl = mailProperties.getFrontendBaseUrl() + BOOKING_LOOKUP_PATH;
         Map<String, String> vars = new HashMap<>();
         vars.put("customerName", "Priya Sharma");
         vars.put("customerEmail", "priya@example.com");
-        vars.put("loginUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
+        vars.put("loginUrl", lookupUrl);
         vars.put("bookingReference", "JW-2026-00018");
         vars.put("packageTitle", "Nainital Weekend Escape");
         vars.put("destination", "Nainital");
         vars.put("travelDate", "15 Sep 2026");
         vars.put("endDate", "17 Sep 2026");
         vars.put("travellerCount", "2");
-        vars.put("amount", "12000.00");
-        vars.put("amountPaid", "12000.00");
+        vars.put("amount", SAMPLE_AMOUNT);
+        vars.put("amountPaid", SAMPLE_AMOUNT);
         vars.put("currency", "INR");
         vars.put("paymentStatusLabel", "PAID");
         vars.put("bookingStatusLabel", "CONFIRMED");
         vars.put("paymentPendingNote", "Payment is pending. Please complete payment to confirm your seats.");
-        vars.put("continuePaymentUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
+        vars.put("continuePaymentUrl", lookupUrl);
         vars.put("paymentId", "pay_sample123");
         vars.put("paymentDate", "27 Aug 2026");
         vars.put("duration", "2 Nights / 3 Days");
         vars.put("pickup", "Kashmere Gate, Delhi");
-        vars.put("bookingUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
+        vars.put("bookingUrl", lookupUrl);
         vars.put("cancellationDate", "27 Aug 2026");
         vars.put("refundNote", "If a refund applies, our team will process it separately and confirm by email.");
-        vars.put("refundAmount", "12000.00");
+        vars.put("refundAmount", SAMPLE_AMOUNT);
         vars.put("refundId", "rfnd_sample123");
         vars.put("reminderMessage", "Your JOYWAY trip is coming up in 7 days.");
         vars.put("daysBefore", "7");
