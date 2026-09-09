@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/** Intrinsic size of public/logo.png */
+/** Intrinsic size of public/logo.webp */
 const LOGO_WIDTH = 721;
 const LOGO_HEIGHT = 346;
 const LOGO_ASPECT = LOGO_WIDTH / LOGO_HEIGHT;

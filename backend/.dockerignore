@@ -3,6 +3,7 @@
 
 # Maven build output (the image rebuilds it)
 target
+src/test
 
 # Local environment files holding real credentials
 .env

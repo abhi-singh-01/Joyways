@@ -21,6 +21,11 @@ dist
 !.env.template
 !.env.production.example
 
+# Local source assets not needed in the image
+Assets
+scripts
+*.log
+
 # AI agent files and boilerplate docs
 AGENTS.md
 CLAUDE.md
