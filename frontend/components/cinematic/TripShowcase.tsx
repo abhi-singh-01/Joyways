@@ -79,13 +79,23 @@ export function TripShowcase({ packages }: Readonly<TripShowcaseProps>) {
                       <dd className="text-white">{formatPrice(pkg.pricePerPerson)}</dd>
                     </div>
                   </dl>
-                  <Link
-                    href={`/trips/${pkg.slug}`}
-                    className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-accent-light hover:text-white"
-                  >
-                    Explore journey
-                    <ArrowRight size={16} />
-                  </Link>
+                  <div className="mt-8 flex flex-wrap items-center gap-3">
+                    {pkg.availableSeats > 0 ? (
+                      <Link
+                        href={`/book/${pkg.id}`}
+                        className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-forest hover:bg-accent-light"
+                      >
+                        Book this trip
+                      </Link>
+                    ) : null}
+                    <Link
+                      href={`/trips/${pkg.slug}`}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-white underline-offset-4 hover:underline"
+                    >
+                      Explore journey
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </article>
