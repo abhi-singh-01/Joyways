@@ -47,7 +47,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Next.js reads this at build time; String.raw is not statically analyzable.
   matcher: [
-    String.raw`/((?!_next/static|_next/image|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)`,
+    "/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
