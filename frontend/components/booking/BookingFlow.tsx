@@ -11,7 +11,7 @@ import { BookingStepper } from "@/components/booking/BookingStepper";
 import { TravellerForm } from "@/components/booking/TravellerForm";
 import { BookingReviewCard } from "@/components/booking/BookingReviewCard";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { formatDateRange, formatPrice } from "@/lib/format";
+import { formatDateRange, formatPrice, parsePickupPoints } from "@/lib/format";
 import type { PackageDetail } from "@/lib/api/packagesApi";
 import {
   createBooking,
@@ -27,6 +27,8 @@ import {
   validateBookingStep,
 } from "@/lib/formValidation";
 import { PaymentCheckout } from "@/components/booking/PaymentCheckout";
+import { WaitlistForm } from "@/components/packages/WaitlistForm";
+import { Select } from "@/components/ui/Select";
 
 function emptyTraveller(): TravellerInput {
   return {
@@ -45,7 +47,7 @@ type BookingFlowProps = {
   pkg: PackageDetail;
 };
 
-export function BookingFlow({ pkg }: BookingFlowProps) {
+export function BookingFlow({ pkg }: Readonly<BookingFlowProps>) {
   const [step, setStep] = useState(1);
   const [count, setCount] = useState(1);
   const [customer, setCustomer] = useState<CustomerInput>({
@@ -54,6 +56,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
     mobile: "",
   });
   const [travellers, setTravellers] = useState<TravellerInput[]>([emptyTraveller()]);
+  const [travellerKeys, setTravellerKeys] = useState<string[]>(() => [crypto.randomUUID()]);
   const [documents, setDocuments] = useState<(File | null)[]>([null]);
   const [customerErrors, setCustomerErrors] = useState<FieldErrors<CustomerInput>>({});
   const [travellerErrors, setTravellerErrors] = useState<FieldErrors<TravellerInput>[]>([
@@ -66,8 +69,18 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
   const [loading, setLoading] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [consentError, setConsentError] = useState("");
+  const [pickupPoint, setPickupPoint] = useState("");
+  const [pickupError, setPickupError] = useState("");
+  const pickupOptions = parsePickupPoints(pkg.pickupPoints);
 
   if (!pkg.bookable) {
+    if (pkg.waitlistable) {
+      return (
+        <div className="mx-auto max-w-3xl">
+          <WaitlistForm slug={pkg.slug} destination={pkg.destination} />
+        </div>
+      );
+    }
     return (
       <ErrorState
         title="Not available"
@@ -83,6 +96,11 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
     setTravellers((prev) => {
       const updated = [...prev];
       while (updated.length < clamped) updated.push(emptyTraveller());
+      return updated.slice(0, clamped);
+    });
+    setTravellerKeys((prev) => {
+      const updated = [...prev];
+      while (updated.length < clamped) updated.push(crypto.randomUUID());
       return updated.slice(0, clamped);
     });
     setDocuments((prev) => {
@@ -109,6 +127,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
       customer: resolveBookingCustomer(count, customer, travellers),
       travellers: travellers.slice(0, count),
       consentAccepted,
+      pickupPoint: pickupPoint || undefined,
     };
   }
 
@@ -125,7 +144,13 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
     setTravellerErrors(validation.travellerErrors);
     setDocumentErrors(validation.documentErrors);
 
-    if (!validation.valid) {
+    if (pickupOptions.length > 0 && !pickupPoint) {
+      setPickupError("Please choose a pickup point.");
+    } else {
+      setPickupError("");
+    }
+
+    if (!validation.valid || (pickupOptions.length > 0 && !pickupPoint)) {
       setError("Please fix the highlighted fields before continuing.");
       document
         .querySelector<HTMLElement>("[aria-invalid='true']")
@@ -137,7 +162,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
     return true;
   }
 
-  async function handlePreview(e?: React.FormEvent) {
+  async function handlePreview(e?: React.SyntheticEvent<HTMLFormElement>) {
     e?.preventDefault();
     if (!validateDetailsForm()) return;
 
@@ -332,7 +357,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
 
             {travellers.slice(0, count).map((traveller, index) => (
               <TravellerForm
-                key={index}
+                key={travellerKeys[index]}
                 index={index}
                 data={traveller}
                 documentFile={documents[index]}
@@ -350,6 +375,38 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
                 }}
               />
             ))}
+
+            {pickupOptions.length > 0 && (
+              <div className="rounded-2xl border border-border bg-white p-5 sm:p-6">
+                <h2 className="font-display text-xl font-semibold text-charcoal">
+                  Pickup point
+                </h2>
+                <p className="mt-1 text-sm text-charcoal-muted">
+                  Choose where you will join the group departure.
+                </p>
+                <div className="mt-4">
+                  <Label htmlFor="pickupPoint">Pickup *</Label>
+                  <Select
+                    id="pickupPoint"
+                    required
+                    aria-invalid={Boolean(pickupError)}
+                    error={pickupError}
+                    value={pickupPoint}
+                    onChange={(e) => {
+                      setPickupPoint(e.target.value);
+                      setPickupError("");
+                    }}
+                  >
+                    <option value="">Select a pickup point</option>
+                    {pickupOptions.map((point) => (
+                      <option key={point} value={point}>
+                        {point}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-between gap-3">
               <Button type="button" variant="outline" onClick={() => setStep(1)}>
@@ -375,6 +432,7 @@ export function BookingFlow({ pkg }: BookingFlowProps) {
               pkg={pkg}
               review={review}
               customerName={bookingCustomer.fullName}
+              pickupPoint={pickupPoint || review.pickupPoint}
             />
             <div className="rounded-2xl border border-border bg-white p-5 sm:p-6">
               <label className="flex items-start gap-3 text-sm leading-relaxed text-charcoal-muted">

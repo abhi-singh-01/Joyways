@@ -28,7 +28,7 @@ export function ButtonLink({
   size = "md",
   children,
   ...props
-}: ButtonLinkProps) {
+}: Readonly<ButtonLinkProps>) {
   return (
     <Link
       className={cn(

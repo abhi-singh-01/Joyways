@@ -19,6 +19,7 @@ import in.joyway.service.operations.OperationsNotificationService;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.util.BookingReferenceGenerator;
 import in.joyway.util.IdDocumentReferenceValidator;
+import in.joyway.util.PickupPoints;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,12 +58,14 @@ public class BookingService {
     private final BookingNotificationService bookingNotificationService;
     private final BookingProperties bookingProperties;
     private final OperationsNotificationService operationsNotificationService;
+    private final WaitlistService waitlistService;
 
     @Transactional(readOnly = true)
     public BookingReviewDto previewBooking(CreateBookingRequest request) {
         validateBookingRequest(request);
         TravelPackage pkg = findPublishedPackage(request.getPackageId());
         validateBookable(pkg, request.getNumberOfTravellers());
+        String pickupPoint = PickupPoints.requireSelection(pkg.getPickupPoints(), request.getPickupPoint());
 
         BigDecimal subtotal = calculateSubtotal(pkg, request.getNumberOfTravellers());
         BigDecimal taxes = BigDecimal.ZERO;
@@ -82,6 +85,7 @@ public class BookingService {
                 .currency("INR")
                 .availableSeats(pkg.getAvailableSeats())
                 .bookable(true)
+                .pickupPoint(pickupPoint)
                 .build();
     }
 
@@ -99,6 +103,7 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found or unavailable."));
 
         validateBookable(pkg, request.getNumberOfTravellers());
+        String pickupPoint = PickupPoints.requireSelection(pkg.getPickupPoints(), request.getPickupPoint());
 
         if (pkg.getAvailableSeats() < request.getNumberOfTravellers()) {
             throw new InsufficientSeatsException("No seats are available for this trip.");
@@ -120,6 +125,7 @@ public class BookingService {
                 .travelPackage(pkg)
                 .customer(customer)
                 .numberOfTravellers(request.getNumberOfTravellers())
+                .pickupPoint(pickupPoint)
                 .totalAmount(totalAmount)
                 .currency("INR")
                 .status(BookingStatus.PENDING_PAYMENT)
@@ -196,6 +202,72 @@ public class BookingService {
         return expired;
     }
 
+    /**
+     * Emails unpaid bookings that are still inside the payment window but close to expiry.
+     * Duplicate sends are skipped by the email log (template + booking id).
+     */
+    @Transactional
+    public int remindExpiringPendingPaymentBookings() {
+        Instant now = Instant.now();
+        Instant expiryCutoff = now.minus(bookingProperties.getPaymentWindowMinutes(), ChronoUnit.MINUTES);
+        Instant reminderBefore = now.minus(
+                bookingProperties.getPaymentWindowMinutes() - bookingProperties.effectiveReminderMinutes(),
+                ChronoUnit.MINUTES);
+        if (!reminderBefore.isAfter(expiryCutoff)) {
+            return 0;
+        }
+        List<Booking> due = bookingRepository.findPendingPaymentBookingsNearingExpiry(
+                expiryCutoff, reminderBefore);
+        int sent = 0;
+        for (Booking booking : due) {
+            try {
+                Instant expiresAt = bookingProperties.paymentExpiresAt(booking.getCreatedAt());
+                if (expiresAt == null) {
+                    continue;
+                }
+                long remaining = ChronoUnit.MINUTES.between(now, expiresAt);
+                bookingNotificationService.onPaymentExpiryReminder(booking, Math.max(1, remaining));
+                sent++;
+            } catch (RuntimeException ex) {
+                log.warn("Payment expiry reminder failed for reference={}: {}",
+                        booking.getBookingReference(), ex.getClass().getSimpleName());
+            }
+        }
+        return sent;
+    }
+
+    @Transactional
+    public int completeEndedConfirmedBookings() {
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        return completeConfirmedPaidBookings(bookingRepository.findConfirmedPaidTripsEndedBefore(today));
+    }
+
+    @Transactional
+    public int completeConfirmedPaidBookingsForPackage(Long packageId) {
+        return completeConfirmedPaidBookings(bookingRepository.findConfirmedPaidByPackageId(packageId));
+    }
+
+    private int completeConfirmedPaidBookings(List<Booking> bookings) {
+        int completed = 0;
+        for (Booking booking : bookings) {
+            if (booking.getStatus() != BookingStatus.CONFIRMED
+                    || booking.getPaymentStatus() != PaymentStatus.PAID) {
+                continue;
+            }
+            booking.setStatus(BookingStatus.COMPLETED);
+            bookingRepository.save(booking);
+            completed++;
+            try {
+                bookingNotificationService.onTripCompleted(booking);
+            } catch (RuntimeException ex) {
+                log.warn("Trip completion notification failed for reference={}: {}",
+                        booking.getBookingReference(), ex.getClass().getSimpleName());
+            }
+            log.info("event=booking.completed bookingReference={}", booking.getBookingReference());
+        }
+        return completed;
+    }
+
     private boolean expireBookingInternal(String bookingReference) {
         Booking booking = bookingRepository.findByBookingReferenceForUpdate(bookingReference)
                 .orElse(null);
@@ -214,6 +286,8 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.EXPIRED);
         bookingRepository.save(booking);
+
+        waitlistService.notifyIfSeatsAvailable(pkg.getId());
 
         log.info("event=booking.expired bookingReference={}", booking.getBookingReference());
         return true;
@@ -268,6 +342,8 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+
+        waitlistService.notifyIfSeatsAvailable(pkg.getId());
 
         log.info("event=booking.cancelled bookingReference={} paymentStatus={}",
                 booking.getBookingReference(), booking.getPaymentStatus());

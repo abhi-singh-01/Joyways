@@ -31,5 +31,6 @@ public record PackageDetailDto(
         String cancellationPolicy,
         String status,
         List<PackageImageDto> images,
-        boolean bookable
+        boolean bookable,
+        boolean waitlistable
 ) {}

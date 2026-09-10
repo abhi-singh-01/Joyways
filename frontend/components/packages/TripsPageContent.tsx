@@ -16,14 +16,14 @@ type TripsPageContentProps = {
   initialQuery?: string;
 };
 
-export function TripsPageContent({ packages, initialQuery = "" }: TripsPageContentProps) {
+export function TripsPageContent({ packages, initialQuery = "" }: Readonly<TripsPageContentProps>) {
   const [destination, setDestination] = useState<string | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<SortKey>("date");
 
   const destinations = useMemo(() => {
     const unique = [...new Set(packages.map((p) => p.destination))];
-    return unique.sort();
+    return unique.sort((a, b) => a.localeCompare(b));
   }, [packages]);
 
   const filtered = useMemo(() => {

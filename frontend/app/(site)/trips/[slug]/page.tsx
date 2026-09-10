@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getPackageBySlug, getPackages } from "@/lib/api/packagesApi";
+import { getPackageBySlug, getPackageReviews, getPackages } from "@/lib/api/packagesApi";
 import { PackageDetailView } from "@/components/packages/PackageDetailView";
 
 export const revalidate = 60;
@@ -18,7 +18,7 @@ export async function generateStaticParams() {
   }
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: Readonly<PageProps>): Promise<Metadata> {
   const { slug } = await params;
 
   try {
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function TripDetailPage({ params }: PageProps) {
+export default async function TripDetailPage({ params }: Readonly<PageProps>) {
   const { slug } = await params;
 
   let pkg;
@@ -58,5 +58,16 @@ export default async function TripDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <PackageDetailView pkg={pkg} />;
+  let reviews: Awaited<ReturnType<typeof getPackageReviews>> = {
+    averageRating: null,
+    reviewCount: 0,
+    reviews: [],
+  };
+  try {
+    reviews = await getPackageReviews(slug);
+  } catch {
+    // Trip page still renders if reviews cannot be loaded.
+  }
+
+  return <PackageDetailView pkg={pkg} reviews={reviews} />;
 }

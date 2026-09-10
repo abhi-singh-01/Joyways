@@ -4,6 +4,7 @@ import in.joyway.domain.entity.Trip;
 import in.joyway.domain.enums.TripStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -37,6 +38,7 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
             """)
     Optional<Trip> findByIdWithDetails(Long id);
 
+    @EntityGraph(attributePaths = {"travelPackage", "driver"})
     @Query("""
             SELECT t FROM Trip t
             JOIN t.travelPackage p
@@ -58,6 +60,7 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
             Pageable pageable
     );
 
+    @EntityGraph(attributePaths = {"travelPackage", "driver"})
     @Query("""
             SELECT t FROM Trip t
             WHERE t.travelDate >= :fromDate AND t.travelDate <= :toDate
@@ -93,6 +96,7 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
             """)
     long countTripsOnDate(LocalDate date);
 
+    @EntityGraph(attributePaths = {"travelPackage", "driver"})
     @Query("""
             SELECT t FROM Trip t
             WHERE t.travelDate >= :fromDate

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 const lastUpdated = "9 September 2026";
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
     <section className="scroll-mt-24">
       <h2 className="font-display text-xl font-semibold text-charcoal">{title}</h2>
@@ -59,8 +59,7 @@ export default function PrivacyPage() {
                 className="text-forest hover:text-forest-light"
               >
                 {DEVELOPER_SITE_LABEL}
-              </a>
-              . All rights in JOYWAY and this Website are reserved by JOYWAY. By using the Website,
+              </a>. All rights in JOYWAY and this Website are reserved by JOYWAY. By using the Website,
               you agree to the collection and use of information as described in this policy. If you
               do not agree, please do not use the Website.
             </p>

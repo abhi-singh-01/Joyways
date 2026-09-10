@@ -31,7 +31,7 @@ export function TravellerForm({
   documentError,
   onChange,
   onDocumentChange,
-}: TravellerFormProps) {
+}: Readonly<TravellerFormProps>) {
   function update(field: keyof TravellerInput, value: string) {
     onChange({ ...data, [field]: value });
   }

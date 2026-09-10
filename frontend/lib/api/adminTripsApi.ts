@@ -1,7 +1,6 @@
 import { adminFetch } from "./client";
-import type { PageResponse } from "./adminVehiclesApi";
+import type { PageResponse, VehicleSummary } from "./adminVehiclesApi";
 import type { DriverSummary } from "./adminDriversApi";
-import type { VehicleSummary } from "./adminVehiclesApi";
 
 export type TripStatus =
   | "PLANNED"

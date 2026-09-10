@@ -1,6 +1,7 @@
 package in.joyway.controller.admin;
 
 import in.joyway.dto.ApiResponse;
+import in.joyway.dto.PageResponse;
 import in.joyway.dto.admin.AdminBookingDetailDto;
 import in.joyway.dto.admin.AdminBookingSummaryDto;
 import in.joyway.dto.admin.AdminRefundRequest;
@@ -15,9 +16,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/bookings")
@@ -29,8 +29,16 @@ public class AdminBookingController {
     private final PaymentService paymentService;
 
     @GetMapping
-    public ApiResponse<List<AdminBookingSummaryDto>> listBookings() {
-        return ApiResponse.success(adminBookingService.listBookings());
+    public ApiResponse<PageResponse<AdminBookingSummaryDto>> listBookings(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String bookingStatus,
+            @RequestParam(required = false) String paymentStatus,
+            @RequestParam(required = false) String destination,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.success(adminBookingService.listBookings(
+                query, bookingStatus, paymentStatus, destination, page, size));
     }
 
     @GetMapping("/{id}")

@@ -49,8 +49,8 @@ export function HowItWorks() {
             aria-hidden
           >
             <div className="mx-auto flex max-w-5xl items-center px-[calc(12.5%+1rem)]">
-              {steps.slice(0, -1).map((_, i) => (
-                <div key={i} className="flex flex-1 items-center">
+              {steps.slice(0, -1).map((step) => (
+                <div key={step.number} className="flex flex-1 items-center">
                   <div className="h-px flex-1 border-t-2 border-dashed border-forest/25" />
                   <div className="mx-1 h-1.5 w-1.5 shrink-0 rounded-full bg-forest/30" />
                 </div>

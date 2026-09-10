@@ -1,5 +1,3 @@
-import { PUBLIC_EMAILS } from "@/lib/publicEmails";
-
 /** E.164 without + — override via env if needed */
 export const PUBLIC_CALL_NUMBER =
   process.env.NEXT_PUBLIC_CALL_NUMBER?.replace(/\D/g, "") ?? "919696313547";
@@ -24,7 +22,15 @@ export function whatsappUrl(message: string): string {
   return `https://wa.me/${PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+export function paidBookingWhatsAppMessage(booking: {
+  bookingReference: string;
+  packageTitle: string;
+  numberOfTravellers: number;
+}): string {
+  return `Hi JOYWAY, I completed payment for booking ${booking.bookingReference} (${booking.packageTitle}, ${booking.numberOfTravellers} travellers). Please confirm.`;
+}
+
 export const DEFAULT_WHATSAPP_MESSAGE =
   "Hi Joyway! I'd like help choosing a group trip from Delhi.";
 
-export { PUBLIC_EMAILS };
+export { PUBLIC_EMAILS } from "@/lib/publicEmails";

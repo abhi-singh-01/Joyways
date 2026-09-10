@@ -18,7 +18,7 @@ type PackageTableProps = {
   onDeleted?: (id: number) => void;
 };
 
-export function PackageTable({ packages, onDeleted }: PackageTableProps) {
+export function PackageTable({ packages, onDeleted }: Readonly<PackageTableProps>) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState("");
 

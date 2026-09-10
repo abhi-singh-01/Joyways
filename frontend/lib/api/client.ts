@@ -1,3 +1,4 @@
+import { readCsrfTokenFromCookie } from "../csrfCookie";
 import { getApiBaseUrl } from "./config";
 
 /** Default timeout for public API requests (ms). */
@@ -5,8 +6,7 @@ const DEFAULT_API_FETCH_TIMEOUT_MS = 10_000;
 
 function readCsrfToken(): string | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  return readCsrfTokenFromCookie(document.cookie);
 }
 
 /** Refresh the XSRF-TOKEN cookie (Set-Cookie from api.joyway.in, Domain=joyway.in). */

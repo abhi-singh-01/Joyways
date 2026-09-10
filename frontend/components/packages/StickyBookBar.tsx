@@ -8,16 +8,48 @@ import { Button } from "@/components/ui/Button";
 type StickyBookBarProps = {
   pricePerPerson: number;
   bookable: boolean;
+  waitlistable?: boolean;
   packageId: number;
   destination: string;
 };
 
+function stickyBookAction(
+  bookable: boolean,
+  waitlistable: boolean | undefined,
+  packageId: number
+) {
+  if (bookable) {
+    return (
+      <Link href={`/book/${packageId}`} className="shrink-0">
+        <Button size="md" className="min-w-[130px]">
+          Book Now
+        </Button>
+      </Link>
+    );
+  }
+  if (waitlistable) {
+    return (
+      <a href="#waitlist" className="shrink-0">
+        <Button size="md" className="min-w-[130px]">
+          Join waitlist
+        </Button>
+      </a>
+    );
+  }
+  return (
+    <Button size="md" disabled className="min-w-[130px]">
+      Unavailable
+    </Button>
+  );
+}
+
 export function StickyBookBar({
   pricePerPerson,
   bookable,
+  waitlistable,
   packageId,
   destination,
-}: StickyBookBarProps) {
+}: Readonly<StickyBookBarProps>) {
   return (
     <motion.div
       initial={{ y: 100 }}
@@ -33,17 +65,7 @@ export function StickyBookBar({
             <span className="text-xs font-normal text-charcoal-muted"> / person</span>
           </p>
         </div>
-        {bookable ? (
-          <Link href={`/book/${packageId}`} className="shrink-0">
-            <Button size="md" className="min-w-[130px]">
-              Book Now
-            </Button>
-          </Link>
-        ) : (
-          <Button size="md" disabled className="min-w-[130px]">
-            Unavailable
-          </Button>
-        )}
+        {stickyBookAction(bookable, waitlistable, packageId)}
       </div>
     </motion.div>
   );

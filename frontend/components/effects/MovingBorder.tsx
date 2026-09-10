@@ -13,7 +13,7 @@ export function MovingBorder({
   className,
   containerClassName,
   borderRadius = "9999px",
-}: MovingBorderProps) {
+}: Readonly<MovingBorderProps>) {
   return (
     <div
       className={cn("relative p-[2px] overflow-hidden", containerClassName)}

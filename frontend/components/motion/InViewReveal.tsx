@@ -16,7 +16,7 @@ export function InViewReveal({
   duration = 0.5,
   y = 20,
   ...props
-}: InViewRevealProps) {
+}: Readonly<InViewRevealProps>) {
   return (
     <motion.div
       initial={{ opacity: 0, y }}

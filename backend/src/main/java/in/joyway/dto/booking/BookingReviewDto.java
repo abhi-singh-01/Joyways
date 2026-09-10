@@ -20,5 +20,6 @@ public record BookingReviewDto(
         BigDecimal totalAmount,
         String currency,
         int availableSeats,
-        boolean bookable
+        boolean bookable,
+        String pickupPoint
 ) {}

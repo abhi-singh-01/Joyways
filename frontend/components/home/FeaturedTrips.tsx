@@ -9,7 +9,7 @@ type FeaturedTripsProps = {
   packages: PackageSummary[];
 };
 
-export function FeaturedTrips({ packages }: FeaturedTripsProps) {
+export function FeaturedTrips({ packages }: Readonly<FeaturedTripsProps>) {
   if (packages.length === 0) {
     return (
       <section className="py-20">

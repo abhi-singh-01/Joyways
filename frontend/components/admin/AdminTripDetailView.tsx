@@ -27,7 +27,7 @@ const NEXT_STATUS: Partial<Record<TripStatus, TripStatus>> = {
   IN_PROGRESS: "COMPLETED",
 };
 
-export function AdminTripDetailView({ tripId }: { tripId: number }) {
+export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
   const router = useRouter();
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [error, setError] = useState("");
@@ -47,12 +47,19 @@ export function AdminTripDetailView({ tripId }: { tripId: number }) {
 
   useEffect(() => {
     Promise.all([
-      getTrip(tripId),
+      getTrip(tripId).then(async (detail) => {
+        const bookingPage = await listAdminBookings({
+          bookingStatus: "CONFIRMED",
+          paymentStatus: "PAID",
+          destination: detail.destination,
+          size: 100,
+        });
+        return { detail, bookingPage };
+      }),
       listVehicles({ status: "AVAILABLE", size: 100 }),
       listDrivers({ status: "AVAILABLE", size: 100 }),
-      listAdminBookings(),
     ])
-      .then(([detail, vehiclePage, driverPage, allBookings]) => {
+      .then(([{ detail, bookingPage }, vehiclePage, driverPage]) => {
         setTrip(detail);
         setVehicles(
           vehiclePage.content.map((v) => ({
@@ -67,17 +74,10 @@ export function AdminTripDetailView({ tripId }: { tripId: number }) {
           }))
         );
         setBookings(
-          allBookings
-            .filter(
-              (b) =>
-                b.bookingStatus === "CONFIRMED" &&
-                b.paymentStatus === "PAID" &&
-                b.destination === detail.destination
-            )
-            .map((b) => ({
-              id: b.bookingId,
-              label: `${b.bookingReference} · ${b.numberOfTravellers} travellers`,
-            }))
+          bookingPage.content.map((b) => ({
+            id: b.bookingId,
+            label: `${b.bookingReference} · ${b.numberOfTravellers} travellers`,
+          }))
         );
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
@@ -207,9 +207,10 @@ export function AdminTripDetailView({ tripId }: { tripId: number }) {
           <h2 className="font-medium text-charcoal">Assignments</h2>
           <div className="mt-4 space-y-4">
             <div>
-              <label className="text-sm text-charcoal-muted">Vehicle</label>
+              <label htmlFor="trip-vehicle" className="text-sm text-charcoal-muted">Vehicle</label>
               <div className="mt-1 flex flex-col gap-2 sm:flex-row">
                 <select
+                  id="trip-vehicle"
                   value={vehicleId}
                   onChange={(e) => setVehicleId(e.target.value)}
                   className="flex-1 rounded-xl border border-border px-3 py-2 text-sm"
@@ -234,9 +235,10 @@ export function AdminTripDetailView({ tripId }: { tripId: number }) {
               </div>
             </div>
             <div>
-              <label className="text-sm text-charcoal-muted">Driver</label>
+              <label htmlFor="trip-driver" className="text-sm text-charcoal-muted">Driver</label>
               <div className="mt-1 flex flex-col gap-2 sm:flex-row">
                 <select
+                  id="trip-driver"
                   value={driverId}
                   onChange={(e) => setDriverId(e.target.value)}
                   className="flex-1 rounded-xl border border-border px-3 py-2 text-sm"
@@ -288,7 +290,7 @@ export function AdminTripDetailView({ tripId }: { tripId: number }) {
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoCard({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="rounded-2xl border border-border bg-white p-4">
       <p className="text-xs uppercase tracking-wide text-charcoal-muted">{label}</p>

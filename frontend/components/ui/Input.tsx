@@ -4,7 +4,7 @@ type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
 };
 
-export function Input({ className, error, ...props }: InputProps) {
+export function Input({ className, error, ...props }: Readonly<InputProps>) {
   return (
     <div>
       <input

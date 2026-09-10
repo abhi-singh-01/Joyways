@@ -35,6 +35,8 @@ public class MailProperties {
 
     private String adminNotificationEmail = DEFAULT_HELLO_EMAIL;
     private String frontendBaseUrl = "http://localhost:3000";
+    /** E.164 without +. Used for customer WhatsApp confirmation links in email. */
+    private String whatsappNumber = "917050971956";
     private boolean enabled = true;
     private boolean previewEnabled = false;
     private int maxRetryAttempts = 3;

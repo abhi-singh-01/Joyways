@@ -27,7 +27,7 @@ export function Button({
   size = "md",
   children,
   ...props
-}: ButtonProps) {
+}: Readonly<ButtonProps>) {
   return (
     <button
       className={cn(

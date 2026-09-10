@@ -5,7 +5,7 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function EditPackagePage({ params }: PageProps) {
+export default async function EditPackagePage({ params }: Readonly<PageProps>) {
   const { id: idParam } = await params;
   const id = Number(idParam);
 

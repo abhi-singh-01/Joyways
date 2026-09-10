@@ -1,116 +1,144 @@
 import type { Metadata } from "next";
-import { Bus, Heart, MapPin, Shield, Sparkles } from "lucide-react";
+import Image from "next/image";
 import { PageHero } from "@/components/layout/PageHero";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 
 export const metadata: Metadata = {
   title: "About | JOYWAY",
-  description: "Learn about JOYWAY — a modern group travel platform from Delhi, India.",
+  description:
+    "JOYWAY is a group travel platform from Delhi — curated trips, secure booking, and journeys that stay with you.",
+  openGraph: {
+    title: "About | JOYWAY",
+    description:
+      "Group travel from Delhi. Curated packages, secure checkout, and booking lookup without a customer login.",
+    url: "https://joyway.in/about",
+  },
+  alternates: {
+    canonical: "https://joyway.in/about",
+  },
 };
+
+const facts = [
+  { title: "Delhi departures", text: "Group packages leave from Delhi and nearby pickup points." },
+  { title: "One booking", text: "Transport, stay, and itinerary are planned together." },
+  { title: "Secure checkout", text: "Pay with Razorpay. We never store card numbers or UPI PINs." },
+  { title: "Guest lookup", text: "Find your booking anytime with reference and email." },
+];
 
 const values = [
   {
-    icon: Heart,
-    title: "Joy-first travel",
-    text: "We believe the journey matters as much as the destination.",
+    title: "The road matters",
+    text: "We plan the journey as carefully as the destination — pickup, travel days, and the stay.",
   },
   {
-    icon: MapPin,
-    title: "Curated routes",
-    text: "Hill stations and spiritual getaways handpicked for Delhi travelers.",
+    title: "Curated, not crowded",
+    text: "Hill and heritage routes chosen for Delhi travelers who want a clear plan, not a catalogue of every city.",
   },
   {
-    icon: Bus,
-    title: "Complete packages",
-    text: "Transport, stay, and itinerary — one booking, zero hassle.",
+    title: "Book without friction",
+    text: "No customer account. Choose a trip, add travellers, pay securely, and keep the confirmation email.",
   },
   {
-    icon: Shield,
-    title: "Transparent & secure",
-    text: "Clear pricing, secure payments, and responsive support.",
+    title: "Real support",
+    text: "Call, WhatsApp, or write to JOYWAY when you need help with a trip or an existing booking.",
   },
-];
-
-const stats = [
-  { value: "5+", label: "Destinations" },
-  { value: "Delhi", label: "Departure hub" },
-  { value: "Group", label: "Travel style" },
-  { value: "Email", label: "And WhatsApp support" },
 ];
 
 export default function AboutPage() {
   return (
     <>
       <PageHero
-        eyebrow="Our story"
+        illustrated
+        eyebrow="About JOYWAY"
         title="Group travel made simple, joyful, and modern"
-        description="JOYWAY is an Indian travel startup helping Delhi travelers explore hills, rivers, and spiritual destinations through curated group packages."
+        description="JOYWAY is an Indian travel studio helping Delhi travelers explore hills, valleys, and heritage roads through curated group packages."
       />
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-border bg-white p-6 text-center shadow-sm"
-            >
-              <p className="font-display text-3xl font-semibold text-forest">{stat.value}</p>
-              <p className="mt-1 text-sm text-charcoal-muted">{stat.label}</p>
+      <section className="border-b border-border bg-off-white">
+        <div className="mx-auto max-w-7xl divide-y divide-border px-4 sm:px-6 lg:grid lg:grid-cols-4 lg:divide-x lg:divide-y-0 lg:px-8">
+          {facts.map((fact) => (
+            <div key={fact.title} className="py-8 lg:px-6 lg:py-12 first:lg:pl-0 last:lg:pr-0">
+              <h2 className="font-display text-xl font-semibold text-charcoal">{fact.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-charcoal-muted">{fact.text}</p>
             </div>
           ))}
         </div>
+      </section>
 
-        <div className="mt-16 grid gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <h2 className="font-display text-3xl font-semibold text-charcoal">
-              Find Joy in Every Journey
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-charcoal-muted">
-              We started JOYWAY to remove the friction from group travel — no chasing
-              operators, no unclear pricing, no last-minute chaos. Just well-planned
-              trips you can book online and show up for.
-            </p>
-            <p className="mt-4 text-lg leading-relaxed text-charcoal-muted">
-              From Nainital weekends to Rishikesh spiritual escapes, every package is
-              designed for travelers who want comfort, community, and memorable roads.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="/trips">Browse trips</ButtonLink>
-              <ButtonLink href="/contact" variant="outline">
-                Talk to us
-              </ButtonLink>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {values.map(({ icon: Icon, title, text }) => (
-              <div
-                key={title}
-                className="rounded-2xl border border-border bg-surface/60 p-5"
-              >
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-forest/10 text-forest">
-                  <Icon size={20} />
-                </div>
-                <h3 className="font-semibold text-charcoal">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-charcoal-muted">{text}</p>
-              </div>
-            ))}
+      <section className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
+        <div className="relative min-h-[22rem] overflow-hidden sm:min-h-[28rem]">
+          <Image
+            src="/images/mountains-road.webp"
+            alt="A highland road through the mountains"
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-cover"
+          />
+        </div>
+        <div>
+          <h2 className="font-display text-3xl font-semibold text-charcoal sm:text-4xl">
+            Find joy in every journey.
+          </h2>
+          <p className="mt-5 text-lg leading-relaxed text-charcoal-muted">
+            We started JOYWAY to take the friction out of group travel — no chasing operators,
+            no unclear pricing, no last-minute chaos. Book online, show up at pickup, and travel
+            with the group.
+          </p>
+          <p className="mt-4 text-lg leading-relaxed text-charcoal-muted">
+            From Nainital weekends to Rishikesh and Himalayan roads, every package is built for
+            people who want comfort, company, and a route they will remember.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <ButtonLink href="/trips">Browse trips</ButtonLink>
+            <ButtonLink href="/contact" variant="outline">
+              Talk to us
+            </ButtonLink>
           </div>
         </div>
+      </section>
 
-        <div className="mt-16 rounded-3xl bg-forest px-8 py-10 text-center text-white sm:px-12">
-          <Sparkles className="mx-auto text-accent" size={28} />
-          <h2 className="mt-4 font-display text-2xl font-semibold sm:text-3xl">
+      <section className="bg-surface">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+          <h2 className="max-w-2xl font-display text-3xl font-semibold text-charcoal sm:text-4xl">
+            How we travel.
+          </h2>
+          <ul className="mt-10 divide-y divide-border border-y border-border">
+            {values.map((item, index) => (
+              <li
+                key={item.title}
+                className="grid gap-2 py-8 sm:grid-cols-[4rem_minmax(12rem,18rem)_1fr] sm:items-baseline"
+              >
+                <span className="font-display text-sm font-semibold text-forest">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="font-display text-xl font-semibold text-charcoal">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-charcoal-muted">{item.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="relative min-h-[70svh] overflow-hidden bg-forest-dark text-white">
+        <Image
+          src="/images/mountains-peaks.webp"
+          alt="Himalayan peaks under open sky"
+          fill
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/25" />
+        <div className="relative z-10 mx-auto flex min-h-[70svh] max-w-7xl flex-col justify-end px-4 py-16 sm:px-6 lg:px-8">
+          <h2 className="max-w-2xl font-display text-3xl font-semibold sm:text-5xl">
             Ready for your next escape?
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/75">
-            Join a group departure from Delhi and let us handle transport, stay, and
-            the details.
+          <p className="mt-4 max-w-xl text-white/80">
+            Join a group departure from Delhi. Transport, stay, and the days on the road are
+            already planned.
           </p>
           <ButtonLink
             href="/trips"
-            variant="secondary"
-            className="mt-6 inline-flex"
+            className="mt-8 w-fit bg-white text-forest hover:bg-accent-light hover:text-forest-dark"
           >
             Explore upcoming trips
           </ButtonLink>

@@ -1,6 +1,8 @@
 import { HomePage } from "@/components/home/HomePage";
 import { getPackages, type PackageSummary } from "@/lib/api/packagesApi";
 
+export const revalidate = 60;
+
 export default async function Page() {
   let packages: PackageSummary[] = [];
 

@@ -24,6 +24,9 @@
         <azure-identity.version>1.14.2</azure-identity.version>
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.coverage.exclusions>**/controller/dev/**</sonar.coverage.exclusions>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.projectKey>joyway-backend</sonar.projectKey>
+        <sonar.projectName>joyway-backend</sonar.projectName>
         <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
         <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S2143</sonar.issue.ignore.multicriteria.e1.ruleKey>
         <sonar.issue.ignore.multicriteria.e1.resourceKey>**/JwtTokenProvider.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
@@ -145,6 +148,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>5.1.0.4751</version>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

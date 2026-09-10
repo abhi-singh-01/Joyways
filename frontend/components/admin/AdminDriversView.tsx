@@ -10,6 +10,7 @@ import {
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { AdminTableStatusRow } from "@/components/admin/AdminTableStatusRow";
 
 export function AdminDriversView() {
   const [drivers, setDrivers] = useState<DriverSummary[]>([]);
@@ -41,6 +42,40 @@ export function AdminDriversView() {
       cancelled = true;
     };
   }, [query, status, licenseFilter, page]);
+
+  function driverRows() {
+    if (loading) {
+      return <AdminTableStatusRow colSpan={7} message="Loading drivers..." />;
+    }
+    if (drivers.length === 0) {
+      return <AdminTableStatusRow colSpan={7} message="No drivers found" />;
+    }
+    return drivers.map((driver) => (
+      <tr key={driver.id} className="border-b border-border last:border-0">
+        <td className="px-4 py-3 font-medium">{driver.name}</td>
+        <td className="px-4 py-3">{driver.phone}</td>
+        <td className="px-4 py-3">{driver.licenseNumber}</td>
+        <td className="px-4 py-3">
+          <div>{formatDate(driver.licenseExpiryDate)}</div>
+          <StatusBadge status={driver.licenseStatus} />
+        </td>
+        <td className="px-4 py-3">
+          <StatusBadge status={driver.status} />
+        </td>
+        <td className="px-4 py-3 text-charcoal-muted">
+          {driver.currentTripReference ?? "—"}
+        </td>
+        <td className="px-4 py-3">
+          <Link
+            href={`/admin/drivers/${driver.id}`}
+            className="font-medium text-forest hover:underline"
+          >
+            View
+          </Link>
+        </td>
+      </tr>
+    ));
+  }
 
   if (error) return <ErrorState message={error} fullPage />;
 
@@ -115,47 +150,7 @@ export function AdminDriversView() {
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-charcoal-muted">
-                  Loading drivers...
-                </td>
-              </tr>
-            ) : drivers.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-charcoal-muted">
-                  No drivers found
-                </td>
-              </tr>
-            ) : (
-              drivers.map((driver) => (
-                <tr key={driver.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium">{driver.name}</td>
-                  <td className="px-4 py-3">{driver.phone}</td>
-                  <td className="px-4 py-3">{driver.licenseNumber}</td>
-                  <td className="px-4 py-3">
-                    <div>{formatDate(driver.licenseExpiryDate)}</div>
-                    <StatusBadge status={driver.licenseStatus} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={driver.status} />
-                  </td>
-                  <td className="px-4 py-3 text-charcoal-muted">
-                    {driver.currentTripReference ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/drivers/${driver.id}`}
-                      className="font-medium text-forest hover:underline"
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
+          <tbody>{driverRows()}</tbody>
         </table>
       </div>
 

@@ -15,8 +15,15 @@ import {
   type PackageStatus,
 } from "@/lib/api/adminPackagesApi";
 import { AdminAuthError } from "@/lib/api/client";
+import { toSlug } from "@/lib/slug";
 import { PackageImageManager } from "@/components/admin/PackageImageManager";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+
+function packageSubmitLabel(loading: boolean, mode: "create" | "edit"): string {
+  if (loading) return "Saving...";
+  if (mode === "create") return "Save and add photos";
+  return "Save changes";
+}
 
 type PackageFormProps = {
   initial?: AdminPackageDetail;
@@ -44,20 +51,11 @@ const emptyForm: CreatePackagePayload = {
   cancellationPolicy: "",
 };
 
-function toSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/['"]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function FieldHint({ children }: { children: React.ReactNode }) {
+function FieldHint({ children }: Readonly<{ children: React.ReactNode }>) {
   return <p className="mt-1 text-xs leading-relaxed text-charcoal-muted">{children}</p>;
 }
 
-export function PackageForm({ initial, mode }: PackageFormProps) {
+export function PackageForm({ initial, mode }: Readonly<PackageFormProps>) {
   const router = useRouter();
   const [form, setForm] = useState<CreatePackagePayload>(() =>
     initial
@@ -105,7 +103,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
     }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -477,7 +475,7 @@ export function PackageForm({ initial, mode }: PackageFormProps) {
 
         <div className="flex gap-3">
           <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : mode === "create" ? "Save and add photos" : "Save changes"}
+            {packageSubmitLabel(loading, mode)}
           </Button>
           <Button
             type="button"

@@ -10,12 +10,11 @@ import java.util.List;
 
 public interface EmailLogRepository extends JpaRepository<EmailLog, Long> {
 
-    boolean existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
+    boolean existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityId(
             String template,
             String recipient,
             String relatedEntityType,
-            Long relatedEntityId,
-            EmailStatus status
+            Long relatedEntityId
     );
 
     List<EmailLog> findByStatusInAndAttemptCountLessThanOrderByCreatedAtAsc(

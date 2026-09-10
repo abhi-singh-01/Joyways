@@ -14,7 +14,7 @@ type BookingStepperProps = {
   currentStep: number;
 };
 
-export function BookingStepper({ currentStep }: BookingStepperProps) {
+export function BookingStepper({ currentStep }: Readonly<BookingStepperProps>) {
   return (
     <nav aria-label="Booking progress" className="mb-8">
       <ol className="flex items-center justify-between gap-2">

@@ -8,7 +8,7 @@ type PageProps = {
   params: Promise<{ packageId: string }>;
 };
 
-export default async function BookPage({ params }: PageProps) {
+export default async function BookPage({ params }: Readonly<PageProps>) {
   const { packageId } = await params;
   const id = Number(packageId);
 

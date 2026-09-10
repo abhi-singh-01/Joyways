@@ -157,13 +157,16 @@ export default function AdminBookingDetailPage() {
         <h2 className="font-semibold text-charcoal">Trip</h2>
         <p className="mt-2 text-sm">{formatDateRange(booking.startDate, booking.endDate)}</p>
         <p className="text-sm text-charcoal-muted">{booking.numberOfTravellers} travellers</p>
+        {booking.pickupPoint && (
+          <p className="mt-2 text-sm"><span className="text-charcoal-muted">Pickup:</span> {booking.pickupPoint}</p>
+        )}
       </div>
 
       <div className="mt-6 rounded-2xl border border-border bg-white p-5">
         <h2 className="font-semibold text-charcoal">Travellers</h2>
         <ul className="mt-3 space-y-2 text-sm">
-          {booking.travellers.map((t, i) => (
-            <li key={i}>{t.fullName} · {t.idDocumentType}</li>
+          {booking.travellers.map((t) => (
+            <li key={`${t.fullName}-${t.idDocumentType}`}>{t.fullName} · {t.idDocumentType}</li>
           ))}
         </ul>
       </div>

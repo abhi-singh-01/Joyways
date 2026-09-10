@@ -7,7 +7,7 @@ type AdminHeaderProps = {
   onOpenMenu?: () => void;
 };
 
-export function AdminHeader({ onOpenMenu }: AdminHeaderProps) {
+export function AdminHeader({ onOpenMenu }: Readonly<AdminHeaderProps>) {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-white/95 px-4 backdrop-blur sm:px-8">
       <div className="flex items-center gap-3">

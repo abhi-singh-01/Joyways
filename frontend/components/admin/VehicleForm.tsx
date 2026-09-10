@@ -10,11 +10,17 @@ import {
   type VehicleOwnershipType,
 } from "@/lib/api/adminVehiclesApi";
 
+function vehicleSubmitLabel(saving: boolean, isUpdate: boolean): string {
+  if (saving) return "Saving...";
+  if (isUpdate) return "Update Vehicle";
+  return "Create Vehicle";
+}
+
 type VehicleFormProps = {
   initial?: VehicleDetail;
 };
 
-export function VehicleForm({ initial }: VehicleFormProps) {
+export function VehicleForm({ initial }: Readonly<VehicleFormProps>) {
   const router = useRouter();
   const [form, setForm] = useState<CreateVehiclePayload>({
     registrationNumber: initial?.registrationNumber ?? "",
@@ -27,7 +33,7 @@ export function VehicleForm({ initial }: VehicleFormProps) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setError("");
@@ -111,13 +117,13 @@ export function VehicleForm({ initial }: VehicleFormProps) {
         disabled={saving}
         className="rounded-xl bg-forest px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
       >
-        {saving ? "Saving..." : initial ? "Update Vehicle" : "Create Vehicle"}
+        {vehicleSubmitLabel(saving, Boolean(initial))}
       </button>
     </form>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
     <label className="block">
       <span className="text-sm font-medium text-charcoal">{label}</span>

@@ -23,7 +23,7 @@ const statusLabels: Record<string, string> = {
   DRAFT: "Coming Soon",
 };
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status }: Readonly<{ status: string }>) {
   const label = statusLabels[status] ?? status.replaceAll("_", " ");
   return (
     <span

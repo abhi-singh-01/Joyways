@@ -15,6 +15,10 @@ public class PendingPaymentExpiryScheduler {
 
     @Scheduled(cron = "${joyway.booking.payment-expiry-cron:0 * * * * *}", zone = "Asia/Kolkata")
     public void expireStalePendingPayments() {
+        int reminded = bookingService.remindExpiringPendingPaymentBookings();
+        if (reminded > 0) {
+            log.info("event=booking.payment_expiry.reminder processed={}", reminded);
+        }
         int expired = bookingService.expireStalePendingPaymentBookings();
         if (expired > 0) {
             log.info("event=booking.payment_expiry processed={}", expired);

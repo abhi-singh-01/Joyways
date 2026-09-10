@@ -26,3 +26,17 @@ export function splitLines(text: string | null | undefined): string[] {
     .map((line) => line.trim())
     .filter(Boolean);
 }
+
+/** Split admin pickup text (comma or newline) into unique choices. */
+export function parsePickupPoints(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const seen = new Set<string>();
+  const points: string[] = [];
+  for (const part of text.split(/[,\r\n]+/)) {
+    const point = part.trim();
+    if (!point || seen.has(point)) continue;
+    seen.add(point);
+    points.push(point);
+  }
+  return points;
+}

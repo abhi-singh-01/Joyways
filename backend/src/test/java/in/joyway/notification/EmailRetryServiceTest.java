@@ -40,6 +40,8 @@ class EmailRetryServiceTest {
     private PaymentRepository paymentRepository;
     @Mock
     private BookingNotificationService bookingNotificationService;
+    @Mock
+    private in.joyway.domain.repository.WaitlistEntryRepository waitlistEntryRepository;
 
     private EmailRetryService emailRetryService;
     private Booking booking;
@@ -52,7 +54,7 @@ class EmailRetryServiceTest {
         mail.setRetryDelayMs(1_000);
         emailRetryService = new EmailRetryService(
                 emailLogRepository, emailService, bookingRepository, paymentRepository,
-                bookingNotificationService, mail);
+                bookingNotificationService, waitlistEntryRepository, mail);
         booking = Booking.builder().id(9L).build();
         payment = Payment.builder().id(1L).build();
     }
@@ -96,6 +98,8 @@ class EmailRetryServiceTest {
                 EmailTemplates.BOOKING_RECEIPT,
                 EmailTemplates.TRIP_REMINDER_7,
                 EmailTemplates.TRIP_REMINDER_1,
+                EmailTemplates.PAYMENT_EXPIRY_REMINDER,
+                EmailTemplates.REVIEW_REQUEST,
                 EmailTemplates.ADMIN_NEW_BOOKING,
                 EmailTemplates.ADMIN_PAYMENT_SUCCESS,
                 EmailTemplates.ADMIN_PAYMENT_FAILED,
@@ -116,10 +120,45 @@ class EmailRetryServiceTest {
         when(bookingNotificationService.buildReceiptVars(booking, null)).thenReturn(Map.of("k", "v"));
         when(bookingNotificationService.buildTripReminderVars(booking, 7)).thenReturn(Map.of("k", "v"));
         when(bookingNotificationService.buildTripReminderVars(booking, 1)).thenReturn(Map.of("k", "v"));
+        when(bookingNotificationService.buildPaymentExpiryReminderVars(booking)).thenReturn(Map.of("k", "v"));
+        when(bookingNotificationService.buildReviewRequestVars(booking)).thenReturn(Map.of("k", "v"));
 
         emailRetryService.retryFailedEmails();
 
         verify(emailService, times(templates.size())).retryEmail(any(EmailLog.class), anyMap());
+    }
+
+    @Test
+    void retryFailedEmails_resolvesWaitlistTemplate() {
+        EmailLog waitlist = log(9L, EmailTemplates.WAITLIST_SEAT_AVAILABLE, EmailStatus.FAILED, null);
+        waitlist.setRelatedEntityType("WAITLIST");
+        EmailLog waitlistWrongTemplate = log(9L, EmailTemplates.BOOKING_CREATED, EmailStatus.FAILED, null);
+        waitlistWrongTemplate.setRelatedEntityType("WAITLIST");
+        EmailLog waitlistMissing = log(8L, EmailTemplates.WAITLIST_SEAT_AVAILABLE, EmailStatus.FAILED, null);
+        waitlistMissing.setRelatedEntityType("WAITLIST");
+        waitlistMissing.setRelatedEntityId(8L);
+
+        in.joyway.domain.entity.WaitlistEntry entry = in.joyway.domain.entity.WaitlistEntry.builder()
+                .id(9L)
+                .fullName("Priya")
+                .email("priya@example.com")
+                .travelPackage(in.joyway.domain.entity.TravelPackage.builder()
+                        .title("Nainital")
+                        .slug("nainital")
+                        .build())
+                .build();
+        when(emailLogRepository.findByStatusInAndAttemptCountLessThanOrderByCreatedAtAsc(any(), anyInt()))
+                .thenReturn(List.of(waitlist, waitlistWrongTemplate, waitlistMissing));
+        when(waitlistEntryRepository.findByIdWithPackage(9L)).thenReturn(Optional.of(entry));
+        when(waitlistEntryRepository.findByIdWithPackage(8L)).thenReturn(Optional.empty());
+        when(bookingNotificationService.buildWaitlistSeatAvailableVars(entry.getTravelPackage(), entry))
+                .thenReturn(Map.of("k", "v"));
+
+        emailRetryService.retryFailedEmails();
+
+        verify(emailService).retryEmail(waitlist, Map.of("k", "v"));
+        verify(emailService, never()).retryEmail(org.mockito.ArgumentMatchers.eq(waitlistWrongTemplate), anyMap());
+        verify(emailService, never()).retryEmail(org.mockito.ArgumentMatchers.eq(waitlistMissing), anyMap());
     }
 
     private static EmailLog log(Long relatedId, String template, EmailStatus status, Instant lastAttempt) {

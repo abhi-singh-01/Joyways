@@ -17,7 +17,7 @@ export function EmptyState({
   actionLabel = "Back to home",
   actionHref = "/",
   className,
-}: EmptyStateProps) {
+}: Readonly<EmptyStateProps>) {
   return (
     <div
       className={cn(

@@ -6,9 +6,12 @@ import in.joyway.dto.booking.BookingResponse;
 import in.joyway.dto.booking.BookingReviewDto;
 import in.joyway.dto.booking.BookingAccessRequest;
 import in.joyway.dto.booking.CreateBookingRequest;
+import in.joyway.dto.review.PackageReviewItemDto;
+import in.joyway.dto.review.SubmitPackageReviewRequest;
 import in.joyway.exception.RequestValidationException;
 import in.joyway.service.BookingQueryService;
 import in.joyway.service.BookingService;
+import in.joyway.service.PackageReviewService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final BookingQueryService bookingQueryService;
+    private final PackageReviewService packageReviewService;
     private final ObjectMapper objectMapper;
     private final Validator validator;
 
@@ -117,6 +121,15 @@ public class BookingController {
         return ApiResponse.success(response, "Booking cancelled.");
     }
 
+    @PostMapping("/reviews")
+    public ApiResponse<PackageReviewItemDto> submitReview(
+            @RequestBody SubmitPackageReviewRequest request
+    ) {
+        validateReviewRequest(request);
+        PackageReviewItemDto review = packageReviewService.submitReview(request);
+        return ApiResponse.success(review, "Thank you. Your review is now on the trip page.");
+    }
+
     private void validate(CreateBookingRequest request) {
         Set<ConstraintViolation<CreateBookingRequest>> violations = validator.validate(request);
         if (!violations.isEmpty()) {
@@ -133,6 +146,17 @@ public class BookingController {
         if (!violations.isEmpty()) {
             Map<String, String> errors = new HashMap<>();
             for (ConstraintViolation<BookingAccessRequest> v : violations) {
+                errors.put(v.getPropertyPath().toString(), v.getMessage());
+            }
+            throw new RequestValidationException(errors);
+        }
+    }
+
+    private void validateReviewRequest(SubmitPackageReviewRequest request) {
+        Set<ConstraintViolation<SubmitPackageReviewRequest>> violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            Map<String, String> errors = new HashMap<>();
+            for (ConstraintViolation<SubmitPackageReviewRequest> v : violations) {
                 errors.put(v.getPropertyPath().toString(), v.getMessage());
             }
             throw new RequestValidationException(errors);

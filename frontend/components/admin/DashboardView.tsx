@@ -29,12 +29,12 @@ function StatCard({
   value,
   icon: Icon,
   index,
-}: {
+}: Readonly<{
   label: string;
   value: string | number;
   icon: LucideIcon;
   index: number;
-}) {
+}>) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -57,7 +57,7 @@ function StatCard({
   );
 }
 
-export function DashboardView({ metrics }: DashboardViewProps) {
+export function DashboardView({ metrics }: Readonly<DashboardViewProps>) {
   const bookingStats = [
     { label: "Total Bookings", value: metrics.totalBookings, icon: Package },
     { label: "Confirmed", value: metrics.confirmedBookings, icon: CheckCircle },

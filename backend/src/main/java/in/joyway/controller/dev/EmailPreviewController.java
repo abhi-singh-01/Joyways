@@ -38,6 +38,9 @@ public class EmailPreviewController {
         templates.put("booking-confirmed", EmailTemplates.BOOKING_CONFIRMED);
         templates.put("booking-cancelled", EmailTemplates.BOOKING_CANCELLED);
         templates.put("booking-refunded", EmailTemplates.BOOKING_REFUNDED);
+        templates.put("payment-expiry-reminder", EmailTemplates.PAYMENT_EXPIRY_REMINDER);
+        templates.put("waitlist-seat-available", EmailTemplates.WAITLIST_SEAT_AVAILABLE);
+        templates.put("review-request", EmailTemplates.REVIEW_REQUEST);
         templates.put("trip-reminder-7", EmailTemplates.TRIP_REMINDER_7);
         templates.put("trip-reminder-1", EmailTemplates.TRIP_REMINDER_1);
         return ApiResponse.success(templates);
@@ -65,6 +68,8 @@ public class EmailPreviewController {
         vars.put("bookingStatusLabel", "CONFIRMED");
         vars.put("paymentPendingNote", "Payment is pending. Please complete payment to confirm your seats.");
         vars.put("continuePaymentUrl", lookupUrl);
+        vars.put("remainingMinutes", "10");
+        vars.put("whatsappUrl", "https://wa.me/917050971956?text=Hi%20JOYWAY");
         vars.put("paymentId", "pay_sample123");
         vars.put("paymentDate", "27 Aug 2026");
         vars.put("duration", "2 Nights / 3 Days");
@@ -79,6 +84,10 @@ public class EmailPreviewController {
         vars.put("receiptTitle", "Travel Booking Receipt");
         vars.put("frontendUrl", mailProperties.getFrontendBaseUrl());
         vars.put("supportEmail", mailProperties.getFrom());
+        vars.put("availableSeats", "2");
+        vars.put("continueBookingUrl", mailProperties.getFrontendBaseUrl() + "/book/1");
+        vars.put("tripUrl", mailProperties.getFrontendBaseUrl() + "/trips/nainital-weekend");
+        vars.put("reviewUrl", lookupUrl);
         return vars;
     }
 }

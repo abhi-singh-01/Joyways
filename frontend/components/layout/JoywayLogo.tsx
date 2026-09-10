@@ -24,15 +24,22 @@ type JoywayLogoProps = {
   showTagline?: boolean;
 };
 
+function wordmarkTitleClass(iconSize: number): string {
+  if (iconSize >= 64) return "text-4xl";
+  if (iconSize >= 48) return "text-2xl";
+  if (iconSize >= 40) return "text-xl";
+  return "text-lg";
+}
+
 function JoywayWordmark({
   variant,
   iconSize,
   showTagline,
-}: {
+}: Readonly<{
   variant: "default" | "onDark";
   iconSize: number;
   showTagline: boolean;
-}) {
+}>) {
   const onDark = variant === "onDark";
 
   return (
@@ -54,7 +61,7 @@ function JoywayWordmark({
         <span
           className={cn(
             "block font-semibold tracking-tight",
-            iconSize >= 64 ? "text-4xl" : iconSize >= 48 ? "text-2xl" : iconSize >= 40 ? "text-xl" : "text-lg"
+            wordmarkTitleClass(iconSize)
           )}
         >
           <span className={onDark ? "text-white" : "text-forest-dark"}>Joy</span>
@@ -84,7 +91,7 @@ export function JoywayLogo({
   variant = "default",
   layout = "full",
   showTagline = false,
-}: JoywayLogoProps) {
+}: Readonly<JoywayLogoProps>) {
   const content =
     layout === "compact" ? (
       <span

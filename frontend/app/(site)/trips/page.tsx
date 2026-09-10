@@ -32,6 +32,7 @@ export default async function TripsPage() {
   return (
     <>
       <PageHero
+        illustrated
         eyebrow="Explore"
         title="All Trips"
         description="Curated group journeys from Delhi — transport, stay, and unforgettable experiences in one package."

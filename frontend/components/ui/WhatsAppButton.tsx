@@ -37,6 +37,11 @@ export function WhatsAppButton() {
     if (!visible) {
       return;
     }
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    // On touch devices the tooltip covers primary CTAs at the bottom of the viewport.
+    if (coarsePointer) {
+      return;
+    }
     const show = window.setTimeout(() => setTooltipOpen(true), 400);
     const hide = window.setTimeout(() => setTooltipOpen(false), 4500);
     return () => {

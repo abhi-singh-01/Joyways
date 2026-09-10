@@ -84,6 +84,55 @@ export function AdminNotificationBell() {
     await refresh();
   }
 
+  function notificationList() {
+    if (loading && notifications.length === 0) {
+      return <p className="px-4 py-6 text-center text-sm text-charcoal-muted">Loading...</p>;
+    }
+    if (notifications.length === 0) {
+      return <p className="px-4 py-6 text-center text-sm text-charcoal-muted">No notifications</p>;
+    }
+    return notifications.map((notification) => {
+      const href = notificationHref(notification);
+      const content = (
+        <div
+          className={cn(
+            "border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50",
+            !notification.read && "bg-forest/5"
+          )}
+        >
+          <p className="text-sm font-medium text-charcoal">{notification.title}</p>
+          <p className="mt-0.5 text-xs text-charcoal-muted">{notification.message}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-wide text-charcoal-muted/70">
+            {notification.type.replaceAll("_", " ")}
+          </p>
+        </div>
+      );
+
+      if (href) {
+        return (
+          <Link
+            key={notification.id}
+            href={href}
+            onClick={() => void handleMarkRead(notification)}
+          >
+            {content}
+          </Link>
+        );
+      }
+
+      return (
+        <button
+          key={notification.id}
+          type="button"
+          className="block w-full"
+          onClick={() => void handleMarkRead(notification)}
+        >
+          {content}
+        </button>
+      );
+    });
+  }
+
   return (
     <div className="relative" ref={containerRef}>
       <button
@@ -117,52 +166,7 @@ export function AdminNotificationBell() {
           </div>
 
           <div className="max-h-96 overflow-y-auto">
-            {loading && notifications.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-charcoal-muted">Loading...</p>
-            ) : notifications.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-charcoal-muted">No notifications</p>
-            ) : (
-              notifications.map((notification) => {
-                const href = notificationHref(notification);
-                const content = (
-                  <div
-                    className={cn(
-                      "border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50",
-                      !notification.read && "bg-forest/5"
-                    )}
-                  >
-                    <p className="text-sm font-medium text-charcoal">{notification.title}</p>
-                    <p className="mt-0.5 text-xs text-charcoal-muted">{notification.message}</p>
-                    <p className="mt-1 text-[10px] uppercase tracking-wide text-charcoal-muted/70">
-                      {notification.type.replaceAll("_", " ")}
-                    </p>
-                  </div>
-                );
-
-                if (href) {
-                  return (
-                    <Link
-                      key={notification.id}
-                      href={href}
-                      onClick={() => void handleMarkRead(notification)}
-                    >
-                      {content}
-                    </Link>
-                  );
-                }
-
-                return (
-                  <button
-                    key={notification.id}
-                    type="button"
-                    className="block w-full"
-                    onClick={() => void handleMarkRead(notification)}
-                  >
-                    {content}
-                  </button>
-                );
-              })
-            )}
+            {notificationList()}
           </div>
         </div>
       )}

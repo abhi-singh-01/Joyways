@@ -7,10 +7,12 @@ import in.joyway.dto.PageResponse;
 import in.joyway.dto.admin.operations.*;
 import in.joyway.exception.OperationConflictException;
 import in.joyway.exception.ResourceNotFoundException;
+import in.joyway.service.BookingService;
 import in.joyway.service.audit.AuditLogService;
 import in.joyway.util.TripReferenceGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,6 +60,7 @@ public class AdminTripService {
     private final TripReferenceGenerator tripReferenceGenerator;
     private final AuditLogService auditLogService;
     private final OperationsNotificationService operationsNotificationService;
+    private final BookingService bookingService;
 
     @Transactional(readOnly = true)
     public PageResponse<TripSummaryDto> listTrips(
@@ -75,7 +80,8 @@ public class AdminTripService {
                 driverId,
                 pageable(page, size)
         );
-        return PageResponse.of(result.map(this::toSummary));
+        return PageResponse.of(new PageImpl<>(
+                toSummaries(result.getContent()), result.getPageable(), result.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
@@ -90,19 +96,14 @@ public class AdminTripService {
         if (days > 93) {
             throw new IllegalArgumentException("Date range cannot exceed 93 days.");
         }
-        return tripRepository.findByTravelDateBetween(fromDate, toDate).stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(tripRepository.findByTravelDateBetween(fromDate, toDate));
     }
 
     @Transactional(readOnly = true)
     public List<TripSummaryDto> listUpcomingTrips(int limit) {
         int safeLimit = Math.clamp(limit, 1, 20);
         LocalDate today = LicenseStatusHelper.businessToday();
-        return tripRepository.findUpcoming(today, PageRequest.of(0, safeLimit))
-                .stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(tripRepository.findUpcoming(today, PageRequest.of(0, safeLimit)));
     }
 
     @Transactional(readOnly = true)
@@ -340,6 +341,7 @@ public class AdminTripService {
         }
         if (newStatus == TripStatus.COMPLETED) {
             releaseTripResources(trip);
+            bookingService.completeConfirmedPaidBookingsForPackage(trip.getTravelPackage().getId());
         }
         if (newStatus == TripStatus.CANCELLED) {
             releaseTripResources(trip);
@@ -463,11 +465,32 @@ public class AdminTripService {
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found."));
     }
 
-    private TripSummaryDto toSummary(Trip trip) {
-        int travellers = tripBookingRepository.sumTravellersByTripId(trip.getId());
-        int bookingCount = tripBookingRepository.findByTripId(trip.getId()).size();
-        Optional<TripVehicle> primaryVehicle = tripVehicleRepository.findPrimaryVehicle(trip.getId());
-        Integer capacity = primaryVehicle.map(tv -> tv.getVehicle().getSeatingCapacity()).orElse(null);
+    private List<TripSummaryDto> toSummaries(List<Trip> trips) {
+        if (trips.isEmpty()) {
+            return List.of();
+        }
+        List<Long> tripIds = trips.stream().map(Trip::getId).toList();
+        Map<Long, TripBookingRepository.TripLoadSummary> loads = new HashMap<>();
+        for (TripBookingRepository.TripLoadSummary row : tripBookingRepository.summarizeByTripIds(tripIds)) {
+            loads.put(row.getTripId(), row);
+        }
+        Map<Long, TripVehicle> primaries = new HashMap<>();
+        for (TripVehicle vehicle : tripVehicleRepository.findPrimaryVehiclesByTripIdIn(tripIds)) {
+            primaries.put(vehicle.getTrip().getId(), vehicle);
+        }
+        return trips.stream()
+                .map(trip -> toSummary(trip, loads.get(trip.getId()), primaries.get(trip.getId())))
+                .toList();
+    }
+
+    private TripSummaryDto toSummary(
+            Trip trip,
+            TripBookingRepository.TripLoadSummary load,
+            TripVehicle primaryVehicle
+    ) {
+        int travellers = load == null || load.getTravellerCount() == null ? 0 : load.getTravellerCount().intValue();
+        int bookingCount = load == null || load.getBookingCount() == null ? 0 : load.getBookingCount().intValue();
+        Integer capacity = primaryVehicle != null ? primaryVehicle.getVehicle().getSeatingCapacity() : null;
         Integer remaining = capacity != null ? Math.max(capacity - travellers, 0) : null;
 
         return TripSummaryDto.builder()
@@ -482,7 +505,8 @@ public class AdminTripService {
                 .totalTravellers(travellers)
                 .vehicleCapacity(capacity)
                 .remainingCapacity(remaining)
-                .vehicleRegistration(primaryVehicle.map(tv -> tv.getVehicle().getRegistrationNumber()).orElse(null))
+                .vehicleRegistration(primaryVehicle != null
+                        ? primaryVehicle.getVehicle().getRegistrationNumber() : null)
                 .driverName(trip.getDriver() != null ? trip.getDriver().getName() : null)
                 .status(trip.getStatus().name())
                 .build();

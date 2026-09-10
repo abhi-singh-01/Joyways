@@ -1,10 +1,13 @@
 package in.joyway.service;
 
+import in.joyway.config.BookingProperties;
 import in.joyway.domain.entity.Booking;
 import in.joyway.domain.entity.Payment;
 import in.joyway.domain.entity.Traveller;
+import in.joyway.domain.enums.BookingStatus;
 import in.joyway.domain.enums.PaymentRecordStatus;
 import in.joyway.domain.repository.BookingRepository;
+import in.joyway.domain.repository.PackageReviewRepository;
 import in.joyway.domain.repository.PaymentRepository;
 import in.joyway.domain.repository.TravellerRepository;
 import in.joyway.dto.booking.BookingDetailResponse;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 
@@ -31,6 +35,8 @@ public class BookingQueryService {
     private final ReceiptService receiptService;
     private final ReceiptPdfService receiptPdfService;
     private final CustomerTripInfoService customerTripInfoService;
+    private final BookingProperties bookingProperties;
+    private final PackageReviewRepository packageReviewRepository;
 
     public BookingDetailResponse getBookingForCustomer(String bookingReference, String customerEmail) {
         Booking booking = findBookingWithAccessCheck(bookingReference, customerEmail);
@@ -53,7 +59,7 @@ public class BookingQueryService {
         return receiptPdfService.render(getReceiptForCustomer(bookingReference, customerEmail));
     }
 
-    Booking findBookingWithAccessCheck(String bookingReference, String customerEmail) {
+    public Booking findBookingWithAccessCheck(String bookingReference, String customerEmail) {
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
 
@@ -88,6 +94,10 @@ public class BookingQueryService {
                 .paymentDate(payment != null && payment.getStatus() == PaymentRecordStatus.CAPTURED
                         ? payment.getUpdatedAt() : null)
                 .createdAt(booking.getCreatedAt())
+                .paymentExpiresAt(paymentExpiresAt(booking))
+                .pickupPoint(booking.getPickupPoint())
+                .reviewEligible(booking.getStatus() == BookingStatus.COMPLETED)
+                .reviewSubmitted(packageReviewRepository.existsByBookingId(booking.getId()))
                 .travellers(travellers.stream()
                         .map(t -> TravellerSummaryDto.builder()
                                 .fullName(t.getFullName())
@@ -96,6 +106,13 @@ public class BookingQueryService {
                         .toList())
                 .tripInfo(customerTripInfoService.getTripInfoForBooking(booking.getId()).orElse(null))
                 .build();
+    }
+
+    private Instant paymentExpiresAt(Booking booking) {
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            return null;
+        }
+        return bookingProperties.paymentExpiresAt(booking.getCreatedAt());
     }
 
     static String normalizeEmail(String email) {

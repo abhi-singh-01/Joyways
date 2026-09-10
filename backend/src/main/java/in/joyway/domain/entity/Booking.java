@@ -35,6 +35,9 @@ public class Booking {
     @Column(name = "number_of_travellers", nullable = false)
     private Integer numberOfTravellers;
 
+    @Column(name = "pickup_point", length = 200)
+    private String pickupPoint;
+
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 

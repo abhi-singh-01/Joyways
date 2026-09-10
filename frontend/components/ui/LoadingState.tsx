@@ -11,7 +11,7 @@ export function LoadingState({
   message = "Loading...",
   className,
   fullPage = false,
-}: LoadingStateProps) {
+}: Readonly<LoadingStateProps>) {
   return (
     <div
       className={cn(

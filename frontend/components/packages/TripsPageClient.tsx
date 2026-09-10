@@ -8,7 +8,7 @@ type TripsPageClientProps = {
   packages: PackageSummary[];
 };
 
-export function TripsPageClient({ packages }: TripsPageClientProps) {
+export function TripsPageClient({ packages }: Readonly<TripsPageClientProps>) {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
 

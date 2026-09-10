@@ -8,9 +8,11 @@ type BookingReviewCardProps = {
   pkg: PackageDetail;
   review: BookingReview;
   customerName: string;
+  pickupPoint?: string | null;
 };
 
-export function BookingReviewCard({ pkg, review, customerName }: BookingReviewCardProps) {
+export function BookingReviewCard({ pkg, review, customerName, pickupPoint }: Readonly<BookingReviewCardProps>) {
+  const pickup = pickupPoint || review.pickupPoint;
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-white p-6">
       <h3 className="font-display text-xl font-semibold text-charcoal">
@@ -40,6 +42,12 @@ export function BookingReviewCard({ pkg, review, customerName }: BookingReviewCa
           <span className="text-charcoal-muted">Travellers</span>
           <span className="font-medium text-charcoal">{review.numberOfTravellers}</span>
         </div>
+        {pickup && (
+          <div className="flex justify-between gap-4">
+            <span className="text-charcoal-muted">Pickup</span>
+            <span className="text-right font-medium text-charcoal">{pickup}</span>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2 text-sm">

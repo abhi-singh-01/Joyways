@@ -13,7 +13,7 @@ type BadgeProps = {
   className?: string;
 };
 
-export function StatusBadge({ status, className }: BadgeProps) {
+export function StatusBadge({ status, className }: Readonly<BadgeProps>) {
   return (
     <span
       className={cn(

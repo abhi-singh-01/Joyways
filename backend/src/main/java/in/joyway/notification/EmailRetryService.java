@@ -3,10 +3,12 @@ package in.joyway.notification;
 import in.joyway.domain.entity.Booking;
 import in.joyway.domain.entity.EmailLog;
 import in.joyway.domain.entity.Payment;
+import in.joyway.domain.entity.WaitlistEntry;
 import in.joyway.domain.enums.EmailStatus;
 import in.joyway.domain.repository.BookingRepository;
 import in.joyway.domain.repository.EmailLogRepository;
 import in.joyway.domain.repository.PaymentRepository;
+import in.joyway.domain.repository.WaitlistEntryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ public class EmailRetryService {
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final BookingNotificationService bookingNotificationService;
+    private final WaitlistEntryRepository waitlistEntryRepository;
     private final in.joyway.config.MailProperties mailProperties;
 
     @Transactional
@@ -74,6 +77,9 @@ public class EmailRetryService {
     }
 
     private Optional<Map<String, String>> resolveVariables(EmailLog emailLog) {
+        if ("WAITLIST".equals(emailLog.getRelatedEntityType()) && emailLog.getRelatedEntityId() != null) {
+            return resolveWaitlistVariables(emailLog);
+        }
         if (!"BOOKING".equals(emailLog.getRelatedEntityType()) || emailLog.getRelatedEntityId() == null) {
             return Optional.empty();
         }
@@ -92,12 +98,27 @@ public class EmailRetryService {
             case EmailTemplates.BOOKING_RECEIPT -> bookingNotificationService.buildReceiptVars(booking, payment);
             case EmailTemplates.TRIP_REMINDER_7 -> bookingNotificationService.buildTripReminderVars(booking, 7);
             case EmailTemplates.TRIP_REMINDER_1 -> bookingNotificationService.buildTripReminderVars(booking, 1);
+            case EmailTemplates.PAYMENT_EXPIRY_REMINDER -> bookingNotificationService.buildPaymentExpiryReminderVars(booking);
+            case EmailTemplates.REVIEW_REQUEST -> bookingNotificationService.buildReviewRequestVars(booking);
             case EmailTemplates.ADMIN_NEW_BOOKING,
                  EmailTemplates.ADMIN_PAYMENT_SUCCESS,
                  EmailTemplates.ADMIN_PAYMENT_FAILED,
                  EmailTemplates.ADMIN_BOOKING_CANCELLED -> bookingNotificationService.buildBookingCreatedVars(booking);
             default -> null;
         });
+    }
+
+    private Optional<Map<String, String>> resolveWaitlistVariables(EmailLog emailLog) {
+        if (!EmailTemplates.WAITLIST_SEAT_AVAILABLE.equals(emailLog.getTemplate())) {
+            return Optional.empty();
+        }
+        WaitlistEntry entry = waitlistEntryRepository.findByIdWithPackage(emailLog.getRelatedEntityId())
+                .orElse(null);
+        if (entry == null) {
+            return Optional.empty();
+        }
+        return Optional.of(bookingNotificationService.buildWaitlistSeatAvailableVars(
+                entry.getTravelPackage(), entry));
     }
 
     private enum RetryAction {

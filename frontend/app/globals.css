@@ -149,7 +149,109 @@ body {
   .aurora-blob-2,
   .aurora-blob-3,
   .moving-border-gradient,
-  .destination-marquee {
+  .destination-marquee,
+  .hero-parallax-img,
+  .journey-bird,
+  .journey-sun,
+  .journey-sun-glow,
+  .journey-road-dash,
+  .journey-bus,
+  .journey-kenburns {
     animation: none !important;
   }
+}
+
+@keyframes hero-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes journey-bird {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(28px, -16px);
+  }
+}
+
+@keyframes journey-sun {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes journey-road-dash {
+  to {
+    stroke-dashoffset: -80;
+  }
+}
+
+@keyframes journey-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes journey-bus {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+.journey-bird {
+  animation: journey-bird 9s ease-in-out infinite;
+}
+
+.journey-sun,
+.journey-sun-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: journey-sun 6s ease-in-out infinite alternate;
+}
+
+.journey-road-dash {
+  animation: journey-road-dash 8s linear infinite;
+}
+
+.journey-bus {
+  offset-path: path("M80 420 C 180 360, 240 340, 310 300 S 470 250, 560 210 S 680 170, 720 150");
+  offset-rotate: auto;
+  animation: journey-bus 14s linear infinite;
+}
+
+.journey-kenburns {
+  animation: journey-kenburns 22s ease-in-out infinite alternate;
+}
+
+@supports not (offset-path: path("M0 0")) {
+  .journey-bus {
+    display: none;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .hero-parallax-img {
+    animation: hero-zoom linear both;
+    animation-timeline: view();
+    animation-range: exit 0% exit 100%;
+  }
+}
+
+.cinematic-kicker {
+  letter-spacing: 0.22em;
 }

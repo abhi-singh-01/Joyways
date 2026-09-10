@@ -48,6 +48,14 @@ class SecurityConfigTest {
     }
 
     @Test
+    void publicWaitlist_isAccessible() throws Exception {
+        mockMvc.perform(post("/api/packages/nainital-weekend/waitlist")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void adminMutations_withoutCsrfToken_areForbidden() throws Exception {
         mockMvc.perform(post("/api/admin/packages")
                         .contentType("application/json")

@@ -20,11 +20,13 @@ class PendingPaymentExpirySchedulerTest {
     private PendingPaymentExpiryScheduler scheduler;
 
     @Test
-    void expireStalePendingPayments_delegatesToBookingService() {
+    void expireStalePendingPayments_remindsThenExpires() {
+        when(bookingService.remindExpiringPendingPaymentBookings()).thenReturn(1);
         when(bookingService.expireStalePendingPaymentBookings()).thenReturn(2);
 
         scheduler.expireStalePendingPayments();
 
+        verify(bookingService).remindExpiringPendingPaymentBookings();
         verify(bookingService).expireStalePendingPaymentBookings();
     }
 }

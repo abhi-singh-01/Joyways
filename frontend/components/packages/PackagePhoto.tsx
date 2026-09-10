@@ -22,7 +22,7 @@ function isApiPackagePhoto(src: string): boolean {
  * Local assets use the Next.js optimizer. Package photos on api.joyway.in load
  * directly from the API/CDN to avoid an extra frontend image-proxy hop.
  */
-export function PackagePhoto({ src, alt, className, sizes, priority }: PackagePhotoProps) {
+export function PackagePhoto({ src, alt, className, sizes, priority }: Readonly<PackagePhotoProps>) {
   const isLocalAsset = src.startsWith("/");
   const directApiPhoto = isApiPackagePhoto(src);
 

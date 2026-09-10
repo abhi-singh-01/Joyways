@@ -117,6 +117,7 @@ joyway:
     noreply-reply-to: ${MAIL_NOREPLY_REPLY_TO:noreply@joyway.in}
     admin-notification-email: ${ADMIN_NOTIFICATION_EMAIL:hello@joyway.in}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+    whatsapp-number: ${PUBLIC_WHATSAPP_NUMBER:917050971956}
     enabled: ${MAIL_ENABLED:true}
     preview-enabled: ${MAIL_PREVIEW_ENABLED:false}
     max-retry-attempts: ${MAIL_MAX_RETRY_ATTEMPTS:3}
@@ -129,6 +130,7 @@ joyway:
     reconciliation-cron: ${PAYMENT_RECONCILIATION_CRON:0 */15 * * * *}
   booking:
     payment-window-minutes: ${BOOKING_PAYMENT_WINDOW_MINUTES:30}
+    payment-reminder-minutes: ${BOOKING_PAYMENT_REMINDER_MINUTES:10}
     payment-expiry-cron: ${BOOKING_PAYMENT_EXPIRY_CRON:0 * * * * *}
   operations:
     expose-driver-contact-to-customers: ${EXPOSE_DRIVER_CONTACT_TO_CUSTOMERS:false}

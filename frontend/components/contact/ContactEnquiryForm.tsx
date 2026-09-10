@@ -40,7 +40,7 @@ export function ContactEnquiryForm() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitError("");
     const result = contactEnquirySchema.safeParse(form);
@@ -76,9 +76,9 @@ export function ContactEnquiryForm() {
       </p>
 
       {submitted && (
-        <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+        <output className="mt-4 block rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           Thank you — your message was sent successfully. Our team will get back to you shortly.
-        </p>
+        </output>
       )}
 
       {submitError && (
@@ -166,8 +166,7 @@ export function ContactEnquiryForm() {
           Prefer email directly? Write to{" "}
           <a href={`mailto:${PUBLIC_EMAILS.support}`} className="font-medium text-forest hover:underline">
             {PUBLIC_EMAILS.support}
-          </a>
-          .
+          </a>.
         </p>
       </form>
     </div>

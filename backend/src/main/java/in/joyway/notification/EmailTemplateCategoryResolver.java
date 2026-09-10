@@ -17,7 +17,10 @@ public final class EmailTemplateCategoryResolver {
                  EmailTemplates.BOOKING_RECEIPT,
                  EmailTemplates.TRIP_REMINDER,
                  EmailTemplates.TRIP_REMINDER_7,
-                 EmailTemplates.TRIP_REMINDER_1 -> EmailCategory.BOOKING;
+                 EmailTemplates.TRIP_REMINDER_1,
+                 EmailTemplates.PAYMENT_EXPIRY_REMINDER,
+                 EmailTemplates.WAITLIST_SEAT_AVAILABLE,
+                 EmailTemplates.REVIEW_REQUEST -> EmailCategory.BOOKING;
             case EmailTemplates.ADMIN_NEW_BOOKING,
                  EmailTemplates.ADMIN_PAYMENT_SUCCESS,
                  EmailTemplates.ADMIN_PAYMENT_FAILED,

@@ -55,6 +55,41 @@ export function AdminTripCalendarView() {
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [trips]);
 
+  function calendarDays() {
+    if (loading) {
+      return <p className="text-charcoal-muted">Loading calendar...</p>;
+    }
+    if (grouped.length === 0) {
+      return (
+        <div className="rounded-2xl border border-border bg-white p-8 text-center text-charcoal-muted">
+          No trips scheduled this month
+        </div>
+      );
+    }
+    return grouped.map(([date, dayTrips]) => (
+      <div key={date} className="rounded-2xl border border-border bg-white p-4">
+        <h2 className="font-medium text-charcoal">{formatDate(date)}</h2>
+        <div className="mt-3 space-y-2">
+          {dayTrips.map((trip) => (
+            <Link
+              key={trip.id}
+              href={`/admin/trips/${trip.id}`}
+              className="flex flex-col gap-2 rounded-xl border border-border p-3 hover:bg-surface sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p className="font-medium text-forest">{trip.tripReference}</p>
+                <p className="text-sm text-charcoal-muted">
+                  {trip.destination} · {trip.totalTravellers} travellers
+                </p>
+              </div>
+              <StatusBadge status={trip.status} />
+            </Link>
+          ))}
+        </div>
+      </div>
+    ));
+  }
+
   if (error) return <ErrorState message={error} fullPage />;
 
   return (
@@ -98,38 +133,7 @@ export function AdminTripCalendarView() {
         </div>
       </div>
 
-      <div className="mt-8 space-y-4">
-        {loading ? (
-          <p className="text-charcoal-muted">Loading calendar...</p>
-        ) : grouped.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-white p-8 text-center text-charcoal-muted">
-            No trips scheduled this month
-          </div>
-        ) : (
-          grouped.map(([date, dayTrips]) => (
-            <div key={date} className="rounded-2xl border border-border bg-white p-4">
-              <h2 className="font-medium text-charcoal">{formatDate(date)}</h2>
-              <div className="mt-3 space-y-2">
-                {dayTrips.map((trip) => (
-                  <Link
-                    key={trip.id}
-                    href={`/admin/trips/${trip.id}`}
-                    className="flex flex-col gap-2 rounded-xl border border-border p-3 hover:bg-surface sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-forest">{trip.tripReference}</p>
-                      <p className="text-sm text-charcoal-muted">
-                        {trip.destination} · {trip.totalTravellers} travellers
-                      </p>
-                    </div>
-                    <StatusBadge status={trip.status} />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <div className="mt-8 space-y-4">{calendarDays()}</div>
     </div>
   );
 }

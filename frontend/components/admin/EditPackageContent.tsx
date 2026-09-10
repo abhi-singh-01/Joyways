@@ -6,7 +6,7 @@ import { PackageForm } from "@/components/admin/PackageForm";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 
-export function EditPackageContent({ id }: { id: number }) {
+export function EditPackageContent({ id }: Readonly<{ id: number }>) {
   const [pkg, setPkg] = useState<AdminPackageDetail | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);

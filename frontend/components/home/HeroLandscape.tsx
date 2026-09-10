@@ -11,7 +11,7 @@ type HeroLandscapeProps = {
 const heroImageSizes =
   "(max-width: 640px) 100vw, (max-width: 1920px) 100vw, 1920px";
 
-export function HeroLandscape({ scrollYProgress }: HeroLandscapeProps) {
+export function HeroLandscape({ scrollYProgress }: Readonly<HeroLandscapeProps>) {
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.18]);
   const y = useTransform(scrollYProgress, [0, 1], [0, 80]);
 

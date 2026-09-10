@@ -30,6 +30,7 @@ class RateLimitFilterRuleTest {
         assertRule("POST", RateLimitFilter.PAYMENT_ALIAS_ORDER_PATH, RateLimitBucket.PAYMENT, 30);
         assertRule("POST", RateLimitFilter.PAYMENT_ALIAS_VERIFY_PATH, RateLimitBucket.PAYMENT, 30);
         assertRule("POST", RateLimitFilter.CONTACT_ENQUIRY_PATH, RateLimitBucket.CONTACT, 5);
+        assertRule("POST", "/api/packages/nainital-weekend/waitlist", RateLimitBucket.CONTACT, 5);
     }
 
     @Test

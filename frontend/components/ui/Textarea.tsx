@@ -4,7 +4,7 @@ type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
 };
 
-export function Textarea({ className, error, ...props }: TextareaProps) {
+export function Textarea({ className, error, ...props }: Readonly<TextareaProps>) {
   return (
     <div>
       <textarea

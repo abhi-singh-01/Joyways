@@ -7,7 +7,7 @@ type PackageItineraryProps = {
   itinerary: string;
 };
 
-export function PackageItinerary({ itinerary }: PackageItineraryProps) {
+export function PackageItinerary({ itinerary }: Readonly<PackageItineraryProps>) {
   const days = splitLines(itinerary);
 
   if (days.length === 0) {

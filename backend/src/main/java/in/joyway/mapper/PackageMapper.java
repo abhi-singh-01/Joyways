@@ -36,6 +36,7 @@ public class PackageMapper {
                 .availableSeats(pkg.getAvailableSeats())
                 .heroImageUrl(hero != null ? packageImageUrlService.resolvePublicUrl(hero) : null)
                 .heroImageAlt(hero != null ? hero.getAltText() : pkg.getDestination())
+                .waitlistable(isWaitlistable(pkg))
                 .build();
     }
 
@@ -65,6 +66,7 @@ public class PackageMapper {
                 .status(pkg.getStatus().name())
                 .images(toImageDtos(pkg.getImages()))
                 .bookable(isBookable(pkg))
+                .waitlistable(isWaitlistable(pkg))
                 .build();
     }
 
@@ -89,9 +91,19 @@ public class PackageMapper {
         return pkg.getImages().getFirst();
     }
 
+    private boolean isUpcoming(TravelPackage pkg) {
+        return !pkg.getStartDate().isBefore(LocalDate.now(ZoneId.of("Asia/Kolkata")));
+    }
+
     private boolean isBookable(TravelPackage pkg) {
         return pkg.getStatus() == PackageStatus.PUBLISHED
                 && pkg.getAvailableSeats() > 0
-                && !pkg.getStartDate().isBefore(LocalDate.now(ZoneId.of("Asia/Kolkata")));
+                && isUpcoming(pkg);
+    }
+
+    private boolean isWaitlistable(TravelPackage pkg) {
+        return pkg.getStatus() == PackageStatus.PUBLISHED
+                && pkg.getAvailableSeats() <= 0
+                && isUpcoming(pkg);
     }
 }

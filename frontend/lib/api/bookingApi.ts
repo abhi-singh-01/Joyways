@@ -24,6 +24,7 @@ export type CreateBookingPayload = {
   customer: CustomerInput;
   travellers: TravellerInput[];
   consentAccepted: boolean;
+  pickupPoint?: string;
 };
 
 export type BookingAccessInput = {
@@ -46,6 +47,7 @@ export type BookingReview = {
   currency: string;
   availableSeats: number;
   bookable: boolean;
+  pickupPoint?: string | null;
 };
 
 export type BookingResult = {
@@ -61,6 +63,8 @@ export type BookingResult = {
   status: string;
   paymentStatus: string;
   createdAt: string;
+  paymentExpiresAt?: string | null;
+  pickupPoint?: string | null;
   travellers: { fullName: string; idDocumentType: string }[];
 };
 
@@ -89,6 +93,15 @@ export type BookingDetail = BookingResult & {
   razorpayOrderId: string | null;
   razorpayPaymentId: string | null;
   paymentDate: string | null;
+  reviewEligible?: boolean;
+  reviewSubmitted?: boolean;
+};
+
+export type PackageReviewSubmission = {
+  customerName: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
 };
 
 export async function previewBooking(
@@ -206,5 +219,20 @@ export async function cancelBooking(
     cache: "no-store",
   });
   if (!response.data) throw new Error("Cancellation failed");
+  return response.data;
+}
+
+export async function submitBookingReview(payload: {
+  reference: string;
+  email: string;
+  rating: number;
+  comment?: string;
+}): Promise<PackageReviewSubmission> {
+  const response = await apiFetch<PackageReviewSubmission>("/api/bookings/reviews", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+  if (!response.data) throw new Error("Could not submit review");
   return response.data;
 }

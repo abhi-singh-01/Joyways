@@ -46,6 +46,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     static final String PAYMENT_ALIAS_VERIFY_PATH = "/api/verify-payment";
     static final String WEBHOOK_PATH = "/api/payments/webhook";
     static final String CONTACT_ENQUIRY_PATH = "/api/contact/enquiry";
+    static final String WAITLIST_PATH_PREFIX = "/api/packages/";
+    static final String WAITLIST_PATH_SUFFIX = "/waitlist";
 
     private final RateLimitProperties properties;
     private final ObjectMapper objectMapper;
@@ -135,6 +137,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return new RateLimitRule(RateLimitBucket.PAYMENT, properties.getPaymentRequestsPerMinute());
         }
         if ("POST".equals(method) && CONTACT_ENQUIRY_PATH.equals(path)) {
+            return new RateLimitRule(RateLimitBucket.CONTACT, properties.getContactRequestsPerMinute());
+        }
+        if ("POST".equals(method) && path.startsWith(WAITLIST_PATH_PREFIX) && path.endsWith(WAITLIST_PATH_SUFFIX)) {
             return new RateLimitRule(RateLimitBucket.CONTACT, properties.getContactRequestsPerMinute());
         }
         return null;

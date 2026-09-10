@@ -39,7 +39,7 @@ export function PackageImageManager({
   packageId,
   images,
   onImagesChange,
-}: PackageImageManagerProps) {
+}: Readonly<PackageImageManagerProps>) {
   const [altText, setAltText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

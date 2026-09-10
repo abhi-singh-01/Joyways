@@ -18,7 +18,7 @@ export function ErrorState({
   onRetry,
   className,
   fullPage = false,
-}: ErrorStateProps) {
+}: Readonly<ErrorStateProps>) {
   return (
     <div
       className={cn(

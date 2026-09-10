@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 const lastUpdated = "5 September 2026";
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
     <section className="scroll-mt-24">
       <h2 className="font-display text-xl font-semibold text-charcoal">{title}</h2>
@@ -56,8 +56,7 @@ export default function CancellationPage() {
                 className="text-forest hover:text-forest-light"
               >
                 {DEVELOPER_SITE_LABEL}
-              </a>
-              . All rights in JOYWAY and this Website are reserved by JOYWAY.
+              </a>. All rights in JOYWAY and this Website are reserved by JOYWAY.
             </p>
             <p>
               Cancellation terms can vary by trip. The policy shown on each package detail page and

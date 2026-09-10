@@ -14,7 +14,7 @@ export function MotionHoverLift({
   lift = -6,
   scale,
   ...props
-}: MotionHoverLiftProps) {
+}: Readonly<MotionHoverLiftProps>) {
   return (
     <motion.div
       whileHover={{ y: lift, ...(scale != null ? { scale } : {}) }}

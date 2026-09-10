@@ -15,12 +15,42 @@ type PackageCardProps = {
   variant?: "default" | "compact";
 };
 
+function seatBadge(soldOut: boolean, lowSeats: boolean, availableSeats: number) {
+  if (soldOut) {
+    return (
+      <span className="rounded-full bg-charcoal/90 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+        Sold out
+      </span>
+    );
+  }
+  if (lowSeats) {
+    return (
+      <span className="rounded-full bg-accent/95 px-3 py-1 text-xs font-semibold text-charcoal backdrop-blur-sm">
+        {availableSeats} seats left
+      </span>
+    );
+  }
+  return null;
+}
+
+function seatAvailabilityLabel(pkg: PackageSummary, soldOut: boolean): string {
+  if (!soldOut) return `${pkg.availableSeats} seats`;
+  if (pkg.waitlistable) return "Join waitlist";
+  return "Sold out";
+}
+
+function tripActionLabel(pkg: PackageSummary, soldOut: boolean): string {
+  if (!soldOut) return "View Trip";
+  if (pkg.waitlistable) return "Join waitlist";
+  return "View details";
+}
+
 export function PackageCard({
   pkg,
   index = 0,
   className,
   variant = "default",
-}: PackageCardProps) {
+}: Readonly<PackageCardProps>) {
   const soldOut = pkg.availableSeats <= 0;
   const lowSeats = pkg.availableSeats <= 5 && pkg.availableSeats > 0;
 
@@ -63,15 +93,7 @@ export function PackageCard({
               <Bus size={12} />
               Group trip
             </span>
-            {soldOut ? (
-              <span className="rounded-full bg-charcoal/90 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-                Sold out
-              </span>
-            ) : lowSeats ? (
-              <span className="rounded-full bg-accent/95 px-3 py-1 text-xs font-semibold text-charcoal backdrop-blur-sm">
-                {pkg.availableSeats} seats left
-              </span>
-            ) : null}
+            {seatBadge(soldOut, lowSeats, pkg.availableSeats)}
           </div>
           <div className="absolute bottom-4 left-4 right-4">
             <p className="text-xs font-medium uppercase tracking-wider text-white/80">
@@ -95,7 +117,7 @@ export function PackageCard({
             </span>
             <span className="flex items-center gap-1.5">
               <Users size={14} className="shrink-0 text-forest" />
-              {soldOut ? "Waitlist soon" : `${pkg.availableSeats} seats`}
+              {seatAvailabilityLabel(pkg, soldOut)}
             </span>
           </div>
 
@@ -107,7 +129,7 @@ export function PackageCard({
               </p>
             </div>
             <span className="flex items-center gap-1 text-sm font-semibold text-forest transition-colors group-hover:text-forest-light">
-              {soldOut ? "View details" : "View Trip"}
+              {tripActionLabel(pkg, soldOut)}
               <ArrowRight
                 size={16}
                 className="transition-transform group-hover:translate-x-0.5"

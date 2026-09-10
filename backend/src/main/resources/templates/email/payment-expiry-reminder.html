@@ -1,0 +1,12 @@
+<p style="margin:0 0 16px;font-size:16px;">Hello {{customerName}},</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#b45309;">Your seats are still on hold, but this booking will expire in about {{remainingMinutes}} minutes if payment is not completed.</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fffbeb;border-radius:8px;padding:16px;margin-bottom:20px;">
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Booking Reference:</strong> {{bookingReference}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Package:</strong> {{packageTitle}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Destination:</strong> {{destination}}</td></tr>
+  <tr><td style="padding:8px 16px;font-size:14px;"><strong>Amount:</strong> {{currency}} {{amount}}</td></tr>
+</table>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Complete payment now to keep your seats. After the hold ends, the trip may sell out.</p>
+<p style="margin:0;">
+  <a href="{{continuePaymentUrl}}" style="display:inline-block;background:#1b4332;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Complete payment</a>
+</p>

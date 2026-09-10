@@ -4,6 +4,7 @@ import in.joyway.domain.entity.TripBooking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,5 +39,22 @@ public interface TripBookingRepository extends JpaRepository<TripBooking, Long> 
             """)
     int sumTravellersByTripId(Long tripId);
 
+    @Query("""
+            SELECT tb.trip.id AS tripId,
+                   COALESCE(SUM(b.numberOfTravellers), 0) AS travellerCount,
+                   COUNT(tb.id) AS bookingCount
+            FROM TripBooking tb
+            JOIN tb.booking b
+            WHERE tb.trip.id IN :tripIds
+            GROUP BY tb.trip.id
+            """)
+    List<TripLoadSummary> summarizeByTripIds(Collection<Long> tripIds);
+
     void deleteByTripIdAndBookingId(Long tripId, Long bookingId);
+
+    interface TripLoadSummary {
+        Long getTripId();
+        Long getTravellerCount();
+        Long getBookingCount();
+    }
 }

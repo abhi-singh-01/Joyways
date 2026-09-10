@@ -19,7 +19,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,14 +42,13 @@ class EmailServiceTest {
     private EmailService emailService;
 
     @Test
-    void sendTemplateEmail_skipsDuplicateSentEmail() {
+    void sendTemplateEmail_skipsDuplicateEmail() {
         when(mailProperties.isEnabled()).thenReturn(true);
-        when(emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
+        when(emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityId(
                 EmailTemplates.BOOKING_CREATED,
                 "customer@example.com",
                 "BOOKING",
-                1L,
-                EmailStatus.SENT
+                1L
         )).thenReturn(true);
 
         emailService.sendTemplateEmail(
@@ -73,8 +71,8 @@ class EmailServiceTest {
         when(mailProperties.getFromName()).thenReturn("JOYWAY");
         when(emailSenderResolver.resolve(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new EmailSenderProfile("bookings@joyway.in", "JOYWAY Bookings", "bookings@joyway.in"));
-        when(emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
-                any(), any(), any(), any(), eq(EmailStatus.SENT)
+        when(emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityId(
+                any(), any(), any(), any()
         )).thenReturn(false);
         when(emailLogRepository.save(any(EmailLog.class))).thenAnswer(inv -> {
             EmailLog log = inv.getArgument(0);
@@ -103,8 +101,8 @@ class EmailServiceTest {
         when(mailProperties.isEnabled()).thenReturn(true);
         when(emailSenderResolver.resolve(EmailCategory.SUPPORT))
                 .thenReturn(new EmailSenderProfile("support@joyway.in", "JOYWAY Support", "support@joyway.in"));
-        when(emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
-                any(), any(), any(), any(), eq(EmailStatus.SENT)
+        when(emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityId(
+                any(), any(), any(), any()
         )).thenReturn(false);
         when(emailLogRepository.save(any(EmailLog.class))).thenAnswer(inv -> {
             EmailLog log = inv.getArgument(0);

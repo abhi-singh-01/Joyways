@@ -73,6 +73,8 @@ class PaymentServiceTest {
     private in.joyway.service.operations.ConfirmedBookingTripAssignmentService tripAssignmentService;
     @Mock
     private in.joyway.service.audit.AuditLogService auditLogService;
+    @Mock
+    private WaitlistService waitlistService;
 
     private PaymentService paymentService;
 
@@ -97,7 +99,8 @@ class PaymentServiceTest {
                 webhookMetricsRecorder,
                 packageRepository,
                 tripAssignmentService,
-                auditLogService
+                auditLogService,
+                waitlistService
         );
 
         customer = Customer.builder()

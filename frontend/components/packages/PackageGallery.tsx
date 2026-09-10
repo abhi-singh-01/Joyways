@@ -13,7 +13,7 @@ type PackageGalleryProps = {
   className?: string;
 };
 
-export function PackageGallery({ images, destination, className }: PackageGalleryProps) {
+export function PackageGallery({ images, destination, className }: Readonly<PackageGalleryProps>) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -114,16 +114,13 @@ export function PackageGallery({ images, destination, className }: PackageGaller
           >
             <button
               type="button"
-              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
               onClick={() => setLightboxOpen(false)}
               aria-label="Close gallery"
             >
               <X size={24} />
             </button>
-            <div
-              className="relative h-[70vh] w-full max-w-5xl"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="pointer-events-none relative h-[70vh] w-full max-w-5xl">
               <PackagePhoto
                 src={active.imageUrl}
                 alt={active.altText || destination}

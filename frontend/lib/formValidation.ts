@@ -6,6 +6,12 @@ export const INDIAN_MOBILE_REGEX = /^[6-9]\d{9}$/;
 
 export const BOOKING_REFERENCE_REGEX = /^JW-\d{4}-\d{5}$/i;
 
+const requiredEmail = z
+  .string()
+  .trim()
+  .min(1, "Email is required")
+  .pipe(z.email({ error: "Enter a valid email address" }));
+
 const DOCUMENT_TYPES = ["AADHAAR", "PASSPORT", "DRIVING_LICENCE", "OTHER"] as const;
 
 export const ALLOWED_DOCUMENT_TYPES = [
@@ -21,11 +27,7 @@ export const customerSchema = z.object({
     .trim()
     .min(2, "Full name is required")
     .max(120, "Name is too long"),
-  email: z
-    .string()
-    .trim()
-    .min(1, "Email is required")
-    .email("Enter a valid email address"),
+  email: requiredEmail,
   mobile: z
     .string()
     .trim()
@@ -52,11 +54,7 @@ export const travellerSchema = z.object({
     .string()
     .trim()
     .regex(INDIAN_MOBILE_REGEX, "Enter a valid 10-digit Indian mobile number"),
-  email: z
-    .string()
-    .trim()
-    .min(1, "Email is required")
-    .email("Enter a valid email address"),
+  email: requiredEmail,
   emergencyContact: z
     .string()
     .trim()
@@ -99,20 +97,12 @@ export const bookingLookupSchema = z.object({
     .trim()
     .min(1, "Booking reference is required")
     .regex(BOOKING_REFERENCE_REGEX, "Enter a valid reference (e.g. JW-2026-00001)"),
-  email: z
-    .string()
-    .trim()
-    .min(1, "Email is required")
-    .email("Enter a valid email address"),
+  email: requiredEmail,
 });
 
 export const contactEnquirySchema = z.object({
   name: z.string().trim().min(2, "Name is required").max(120, "Name is too long"),
-  email: z
-    .string()
-    .trim()
-    .min(1, "Email is required")
-    .email("Enter a valid email address"),
+  email: requiredEmail,
   phone: z
     .string()
     .trim()

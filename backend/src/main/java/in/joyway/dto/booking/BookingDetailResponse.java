@@ -27,6 +27,10 @@ public record BookingDetailResponse(
         String razorpayPaymentId,
         Instant paymentDate,
         Instant createdAt,
+        Instant paymentExpiresAt,
+        String pickupPoint,
+        boolean reviewEligible,
+        boolean reviewSubmitted,
         List<TravellerSummaryDto> travellers,
         CustomerTripInfoDto tripInfo
 ) {}

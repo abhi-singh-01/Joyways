@@ -76,6 +76,7 @@ public class PaymentService {
     private final TravelPackageRepository packageRepository;
     private final ConfirmedBookingTripAssignmentService tripAssignmentService;
     private final AuditLogService auditLogService;
+    private final WaitlistService waitlistService;
 
     @Transactional
     public PaymentOrderResponse createOrder(CreatePaymentOrderRequest request) {
@@ -725,6 +726,7 @@ public class PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found."));
         pkg.setAvailableSeats(pkg.getAvailableSeats() + booking.getNumberOfTravellers());
         packageRepository.save(pkg);
+        waitlistService.notifyIfSeatsAvailable(pkg.getId());
     }
 
     private static BigDecimal refundedAmountOrZero(Payment payment) {

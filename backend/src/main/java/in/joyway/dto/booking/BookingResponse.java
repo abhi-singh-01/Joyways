@@ -21,5 +21,7 @@ public record BookingResponse(
         String status,
         String paymentStatus,
         Instant createdAt,
+        Instant paymentExpiresAt,
+        String pickupPoint,
         List<TravellerSummaryDto> travellers
 ) {}

@@ -28,4 +28,7 @@ public class CreateBookingRequest {
 
     /** Required when creating a booking; not required for preview. */
     private boolean consentAccepted;
+
+    @Size(max = 200, message = "Pickup point is too long")
+    private String pickupPoint;
 }

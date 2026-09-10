@@ -1,10 +1,12 @@
 package in.joyway.notification;
 
+import in.joyway.config.BookingProperties;
 import in.joyway.config.MailProperties;
 import in.joyway.domain.entity.Booking;
 import in.joyway.domain.entity.Customer;
 import in.joyway.domain.entity.Payment;
 import in.joyway.domain.entity.TravelPackage;
+import in.joyway.domain.entity.WaitlistEntry;
 import in.joyway.domain.enums.BookingStatus;
 import in.joyway.domain.enums.PaymentStatus;
 import in.joyway.dto.booking.BookingReceiptDto;
@@ -45,7 +47,8 @@ class BookingNotificationServiceTest {
         mail.setFrontendBaseUrl("http://localhost:3000");
         mail.setAdminNotificationEmail("admin@joyway.in");
         mail.setSupportFrom("support@joyway.in");
-        service = new BookingNotificationService(emailService, notificationService, mail, receiptService);
+        service = new BookingNotificationService(
+                emailService, notificationService, mail, receiptService, new BookingProperties());
 
         Customer customer = Customer.builder()
                 .id(1L)
@@ -98,6 +101,8 @@ class BookingNotificationServiceTest {
 
         booking.setPaymentStatus(PaymentStatus.PAID);
         assertThat(service.buildBookingCreatedVars(booking)).containsEntry("paymentPendingNote", "");
+        service.onBookingCreated(booking);
+        assertThat(service.buildBookingCreatedVars(booking)).containsEntry("paymentPendingNote", "");
     }
 
     @Test
@@ -126,9 +131,15 @@ class BookingNotificationServiceTest {
         service.onBookingCancelled(booking);
         service.onTripReminder(booking, 7);
         service.onTripReminder(booking, 1);
+        service.onPaymentExpiryReminder(booking, 10);
+
+        assertThat(service.buildBookingConfirmedVars(booking).get("whatsappUrl"))
+                .contains("wa.me/")
+                .contains("JW-2026-00001");
 
         assertThat(service.buildPaymentFailedVars(booking)).containsKey("continuePaymentUrl");
-        assertThat(service.buildBookingConfirmedVars(booking)).containsEntry("pickup", "Kashmere Gate");
+        booking.setPickupPoint("Kashmere Gate Metro");
+        assertThat(service.buildBookingConfirmedVars(booking)).containsEntry("pickup", "Kashmere Gate Metro");
         assertThat(service.buildBookingCancelledVars(booking)).containsKey("cancellationDate");
         assertThat(service.buildTripReminderVars(booking, 1))
                 .containsEntry("reminderMessage", "Your JOYWAY trip is tomorrow.");
@@ -136,5 +147,73 @@ class BookingNotificationServiceTest {
                 .containsEntry("reminderMessage", "Your JOYWAY trip is coming up in 7 days.");
         verify(notificationService, org.mockito.Mockito.atLeastOnce())
                 .notifyAdmins(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void onTripCompletedAndWaitlist_sendReviewAndSeatEmails() {
+        booking.getTravelPackage().setSlug("nainital-escape");
+        service.onTripCompleted(booking);
+        verify(emailService).sendTemplateEmailAsync(
+                org.mockito.ArgumentMatchers.eq(EmailTemplates.REVIEW_REQUEST),
+                org.mockito.ArgumentMatchers.eq("customer@example.com"),
+                org.mockito.ArgumentMatchers.contains("JW-2026-00001"),
+                org.mockito.ArgumentMatchers.anyMap(),
+                org.mockito.ArgumentMatchers.eq("BOOKING"),
+                org.mockito.ArgumentMatchers.eq(100L)
+        );
+        assertThat(service.buildReviewRequestVars(booking))
+                .containsEntry("reviewUrl", "http://localhost:3000/bookings/lookup?reference=JW-2026-00001")
+                .containsEntry("tripUrl", "http://localhost:3000/trips/nainital-escape");
+
+        WaitlistEntry entry = WaitlistEntry.builder()
+                .id(9L)
+                .fullName("Priya Sharma")
+                .email("priya@example.com")
+                .build();
+        service.onWaitlistSeatAvailable(booking.getTravelPackage(), entry);
+        verify(emailService).sendTemplateEmailAsync(
+                org.mockito.ArgumentMatchers.eq(EmailTemplates.WAITLIST_SEAT_AVAILABLE),
+                org.mockito.ArgumentMatchers.eq("priya@example.com"),
+                org.mockito.ArgumentMatchers.contains("Nainital Escape"),
+                org.mockito.ArgumentMatchers.anyMap(),
+                org.mockito.ArgumentMatchers.eq("WAITLIST"),
+                org.mockito.ArgumentMatchers.eq(9L)
+        );
+        assertThat(service.buildWaitlistSeatAvailableVars(booking.getTravelPackage(), entry))
+                .containsEntry("customerName", "Priya Sharma")
+                .containsEntry("continueBookingUrl", "http://localhost:3000/book/10");
+    }
+
+    @Test
+    void confirmedVars_fallBackToPackagePickupAndLookupWhenWhatsappMissing() {
+        MailProperties mail = new MailProperties();
+        mail.setFrontendBaseUrl("http://localhost:3000");
+        mail.setAdminNotificationEmail("admin@joyway.in");
+        mail.setSupportFrom("support@joyway.in");
+        mail.setWhatsappNumber(null);
+        BookingNotificationService noWhatsapp = new BookingNotificationService(
+                emailService, notificationService, mail, receiptService, new BookingProperties());
+
+        booking.setPickupPoint("  ");
+        assertThat(noWhatsapp.buildBookingConfirmedVars(booking))
+                .containsEntry("pickup", "Kashmere Gate")
+                .containsEntry("whatsappUrl", "http://localhost:3000/bookings/lookup");
+
+        booking.getTravelPackage().setPickupPoints(null);
+        booking.setPickupPoint(null);
+        assertThat(noWhatsapp.buildBookingConfirmedVars(booking))
+                .containsEntry("pickup", "Details will be shared before departure.");
+    }
+
+    @Test
+    void buildPaymentExpiryReminderVars_usesHoldWindowWhenRemainingNotPassed() {
+        booking.setCreatedAt(null);
+        assertThat(service.buildPaymentExpiryReminderVars(booking))
+                .containsEntry("remainingMinutes", "1");
+
+        Instant created = Instant.now().minusSeconds(5 * 60);
+        booking.setCreatedAt(created);
+        assertThat(Integer.parseInt(service.buildPaymentExpiryReminderVars(booking).get("remainingMinutes")))
+                .isGreaterThanOrEqualTo(1);
     }
 }

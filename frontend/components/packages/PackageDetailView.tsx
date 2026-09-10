@@ -18,23 +18,27 @@ import { Button } from "@/components/ui/Button";
 import {
   formatDateRange,
   formatPrice,
+  parsePickupPoints,
   splitLines,
 } from "@/lib/format";
-import type { PackageDetail } from "@/lib/api/packagesApi";
+import type { PackageDetail, PackageReviews } from "@/lib/api/packagesApi";
+import { WaitlistForm } from "@/components/packages/WaitlistForm";
+import { PackageReviewsSection } from "@/components/packages/PackageReviewsSection";
 
 type PackageDetailViewProps = {
   pkg: PackageDetail;
+  reviews: PackageReviews;
 };
 
 function InfoBlock({
   icon: Icon,
   title,
   children,
-}: {
+}: Readonly<{
   icon: LucideIcon;
   title: string;
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <div className="rounded-2xl border border-border bg-white p-6">
       <div className="mb-4 flex items-center gap-2">
@@ -49,10 +53,10 @@ function InfoBlock({
 function BulletList({
   items,
   variant,
-}: {
+}: Readonly<{
   items: string[];
   variant: "check" | "cross";
-}) {
+}>) {
   const Icon = variant === "check" ? Check : X;
   const iconClass = variant === "check" ? "text-forest" : "text-charcoal-muted";
 
@@ -87,16 +91,49 @@ const faqs = [
   },
 ];
 
-export function PackageDetailView({ pkg }: PackageDetailViewProps) {
+function unavailabilityReasonFor(pkg: PackageDetail): string | null {
+  if (pkg.bookable) return null;
+  if (pkg.waitlistable) {
+    return "This trip is full. Join the waitlist and we will email you if a seat opens.";
+  }
+  if (pkg.availableSeats === 0) {
+    return "No seats are available for this trip.";
+  }
+  return "This trip is not available for booking.";
+}
+
+function bookingAction(pkg: PackageDetail) {
+  if (pkg.bookable) {
+    return (
+      <Link href={`/book/${pkg.id}`}>
+        <Button size="lg" className="w-full">
+          Book Now
+        </Button>
+      </Link>
+    );
+  }
+  if (pkg.waitlistable) {
+    return (
+      <a href="#waitlist">
+        <Button size="lg" className="w-full">
+          Join waitlist
+        </Button>
+      </a>
+    );
+  }
+  return (
+    <Button size="lg" className="w-full" disabled>
+      Not Available
+    </Button>
+  );
+}
+
+export function PackageDetailView({ pkg, reviews }: Readonly<PackageDetailViewProps>) {
   const inclusions = splitLines(pkg.inclusions);
   const exclusions = splitLines(pkg.exclusions);
-  const pickupPoints = splitLines(pkg.pickupPoints?.replace(/,/g, "\n"));
+  const pickupPoints = parsePickupPoints(pkg.pickupPoints);
 
-  const unavailabilityReason = !pkg.bookable
-    ? pkg.availableSeats === 0
-      ? "No seats are available for this trip."
-      : "This trip is not available for booking."
-    : null;
+  const unavailabilityReason = unavailabilityReasonFor(pkg);
 
   return (
     <>
@@ -140,6 +177,10 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
         <div className="grid gap-10 lg:grid-cols-3 lg:gap-12">
           {/* Main content */}
           <div className="space-y-10 lg:col-span-2">
+            {pkg.waitlistable && (
+              <WaitlistForm slug={pkg.slug} destination={pkg.destination} />
+            )}
+
             <PackageGallery images={pkg.images} destination={pkg.destination} />
 
             {pkg.fullDescription && (
@@ -233,6 +274,8 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
                 ))}
               </div>
             </InfoBlock>
+
+            <PackageReviewsSection reviews={reviews} />
           </div>
 
           {/* Sidebar booking card — desktop */}
@@ -271,19 +314,7 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
                   </p>
                 )}
 
-                <div className="mt-6">
-                  {pkg.bookable ? (
-                    <Link href={`/book/${pkg.id}`}>
-                      <Button size="lg" className="w-full">
-                        Book Now
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Button size="lg" className="w-full" disabled>
-                      Not Available
-                    </Button>
-                  )}
-                </div>
+                <div className="mt-6">{bookingAction(pkg)}</div>
 
                 <p className="mt-4 text-center text-xs text-charcoal-muted">
                   Secure online booking · Instant confirmation
@@ -299,6 +330,7 @@ export function PackageDetailView({ pkg }: PackageDetailViewProps) {
         <StickyBookBar
           pricePerPerson={pkg.pricePerPerson}
           bookable={pkg.bookable}
+          waitlistable={pkg.waitlistable}
           packageId={pkg.id}
           destination={pkg.destination}
         />

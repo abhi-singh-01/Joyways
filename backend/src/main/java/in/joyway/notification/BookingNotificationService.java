@@ -1,15 +1,22 @@
 package in.joyway.notification;
 
+import in.joyway.config.BookingProperties;
 import in.joyway.config.MailProperties;
 import in.joyway.domain.entity.Booking;
 import in.joyway.domain.entity.Payment;
+import in.joyway.domain.entity.TravelPackage;
+import in.joyway.domain.entity.WaitlistEntry;
 import in.joyway.domain.enums.NotificationType;
 import in.joyway.domain.enums.PaymentStatus;
 import in.joyway.service.ReceiptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -27,15 +34,17 @@ public class BookingNotificationService {
     private static final String VAR_BOOKING_STATUS_LABEL = "bookingStatusLabel";
     private static final String VAR_CONTINUE_PAYMENT_URL = "continuePaymentUrl";
     private static final String VAR_PAYMENT_ID = "paymentId";
+    private static final String VAR_CUSTOMER_NAME = "customerName";
 
     private final EmailService emailService;
     private final NotificationService notificationService;
     private final MailProperties mailProperties;
     private final ReceiptService receiptService;
+    private final BookingProperties bookingProperties;
 
     public void onWelcome(String customerName, String customerEmail) {
         Map<String, String> vars = baseVars();
-        vars.put("customerName", customerName);
+        vars.put(VAR_CUSTOMER_NAME, customerName);
         vars.put("customerEmail", customerEmail);
         vars.put("loginUrl", mailProperties.getFrontendBaseUrl() + "/bookings/lookup");
         emailService.sendTemplateEmailAsync(
@@ -53,7 +62,7 @@ public class BookingNotificationService {
         vars.put(VAR_PAYMENT_STATUS_LABEL, booking.getPaymentStatus().name().replace('_', ' '));
         vars.put(VAR_BOOKING_STATUS_LABEL, booking.getStatus().name().replace('_', ' '));
         vars.put("paymentPendingNote", booking.getPaymentStatus() == PaymentStatus.PENDING
-                ? "Payment is pending. Please complete payment to confirm your seats."
+                ? "Payment is pending. Please complete payment within the hold window to confirm your seats."
                 : "");
         vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
 
@@ -210,6 +219,19 @@ public class BookingNotificationService {
         );
     }
 
+    public void onPaymentExpiryReminder(Booking booking, long remainingMinutes) {
+        Map<String, String> vars = buildPaymentExpiryReminderVars(booking, remainingMinutes);
+
+        emailService.sendTemplateEmailAsync(
+                EmailTemplates.PAYMENT_EXPIRY_REMINDER,
+                booking.getCustomer().getEmail(),
+                "Complete payment soon — JOYWAY " + booking.getBookingReference(),
+                vars,
+                ENTITY_BOOKING,
+                booking.getId()
+        );
+    }
+
     public void onPaymentFailed(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
         vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
@@ -275,6 +297,30 @@ public class BookingNotificationService {
         );
     }
 
+    public void onTripCompleted(Booking booking) {
+        Map<String, String> vars = buildReviewRequestVars(booking);
+        emailService.sendTemplateEmailAsync(
+                EmailTemplates.REVIEW_REQUEST,
+                booking.getCustomer().getEmail(),
+                "How was your JOYWAY trip? — " + booking.getBookingReference(),
+                vars,
+                ENTITY_BOOKING,
+                booking.getId()
+        );
+    }
+
+    public void onWaitlistSeatAvailable(TravelPackage pkg, WaitlistEntry entry) {
+        Map<String, String> vars = buildWaitlistSeatAvailableVars(pkg, entry);
+        emailService.sendTemplateEmailAsync(
+                EmailTemplates.WAITLIST_SEAT_AVAILABLE,
+                entry.getEmail(),
+                "A seat opened on " + pkg.getTitle(),
+                vars,
+                "WAITLIST",
+                entry.getId()
+        );
+    }
+
     public void onTripReminder(Booking booking, int daysBefore) {
         Map<String, String> vars = bookingVars(booking);
         vars.put("daysBefore", String.valueOf(daysBefore));
@@ -298,7 +344,7 @@ public class BookingNotificationService {
         vars.put(VAR_PAYMENT_STATUS_LABEL, booking.getPaymentStatus().name().replace('_', ' '));
         vars.put(VAR_BOOKING_STATUS_LABEL, booking.getStatus().name().replace('_', ' '));
         vars.put("paymentPendingNote", booking.getPaymentStatus() == PaymentStatus.PENDING
-                ? "Payment is pending. Please complete payment to confirm your seats."
+                ? "Payment is pending. Please complete payment within the hold window to confirm your seats."
                 : "");
         vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
         return vars;
@@ -340,6 +386,41 @@ public class BookingNotificationService {
         return receiptVars;
     }
 
+    public Map<String, String> buildPaymentExpiryReminderVars(Booking booking) {
+        Instant expiresAt = bookingProperties.paymentExpiresAt(booking.getCreatedAt());
+        long remaining = expiresAt == null
+                ? 1
+                : Math.max(1, ChronoUnit.MINUTES.between(Instant.now(), expiresAt));
+        return buildPaymentExpiryReminderVars(booking, remaining);
+    }
+
+    public Map<String, String> buildPaymentExpiryReminderVars(Booking booking, long remainingMinutes) {
+        Map<String, String> vars = bookingVars(booking);
+        vars.put("remainingMinutes", String.valueOf(Math.max(1, remainingMinutes)));
+        vars.put(VAR_CONTINUE_PAYMENT_URL, lookupUrl(booking));
+        return vars;
+    }
+
+    public Map<String, String> buildReviewRequestVars(Booking booking) {
+        Map<String, String> vars = bookingVars(booking);
+        vars.put("reviewUrl", lookupUrl(booking));
+        vars.put("tripUrl", mailProperties.getFrontendBaseUrl() + "/trips/" + booking.getTravelPackage().getSlug());
+        return vars;
+    }
+
+    public Map<String, String> buildWaitlistSeatAvailableVars(TravelPackage pkg, WaitlistEntry entry) {
+        Map<String, String> vars = baseVars();
+        vars.put(VAR_CUSTOMER_NAME, entry.getFullName());
+        vars.put("packageTitle", pkg.getTitle());
+        vars.put("destination", pkg.getDestination());
+        vars.put("travelDate", DATE_FMT.format(pkg.getStartDate()));
+        vars.put("endDate", DATE_FMT.format(pkg.getEndDate()));
+        vars.put("availableSeats", String.valueOf(pkg.getAvailableSeats()));
+        vars.put("continueBookingUrl", mailProperties.getFrontendBaseUrl() + "/book/" + pkg.getId());
+        vars.put("tripUrl", mailProperties.getFrontendBaseUrl() + "/trips/" + pkg.getSlug());
+        return vars;
+    }
+
     public Map<String, String> buildTripReminderVars(Booking booking, int daysBefore) {
         Map<String, String> vars = bookingVars(booking);
         vars.put("daysBefore", String.valueOf(daysBefore));
@@ -351,16 +432,27 @@ public class BookingNotificationService {
 
     private Map<String, String> confirmedVars(Booking booking) {
         Map<String, String> vars = bookingVars(booking);
-        vars.put("pickup", booking.getTravelPackage().getPickupPoints() != null
-                ? booking.getTravelPackage().getPickupPoints() : "Details will be shared before departure.");
+        String pickup = booking.getPickupPoint();
+        if (pickup == null || pickup.isBlank()) {
+            pickup = booking.getTravelPackage().getPickupPoints() != null
+                    ? booking.getTravelPackage().getPickupPoints()
+                    : "Details will be shared before departure.";
+        }
+        vars.put("pickup", pickup);
         vars.put("duration", booking.getTravelPackage().getDuration());
         vars.put("bookingUrl", lookupUrl(booking));
+        vars.put("whatsappUrl", whatsappUrl(
+                "Hi JOYWAY, I completed payment for booking "
+                        + booking.getBookingReference()
+                        + " (" + booking.getTravelPackage().getTitle()
+                        + ", " + booking.getNumberOfTravellers()
+                        + " travellers). Please confirm."));
         return vars;
     }
 
     private Map<String, String> bookingVars(Booking booking) {
         Map<String, String> vars = baseVars();
-        vars.put("customerName", booking.getCustomer().getFullName());
+        vars.put(VAR_CUSTOMER_NAME, booking.getCustomer().getFullName());
         vars.put("bookingReference", booking.getBookingReference());
         vars.put("packageTitle", booking.getTravelPackage().getTitle());
         vars.put("destination", booking.getTravelPackage().getDestination());
@@ -387,5 +479,19 @@ public class BookingNotificationService {
         return mailProperties.getFrontendBaseUrl()
                 + "/bookings/lookup?reference="
                 + booking.getBookingReference();
+    }
+
+    private String whatsappUrl(String message) {
+        String digits = mailProperties.getWhatsappNumber() == null
+                ? ""
+                : mailProperties.getWhatsappNumber().replaceAll("\\D", "");
+        if (digits.isEmpty()) {
+            return lookupUrlPlaceholder();
+        }
+        return "https://wa.me/" + digits + "?text=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
+    }
+
+    private String lookupUrlPlaceholder() {
+        return mailProperties.getFrontendBaseUrl() + "/bookings/lookup";
     }
 }

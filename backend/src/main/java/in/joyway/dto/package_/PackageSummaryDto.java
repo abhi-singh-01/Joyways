@@ -19,5 +19,6 @@ public record PackageSummaryDto(
         BigDecimal pricePerPerson,
         Integer availableSeats,
         String heroImageUrl,
-        String heroImageAlt
+        String heroImageAlt,
+        boolean waitlistable
 ) {}

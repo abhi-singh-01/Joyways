@@ -101,12 +101,11 @@ public class EmailService {
             return;
         }
 
-        if (emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
+        if (emailLogRepository.existsByTemplateAndRecipientAndRelatedEntityTypeAndRelatedEntityId(
                 request.template(),
                 request.recipient(),
                 request.relatedEntityType(),
-                request.relatedEntityId(),
-                EmailStatus.SENT)) {
+                request.relatedEntityId())) {
             log.info("Duplicate email skipped: template={} recipient={}",
                     request.template(), maskEmail(request.recipient()));
             return;

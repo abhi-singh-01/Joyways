@@ -4,7 +4,7 @@ type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   error?: string;
 };
 
-export function Select({ className, children, error, ...props }: SelectProps) {
+export function Select({ className, children, error, ...props }: Readonly<SelectProps>) {
   return (
     <div>
       <select

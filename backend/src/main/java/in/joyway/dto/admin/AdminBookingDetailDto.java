@@ -32,5 +32,6 @@ public record AdminBookingDetailDto(
         boolean signatureVerified,
         Instant paymentDate,
         Instant createdAt,
-        List<TravellerSummaryDto> travellers
+        List<TravellerSummaryDto> travellers,
+        String pickupPoint
 ) {}

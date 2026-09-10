@@ -1,4 +1,5 @@
 import { adminFetch } from "./client";
+import type { PageResponse } from "./adminVehiclesApi";
 
 export type AdminBookingSummary = {
   bookingId: number;
@@ -27,6 +28,7 @@ export type AdminBookingDetail = AdminBookingSummary & {
   paymentRecordStatus: string | null;
   refundedAmount: number;
   travellers: { fullName: string; idDocumentType: string }[];
+  pickupPoint?: string | null;
 };
 
 export type AdminRefundResult = {
@@ -41,11 +43,26 @@ export type AdminRefundResult = {
   totalAmount: number;
 };
 
-export async function listAdminBookings(): Promise<AdminBookingSummary[]> {
-  const response = await adminFetch<AdminBookingSummary[]>("/api/admin/bookings", {
-    cache: "no-store",
-  });
-  return response.data ?? [];
+export async function listAdminBookings(params?: {
+  query?: string;
+  bookingStatus?: string;
+  paymentStatus?: string;
+  destination?: string;
+  page?: number;
+  size?: number;
+}): Promise<PageResponse<AdminBookingSummary>> {
+  const search = new URLSearchParams();
+  if (params?.query) search.set("query", params.query);
+  if (params?.bookingStatus) search.set("bookingStatus", params.bookingStatus);
+  if (params?.paymentStatus) search.set("paymentStatus", params.paymentStatus);
+  if (params?.destination) search.set("destination", params.destination);
+  search.set("page", String(params?.page ?? 0));
+  search.set("size", String(params?.size ?? 20));
+  const response = await adminFetch<PageResponse<AdminBookingSummary>>(
+    `/api/admin/bookings?${search.toString()}`,
+    { cache: "no-store" },
+  );
+  return response.data ?? { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 };
 }
 
 export async function getAdminBooking(id: number): Promise<AdminBookingDetail> {

@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getBooking, getBookingReceipt, downloadBookingReceiptPdf, cancelBooking, type BookingDetail, type BookingReceipt } from "@/lib/api/bookingApi";
 import { PaymentCheckout } from "@/components/booking/PaymentCheckout";
+import { TripReviewForm } from "@/components/booking/TripReviewForm";
+import { paidBookingWhatsAppMessage, whatsappUrl } from "@/lib/publicContact";
 import { formatDateRange, formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -26,7 +28,7 @@ async function fetchBookingAndReceipt(reference: string, email: string) {
   return { detail, receipt };
 }
 
-function BookingLookupContent({ initialReference }: { initialReference: string }) {
+function BookingLookupContent({ initialReference }: Readonly<{ initialReference: string }>) {
   const [reference, setReference] = useState(
     initialReference ? initialReference.toUpperCase() : ""
   );
@@ -145,10 +147,24 @@ function BookingLookupContent({ initialReference }: { initialReference: string }
             <p><span className="text-charcoal-muted">Package:</span> {booking.packageTitle}</p>
             <p><span className="text-charcoal-muted">Dates:</span> {formatDateRange(booking.startDate, booking.endDate)}</p>
             <p><span className="text-charcoal-muted">Travellers:</span> {booking.numberOfTravellers}</p>
+            {booking.pickupPoint && (
+              <p><span className="text-charcoal-muted">Pickup:</span> {booking.pickupPoint}</p>
+            )}
             <p><span className="text-charcoal-muted">Total:</span> {formatPrice(booking.totalAmount)}</p>
             <p><span className="text-charcoal-muted">Booking Status:</span> {booking.status.replaceAll("_", " ")}</p>
             <p><span className="text-charcoal-muted">Payment Status:</span> {booking.paymentStatus}</p>
           </div>
+
+          {(booking.paymentStatus === "PAID" || booking.status === "CONFIRMED") && (
+            <a
+              href={whatsappUrl(paidBookingWhatsAppMessage(booking))}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-medium text-white"
+            >
+              Confirm on WhatsApp
+            </a>
+          )}
 
           {receipt && (
             <div className="mt-6 border-t border-border pt-6">
@@ -215,6 +231,20 @@ function BookingLookupContent({ initialReference }: { initialReference: string }
                 </Button>
               </div>
             </div>
+          )}
+
+          {booking.reviewEligible && !booking.reviewSubmitted && (
+            <TripReviewForm
+              bookingReference={booking.bookingReference}
+              email={email.trim()}
+              onSubmitted={() => setBooking({ ...booking, reviewSubmitted: true })}
+            />
+          )}
+
+          {booking.reviewSubmitted && (
+            <p className="mt-6 border-t border-border pt-6 text-sm text-charcoal-muted">
+              Thank you — your review is on the trip page.
+            </p>
           )}
         </div>
       )}

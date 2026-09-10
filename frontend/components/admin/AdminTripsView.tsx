@@ -10,6 +10,7 @@ import {
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { AdminTableStatusRow } from "@/components/admin/AdminTableStatusRow";
 
 export function AdminTripsView() {
   const [trips, setTrips] = useState<TripSummary[]>([]);
@@ -40,6 +41,41 @@ export function AdminTripsView() {
       cancelled = true;
     };
   }, [query, status, page]);
+
+  function tripRows() {
+    if (loading) {
+      return <AdminTableStatusRow colSpan={8} message="Loading trips..." />;
+    }
+    if (trips.length === 0) {
+      return <AdminTableStatusRow colSpan={8} message="No trips found" />;
+    }
+    return trips.map((trip) => (
+      <tr key={trip.id} className="border-b border-border last:border-0">
+        <td className="px-4 py-3 font-medium text-forest">{trip.tripReference}</td>
+        <td className="px-4 py-3">{trip.destination}</td>
+        <td className="px-4 py-3">{formatDate(trip.travelDate)}</td>
+        <td className="px-4 py-3">
+          {trip.totalTravellers}
+          {trip.vehicleCapacity != null && (
+            <span className="text-charcoal-muted"> / {trip.vehicleCapacity}</span>
+          )}
+        </td>
+        <td className="px-4 py-3">{trip.vehicleRegistration ?? "—"}</td>
+        <td className="px-4 py-3">{trip.driverName ?? "—"}</td>
+        <td className="px-4 py-3">
+          <StatusBadge status={trip.status} />
+        </td>
+        <td className="px-4 py-3">
+          <Link
+            href={`/admin/trips/${trip.id}`}
+            className="font-medium text-forest hover:underline"
+          >
+            View
+          </Link>
+        </td>
+      </tr>
+    ));
+  }
 
   if (error) return <ErrorState message={error} fullPage />;
 
@@ -119,48 +155,7 @@ export function AdminTripsView() {
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-charcoal-muted">
-                  Loading trips...
-                </td>
-              </tr>
-            ) : trips.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-charcoal-muted">
-                  No trips found
-                </td>
-              </tr>
-            ) : (
-              trips.map((trip) => (
-                <tr key={trip.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium text-forest">{trip.tripReference}</td>
-                  <td className="px-4 py-3">{trip.destination}</td>
-                  <td className="px-4 py-3">{formatDate(trip.travelDate)}</td>
-                  <td className="px-4 py-3">
-                    {trip.totalTravellers}
-                    {trip.vehicleCapacity != null && (
-                      <span className="text-charcoal-muted"> / {trip.vehicleCapacity}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">{trip.vehicleRegistration ?? "—"}</td>
-                  <td className="px-4 py-3">{trip.driverName ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={trip.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/trips/${trip.id}`}
-                      className="font-medium text-forest hover:underline"
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
+          <tbody>{tripRows()}</tbody>
         </table>
       </div>
 

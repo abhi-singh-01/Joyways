@@ -15,6 +15,12 @@ class EmailTemplateCategoryResolverTest {
                 .isEqualTo(EmailCategory.BOOKING);
         assertThat(EmailTemplateCategoryResolver.resolve(EmailTemplates.BOOKING_CANCELLED))
                 .isEqualTo(EmailCategory.BOOKING);
+        assertThat(EmailTemplateCategoryResolver.resolve(EmailTemplates.PAYMENT_EXPIRY_REMINDER))
+                .isEqualTo(EmailCategory.BOOKING);
+        assertThat(EmailTemplateCategoryResolver.resolve(EmailTemplates.WAITLIST_SEAT_AVAILABLE))
+                .isEqualTo(EmailCategory.BOOKING);
+        assertThat(EmailTemplateCategoryResolver.resolve(EmailTemplates.REVIEW_REQUEST))
+                .isEqualTo(EmailCategory.BOOKING);
     }
 
     @Test

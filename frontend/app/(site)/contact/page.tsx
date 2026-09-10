@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Clock, Mail, MessageCircle, Phone } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 import { ContactEnquiryForm } from "@/components/contact/ContactEnquiryForm";
 import {
@@ -14,27 +13,32 @@ import {
 
 export const metadata: Metadata = {
   title: "Contact | JOYWAY",
-  description: "Get in touch with JOYWAY for group travel enquiries.",
+  description: "Get in touch with JOYWAY for group travel enquiries, bookings, and support.",
+  openGraph: {
+    title: "Contact | JOYWAY",
+    description: "Call, WhatsApp, or write to JOYWAY. We typically respond within one business day.",
+    url: "https://joyway.in/contact",
+  },
+  alternates: {
+    canonical: "https://joyway.in/contact",
+  },
 };
 
-const contacts = [
+const emails = [
   {
-    icon: Mail,
-    title: "Customer Support",
+    title: "Customer support",
     description: "Help, complaints, refunds, and general queries.",
     href: `mailto:${PUBLIC_EMAILS.support}`,
     label: PUBLIC_EMAILS.support,
   },
   {
-    icon: Mail,
-    title: "Booking Assistance",
+    title: "Booking assistance",
     description: "Booking status, payments, confirmations, and trip changes.",
     href: `mailto:${PUBLIC_EMAILS.bookings}`,
     label: PUBLIC_EMAILS.bookings,
   },
   {
-    icon: Mail,
-    title: "General Contact",
+    title: "General contact",
     description: "Business enquiries and partnerships.",
     href: `mailto:${PUBLIC_EMAILS.general}`,
     label: PUBLIC_EMAILS.general,
@@ -49,84 +53,82 @@ export default function ContactPage() {
   return (
     <>
       <PageHero
-        eyebrow="We&apos;re here to help"
+        illustrated
+        eyebrow="Contact"
         title="Plan your next group journey"
         description="Questions about a trip, group size, or booking? Reach out — we typically respond within one business day."
       />
 
-      <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <p className="mb-4 text-sm font-medium uppercase tracking-wider text-charcoal-muted">
-            For more queries
-          </p>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <a
-              href={telUrl(PUBLIC_CALL_NUMBER)}
-              className="flex flex-1 items-center gap-4 rounded-2xl border border-border bg-white p-6 transition-shadow hover:shadow-md"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-forest/10 text-forest">
-                <Phone size={24} />
-              </div>
-              <div>
-                <p className="font-semibold text-charcoal">Call us</p>
-                <p className="text-sm font-medium text-forest">{callDisplay}</p>
-              </div>
-            </a>
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-5">
+            <h2 className="font-display text-2xl font-semibold text-charcoal sm:text-3xl">
+              Talk to us.
+            </h2>
+            <p className="mt-3 max-w-md text-charcoal-muted">
+              Call or WhatsApp for a quick answer. Use the form for detailed trip or group
+              enquiries — we reply by email.
+            </p>
 
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-1 items-center gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 transition-shadow hover:shadow-md"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                <MessageCircle size={24} />
-              </div>
-              <div>
-                <p className="font-semibold text-charcoal">WhatsApp us</p>
-                <p className="text-sm font-medium text-emerald-700">{whatsappDisplay}</p>
-              </div>
-            </a>
+            <ul className="mt-10 divide-y divide-border border-y border-border">
+              <li className="py-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-forest">Call</p>
+                <a
+                  href={telUrl(PUBLIC_CALL_NUMBER)}
+                  className="mt-1 block font-display text-2xl font-semibold text-charcoal hover:text-forest"
+                >
+                  {callDisplay}
+                </a>
+              </li>
+              <li className="py-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-forest">
+                  WhatsApp
+                </p>
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 block font-display text-2xl font-semibold text-charcoal hover:text-forest"
+                >
+                  {whatsappDisplay}
+                </a>
+              </li>
+              <li className="py-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-forest">
+                  Response
+                </p>
+                <p className="mt-1 font-display text-2xl font-semibold text-charcoal">
+                  Within 24 hours
+                </p>
+                <p className="mt-1 text-sm text-charcoal-muted">On business days</p>
+              </li>
+            </ul>
+          </div>
 
-            <div className="flex flex-1 items-center gap-4 rounded-2xl border border-border bg-white p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-forest/10 text-forest">
-                <Clock size={24} />
-              </div>
-              <div>
-                <p className="font-semibold text-charcoal">Response time</p>
-                <p className="text-sm text-charcoal-muted">Within 24 hours on business days</p>
-              </div>
-            </div>
+          <div className="lg:col-span-7">
+            <ContactEnquiryForm />
           </div>
         </div>
 
-        <div className="mt-12">
-          <ContactEnquiryForm />
-        </div>
-
-        <div className="mt-12 space-y-4">
-          {contacts.map(({ icon: Icon, title, description, href, label }) => (
-            <div
-              key={title}
-              className="rounded-2xl border border-border bg-white p-6 transition-shadow hover:shadow-sm"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-forest/10 text-forest">
-                  <Icon size={22} />
-                </div>
-                <div>
-                  <p className="font-semibold text-charcoal">{title}</p>
-                  <p className="mt-1 text-sm text-charcoal-muted">{description}</p>
-                  <a
-                    href={href}
-                    className="mt-3 inline-block text-sm font-medium text-forest hover:text-forest-light"
-                  >
-                    {label}
-                  </a>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="mt-20">
+          <h2 className="font-display text-2xl font-semibold text-charcoal">Write by email</h2>
+          <ul className="mt-8 divide-y divide-border border-y border-border">
+            {emails.map((item) => (
+              <li
+                key={item.title}
+                className="grid gap-2 py-6 sm:grid-cols-[minmax(12rem,16rem)_1fr_auto] sm:items-baseline"
+              >
+                <h3 className="font-display text-lg font-semibold text-charcoal">{item.title}</h3>
+                <p className="text-sm text-charcoal-muted">{item.description}</p>
+                <a
+                  href={item.href}
+                  className="text-sm font-semibold text-forest hover:text-forest-light"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
     </>

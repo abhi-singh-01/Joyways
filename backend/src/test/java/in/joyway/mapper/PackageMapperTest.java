@@ -82,6 +82,7 @@ class PackageMapperTest {
         PackageDetailDto dto = mapper.toDetailDto(travelPackage);
 
         assertThat(dto.bookable()).isFalse();
+        assertThat(dto.waitlistable()).isTrue();
     }
 
     @Test
@@ -90,5 +91,14 @@ class PackageMapperTest {
         PackageDetailDto dto = mapper.toDetailDto(travelPackage);
 
         assertThat(dto.bookable()).isFalse();
+        assertThat(dto.waitlistable()).isFalse();
+    }
+
+    @Test
+    void toImageDtos_returnsEmptyForNullImages() {
+        assertThat(mapper.toImageDtos(null)).isEmpty();
+        travelPackage.setImages(null);
+        assertThat(mapper.toSummaryDto(travelPackage).heroImageUrl()).isNull();
+        assertThat(mapper.toSummaryDto(travelPackage).heroImageAlt()).isEqualTo("Nainital");
     }
 }

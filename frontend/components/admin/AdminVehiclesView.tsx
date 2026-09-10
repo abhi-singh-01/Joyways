@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/adminVehiclesApi";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { AdminTableStatusRow } from "@/components/admin/AdminTableStatusRow";
 
 export function AdminVehiclesView() {
   const [vehicles, setVehicles] = useState<VehicleSummary[]>([]);
@@ -39,6 +40,39 @@ export function AdminVehiclesView() {
       cancelled = true;
     };
   }, [query, status, page]);
+
+  function vehicleRows() {
+    if (loading) {
+      return <AdminTableStatusRow colSpan={7} message="Loading vehicles..." />;
+    }
+    if (vehicles.length === 0) {
+      return <AdminTableStatusRow colSpan={7} message="No vehicles found" />;
+    }
+    return vehicles.map((vehicle) => (
+      <tr key={vehicle.id} className="border-b border-border last:border-0">
+        <td className="px-4 py-3 font-medium text-forest">
+          {vehicle.registrationNumber}
+        </td>
+        <td className="px-4 py-3">{vehicle.vehicleType}</td>
+        <td className="px-4 py-3">{vehicle.seatingCapacity}</td>
+        <td className="px-4 py-3">{vehicle.ownershipType}</td>
+        <td className="px-4 py-3">
+          <StatusBadge status={vehicle.status} />
+        </td>
+        <td className="px-4 py-3 text-charcoal-muted">
+          {vehicle.currentTripReference ?? "—"}
+        </td>
+        <td className="px-4 py-3">
+          <Link
+            href={`/admin/vehicles/${vehicle.id}`}
+            className="font-medium text-forest hover:underline"
+          >
+            View
+          </Link>
+        </td>
+      </tr>
+    ));
+  }
 
   if (error) return <ErrorState message={error} fullPage />;
 
@@ -102,46 +136,7 @@ export function AdminVehiclesView() {
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-charcoal-muted">
-                  Loading vehicles...
-                </td>
-              </tr>
-            ) : vehicles.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-charcoal-muted">
-                  No vehicles found
-                </td>
-              </tr>
-            ) : (
-              vehicles.map((vehicle) => (
-                <tr key={vehicle.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium text-forest">
-                    {vehicle.registrationNumber}
-                  </td>
-                  <td className="px-4 py-3">{vehicle.vehicleType}</td>
-                  <td className="px-4 py-3">{vehicle.seatingCapacity}</td>
-                  <td className="px-4 py-3">{vehicle.ownershipType}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={vehicle.status} />
-                  </td>
-                  <td className="px-4 py-3 text-charcoal-muted">
-                    {vehicle.currentTripReference ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/vehicles/${vehicle.id}`}
-                      className="font-medium text-forest hover:underline"
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
+          <tbody>{vehicleRows()}</tbody>
         </table>
       </div>
 

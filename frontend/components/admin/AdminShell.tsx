@@ -9,7 +9,7 @@ type AdminShellProps = {
   children: React.ReactNode;
 };
 
-export function AdminShell({ children }: AdminShellProps) {
+export function AdminShell({ children }: Readonly<AdminShellProps>) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
@@ -55,17 +55,20 @@ export function AdminShell({ children }: AdminShellProps) {
           aria-label="Close navigation menu"
           onClick={closeMobile}
         />
-        <div
+        <dialog
+          open={mobileOpen}
           className={cn(
-            "absolute inset-y-0 left-0 w-64 max-w-[85vw] transform transition-transform duration-200",
+            "absolute inset-y-0 left-0 m-0 h-full w-64 max-w-[85vw] transform border-0 bg-transparent p-0 transition-transform duration-200",
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           )}
-          role="dialog"
-          aria-modal="true"
           aria-label="Admin navigation"
+          onCancel={(event) => {
+            event.preventDefault();
+            closeMobile();
+          }}
         >
           <AdminSidebar onNavigate={closeMobile} />
-        </div>
+        </dialog>
       </div>
 
       <div className="flex flex-1 flex-col md:ml-64">

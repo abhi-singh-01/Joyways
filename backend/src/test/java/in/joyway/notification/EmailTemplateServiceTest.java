@@ -64,6 +64,36 @@ class EmailTemplateServiceTest {
     }
 
     @Test
+    void render_paymentExpiryReminderIncludesRemainingMinutes() {
+        Map<String, String> vars = bookingCreatedVariables("Asha", "JW-2026-00001");
+        vars.put("remainingMinutes", "8");
+
+        String html = service.render(EmailTemplates.PAYMENT_EXPIRY_REMINDER, vars);
+
+        assertThat(html).contains("JW-2026-00001").contains("8 minutes");
+    }
+
+    @Test
+    void render_waitlistAndReviewTemplatesIncludeLinks() {
+        Map<String, String> waitlist = bookingCreatedVariables("Asha", "JW-2026-00001");
+        waitlist.put("availableSeats", "2");
+        waitlist.put("continueBookingUrl", "http://localhost:3000/book/1");
+        waitlist.put("tripUrl", "http://localhost:3000/trips/nainital");
+
+        assertThat(service.render(EmailTemplates.WAITLIST_SEAT_AVAILABLE, waitlist))
+                .contains("Asha")
+                .contains("http://localhost:3000/book/1");
+
+        Map<String, String> review = bookingCreatedVariables("Asha", "JW-2026-00001");
+        review.put("reviewUrl", "http://localhost:3000/bookings/lookup?reference=JW-2026-00001");
+        review.put("tripUrl", "http://localhost:3000/trips/nainital");
+
+        assertThat(service.render(EmailTemplates.REVIEW_REQUEST, review))
+                .contains("JW-2026-00001")
+                .contains("Rate this trip");
+    }
+
+    @Test
     void render_escapesQuotesAndAmpersands() {
         Map<String, String> vars = bookingCreatedVariables("Tom & \"Jerry\"", "JW-2026-00001");
 

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { createPaymentOrder, verifyPayment } from "@/lib/api/paymentApi";
 import { openRazorpayCheckout } from "@/lib/razorpay";
-import type { BookingReceipt, BookingResult } from "@/lib/api/bookingApi";
-import type { CustomerInput } from "@/lib/api/bookingApi";
+import type { BookingReceipt, BookingResult, CustomerInput } from "@/lib/api/bookingApi";
 import { formatPrice } from "@/lib/format";
 import { CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { PaymentHoldCountdown, isPaymentHoldExpired } from "@/components/booking/PaymentHoldCountdown";
+import { paidBookingWhatsAppMessage, whatsappUrl } from "@/lib/publicContact";
 
 type PaymentCheckoutProps = {
   booking: BookingResult;
@@ -19,11 +20,22 @@ type PaymentCheckoutProps = {
   onPaid?: (receipt: BookingReceipt) => void;
 };
 
-export function PaymentCheckout({ booking, customer, onReset, embedded = false, onPaid }: PaymentCheckoutProps) {
+export function PaymentCheckout({ booking, customer, onReset, embedded = false, onPaid }: Readonly<PaymentCheckoutProps>) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<BookingReceipt | null>(null);
   const [paid, setPaid] = useState(booking.paymentStatus === "PAID");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const holdExpired = isPaymentHoldExpired(booking.paymentExpiresAt, nowMs);
+  const confirmWhatsAppUrl = whatsappUrl(paidBookingWhatsAppMessage(booking));
+
+  useEffect(() => {
+    if (!booking.paymentExpiresAt) {
+      return;
+    }
+    const tick = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(tick);
+  }, [booking.paymentExpiresAt]);
 
   async function handlePayNow() {
     setError("");
@@ -83,6 +95,14 @@ export function PaymentCheckout({ booking, customer, onReset, embedded = false, 
               Payment ID: {receipt.razorpayPaymentId}
             </p>
           )}
+          <a
+            href={confirmWhatsAppUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-medium text-white"
+          >
+            Confirm on WhatsApp
+          </a>
         </div>
       );
     }
@@ -137,11 +157,19 @@ export function PaymentCheckout({ booking, customer, onReset, embedded = false, 
           </div>
         </div>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <a
+            href={confirmWhatsAppUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-medium text-white"
+          >
+            Confirm on WhatsApp
+          </a>
           <Link href={`/bookings/lookup?reference=${encodeURIComponent(booking.bookingReference)}`}>
             <Button variant="outline">View Booking</Button>
           </Link>
           <Link href="/trips">
-            <Button>Browse more trips</Button>
+            <Button variant="outline">Browse more trips</Button>
           </Link>
         </div>
       </div>
@@ -157,13 +185,16 @@ export function PaymentCheckout({ booking, customer, onReset, embedded = false, 
             {formatPrice(booking.totalAmount)}
           </span>
         </p>
+        <div className="mt-3">
+          <PaymentHoldCountdown key={booking.paymentExpiresAt ?? "none"} expiresAt={booking.paymentExpiresAt} />
+        </div>
         {error && (
           <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
             {error}
           </p>
         )}
         <div className="mt-4">
-          <Button onClick={handlePayNow} disabled={loading} className="w-full sm:w-auto">
+          <Button onClick={handlePayNow} disabled={loading || holdExpired} className="w-full sm:w-auto">
             {loading ? "Opening Razorpay..." : "Pay Now with Razorpay"}
           </Button>
         </div>
@@ -185,6 +216,9 @@ export function PaymentCheckout({ booking, customer, onReset, embedded = false, 
       <p className="mt-2 text-charcoal-muted">
         Complete payment to confirm your seats.
       </p>
+      <div className="mx-auto mt-4 max-w-lg text-left">
+        <PaymentHoldCountdown key={booking.paymentExpiresAt ?? "none"} expiresAt={booking.paymentExpiresAt} />
+      </div>
       <div className="mt-8 rounded-2xl border border-border bg-white p-6 text-left">
         <p className="text-sm text-charcoal-muted">Booking Reference</p>
         <p className="font-display text-2xl font-semibold text-forest">
@@ -212,7 +246,7 @@ export function PaymentCheckout({ booking, customer, onReset, embedded = false, 
       )}
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Button onClick={handlePayNow} disabled={loading} size="lg">
+        <Button onClick={handlePayNow} disabled={loading || holdExpired} size="lg">
           {loading ? "Opening Razorpay..." : "Pay Now with Razorpay"}
         </Button>
         {onReset && (
