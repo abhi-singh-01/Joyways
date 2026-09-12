@@ -109,7 +109,7 @@ public class BookingQueryService {
     }
 
     private Instant paymentExpiresAt(Booking booking) {
-        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT || booking.isCreatedByAdmin()) {
             return null;
         }
         return bookingProperties.paymentExpiresAt(booking.getCreatedAt());

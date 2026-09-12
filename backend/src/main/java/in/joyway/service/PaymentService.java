@@ -14,6 +14,7 @@ import in.joyway.domain.repository.BookingRepository;
 import in.joyway.domain.repository.PaymentRepository;
 import in.joyway.domain.repository.PaymentWebhookEventRepository;
 import in.joyway.domain.repository.TravelPackageRepository;
+import in.joyway.domain.repository.TripBookingRepository;
 import in.joyway.dto.admin.AdminRefundRequest;
 import in.joyway.dto.admin.AdminRefundResponse;
 import in.joyway.dto.booking.BookingReceiptDto;
@@ -56,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 public class PaymentService {
 
     private static final String BOOKING_NOT_FOUND = "Booking not found.";
+    private static final String ENTITY_BOOKING = "BOOKING";
     private static final String JSON_PAYLOAD = "payload";
     private static final String JSON_ORDER = "order";
     private static final String JSON_ENTITY = "entity";
@@ -77,6 +79,7 @@ public class PaymentService {
     private final ConfirmedBookingTripAssignmentService tripAssignmentService;
     private final AuditLogService auditLogService;
     private final WaitlistService waitlistService;
+    private final TripBookingRepository tripBookingRepository;
 
     @Transactional
     public PaymentOrderResponse createOrder(CreatePaymentOrderRequest request) {
@@ -569,6 +572,9 @@ public class PaymentService {
 
         Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId())
                 .orElseThrow(() -> new IllegalArgumentException("No payment found for this booking."));
+        if (isOfflineCaptured(payment)) {
+            return voidOfflinePayment(booking, payment);
+        }
         validateRefundable(booking, payment);
 
         BigDecimal remaining = payment.getAmount().subtract(refundedAmountOrZero(payment));
@@ -600,7 +606,7 @@ public class PaymentService {
 
         if ("pending".equals(refundState) || "created".equals(refundState)) {
             paymentRepository.save(payment);
-            auditLogService.log("REFUND_PENDING", "BOOKING", booking.getId(),
+            auditLogService.log("REFUND_PENDING", ENTITY_BOOKING, booking.getId(),
                     "Refund " + result.refundId() + " pending for " + booking.getBookingReference() + ".");
             log.info("event=payment.refund.pending bookingReference={} refundId={}",
                     booking.getBookingReference(), result.refundId());
@@ -608,11 +614,38 @@ public class PaymentService {
         }
 
         applyRefundCapture(booking, payment, requested, result.refundId());
-        auditLogService.log("REFUND_ISSUED", "BOOKING", booking.getId(),
+        auditLogService.log("REFUND_ISSUED", ENTITY_BOOKING, booking.getId(),
                 "Refund " + result.refundId() + " of " + requested + " " + booking.getCurrency()
                         + " for " + booking.getBookingReference() + ".");
         notifyRefundSafely(booking, payment, requested);
         return toRefundResponse(booking, payment, "PROCESSED");
+    }
+
+    private AdminRefundResponse voidOfflinePayment(Booking booking, Payment payment) {
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new IllegalArgumentException("Completed trips cannot be refunded from admin. Contact finance.");
+        }
+        if (booking.getStatus() == BookingStatus.REFUNDED
+                || payment.getStatus() == PaymentRecordStatus.REFUNDED) {
+            throw new IllegalArgumentException("This payment is already refunded.");
+        }
+        BigDecimal remaining = payment.getAmount().subtract(refundedAmountOrZero(payment));
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("There is no remaining amount to refund.");
+        }
+        applyRefundCapture(booking, payment, remaining, null);
+        tripBookingRepository.deleteByBookingId(booking.getId());
+        auditLogService.log("OFFLINE_PAYMENT_VOIDED", ENTITY_BOOKING, booking.getId(),
+                "Offline payment voided for " + booking.getBookingReference() + ".");
+        notifyRefundSafely(booking, payment, remaining);
+        log.info("event=payment.offline.voided bookingReference={}", booking.getBookingReference());
+        return toRefundResponse(booking, payment, "PROCESSED");
+    }
+
+    private static boolean isOfflineCaptured(Payment payment) {
+        return (payment.getRazorpayPaymentId() == null || payment.getRazorpayPaymentId().isBlank())
+                && (payment.getStatus() == PaymentRecordStatus.CAPTURED
+                || payment.getStatus() == PaymentRecordStatus.PARTIALLY_REFUNDED);
     }
 
     private void validateRefundable(Booking booking, Payment payment) {
@@ -749,6 +782,48 @@ public class PaymentService {
                 .refundedAmount(refundedAmountOrZero(payment))
                 .totalAmount(booking.getTotalAmount())
                 .build();
+    }
+
+    /**
+     * Records cash / UPI / bank payment collected by staff. No Razorpay IDs are stored,
+     * so the online refund path will refuse this payment until a manual refund exists.
+     */
+    @Transactional
+    public void recordOfflinePayment(Booking booking, String paymentReference, String notes) {
+        if (booking.getPaymentStatus() == PaymentStatus.PAID) {
+            throw new IllegalArgumentException("This booking is already paid.");
+        }
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new IllegalArgumentException("This booking is not eligible for an offline payment.");
+        }
+
+        Payment payment = Payment.builder()
+                .booking(booking)
+                .amount(booking.getTotalAmount())
+                .currency(booking.getCurrency())
+                .status(PaymentRecordStatus.CAPTURED)
+                .signatureVerified(false)
+                .build();
+        paymentRepository.save(payment);
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setPaymentStatus(PaymentStatus.PAID);
+        bookingRepository.save(booking);
+
+        StringBuilder summary = new StringBuilder("Offline payment recorded for ")
+                .append(booking.getBookingReference());
+        if (paymentReference != null && !paymentReference.isBlank()) {
+            summary.append(" (ref ").append(paymentReference.trim()).append(')');
+        }
+        if (notes != null && !notes.isBlank()) {
+            summary.append(". ").append(notes.trim());
+        }
+        auditLogService.log("OFFLINE_PAYMENT_RECORDED", ENTITY_BOOKING, booking.getId(), summary.toString());
+
+        log.info("event=payment.offline.recorded bookingReference={}", booking.getBookingReference());
+
+        notifyPaymentSuccessSafely(booking, payment);
+        tryAssignTripSafely(booking);
     }
 
     private void tryAssignTripSafely(Booking booking) {

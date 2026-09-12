@@ -45,61 +45,65 @@ export function Navbar() {
         onHome ? "fixed inset-x-0 top-0" : "sticky top-0"
       )}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex h-16 w-full items-center justify-between gap-4 px-6 sm:px-10 lg:px-16 xl:px-20">
         <JoywayLogo
-          height={40}
+          height={36}
           priority
           layout="compact"
           showTagline
+          taglineClassName="hidden sm:block"
           variant="default"
         />
 
-        <nav className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => {
-            const active = isActive(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "group relative rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  active ? "text-forest" : "text-charcoal hover:text-forest"
-                )}
-              >
-                {link.label}
-                <span
+        <div className="flex items-center">
+          <nav className="hidden items-center gap-0.5 lg:flex">
+            {navLinks.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
                   className={cn(
-                    "absolute bottom-1 left-4 right-4 h-0.5 rounded-full bg-forest transition-all duration-300",
-                    active ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                    "group relative rounded-full px-3 py-2 text-sm font-medium transition-colors xl:px-4",
+                    active ? "text-forest" : "text-charcoal hover:text-forest"
                   )}
-                />
-              </Link>
-            );
-          })}
-          <Link href="/trips" className="ml-4">
-            <motion.span
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              className="inline-block rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-forest-light"
-            >
-              Book a trip
-            </motion.span>
-          </Link>
-        </nav>
+                >
+                  {link.label}
+                  <span
+                    className={cn(
+                      "absolute bottom-1 left-3 right-3 h-0.5 rounded-full bg-forest transition-all duration-300 xl:left-4 xl:right-4",
+                      active ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                    )}
+                  />
+                </Link>
+              );
+            })}
+            <Link href="/trips" className="ml-2 xl:ml-4">
+              <motion.span
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-block rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-forest-light"
+              >
+                Book a trip
+              </motion.span>
+            </Link>
+          </nav>
 
-        <button
-          type="button"
-          className="rounded-lg p-2 text-charcoal md:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-        >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          <button
+            type="button"
+            className="relative z-10 rounded-lg p-2 text-charcoal lg:hidden"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       <div
         className={cn(
-          "border-t border-border bg-off-white md:hidden",
+          "border-t border-border bg-off-white lg:hidden",
           mobileOpen ? "block min-h-[calc(100svh-4rem)]" : "hidden"
         )}
       >

@@ -66,4 +66,11 @@ class BookingMapperTest {
 
         assertThat(mapper.paymentExpiresAt(booking)).isNull();
     }
+
+    @Test
+    void paymentExpiresAt_isNullForAdminPendingBookings() {
+        booking.setCreatedByAdmin(true);
+
+        assertThat(mapper.paymentExpiresAt(booking)).isNull();
+    }
 }

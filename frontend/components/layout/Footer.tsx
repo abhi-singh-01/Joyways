@@ -67,9 +67,9 @@ const socialLinks = [
 export function Footer() {
   return (
     <footer className="border-t border-border bg-charcoal text-white">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-2">
+      <div className="w-full px-6 pb-[calc(env(safe-area-inset-bottom,0px)+6.5rem)] pt-12 sm:px-10 sm:pt-14 lg:px-16 lg:pb-16 lg:pt-16 xl:px-20">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-x-10 md:gap-y-12 lg:grid-cols-[minmax(0,18rem)_1fr_auto] lg:items-start lg:gap-x-12">
+          <div className="min-w-0 md:col-span-2 lg:col-span-1">
             <JoywayLogo
               height={44}
               href={null}
@@ -81,7 +81,7 @@ export function Footer() {
             <div className="mt-6 space-y-3 text-sm text-white/70">
               <p className="flex items-start gap-2">
                 <Mail size={16} className="mt-0.5 shrink-0 text-accent" />
-                <span>
+                <span className="min-w-0 break-words">
                   <span className="block text-white/50">Customer Support</span>
                   <a href={`mailto:${PUBLIC_EMAILS.support}`} className="hover:text-white">
                     {PUBLIC_EMAILS.support}
@@ -98,17 +98,16 @@ export function Footer() {
                 </span>
               </p>
               <p className="flex items-center gap-2">
-                <MapPin size={16} className="text-accent" />
+                <MapPin size={16} className="shrink-0 text-accent" />
                 Delhi, India
               </p>
             </div>
 
-            {/* Social media links */}
             <div className="mt-8">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">
+              <p className="text-sm font-semibold uppercase tracking-wider text-white/50">
                 Follow us
               </p>
-              <div className="flex items-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center gap-3">
                 {socialLinks.map((social) => (
                   <a
                     key={social.label}
@@ -116,7 +115,7 @@ export function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white/60 transition-all duration-200 hover:scale-110 hover:bg-white/15 hover:text-white"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-white/60 transition-all duration-200 hover:scale-110 hover:bg-white/15 hover:text-white"
                   >
                     {social.icon}
                   </a>
@@ -125,7 +124,7 @@ export function Footer() {
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0 lg:justify-self-center">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">
               Explore
             </h3>
@@ -143,7 +142,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          <div className="min-w-0 md:text-right lg:justify-self-end">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">
               Legal
             </h3>
@@ -162,7 +161,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/10 pt-8 text-center">
+        <div className="mt-10 border-t border-white/10 pt-6 text-center sm:mt-12 sm:pt-8">
           <p className="text-sm text-white/50">
             &copy; {new Date().getFullYear()} JOYWAY. All rights reserved.
           </p>

@@ -47,8 +47,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Next.js reads this at build time; String.raw is not statically analyzable.
+  // Literal string required: Next.js cannot statically analyze String.raw.
+  // [.] is a literal dot so the matcher does not need escaped backslashes.
   matcher: [
-    "/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|.*[.](?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

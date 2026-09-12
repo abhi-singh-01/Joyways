@@ -9,12 +9,15 @@ import in.joyway.domain.repository.BookingRepository;
 import in.joyway.domain.repository.CustomerRepository;
 import in.joyway.domain.repository.TravellerRepository;
 import in.joyway.domain.repository.TravelPackageRepository;
+import in.joyway.dto.admin.AdminBookingPaymentMode;
+import in.joyway.dto.admin.AdminCreateBookingRequest;
 import in.joyway.dto.booking.*;
 import in.joyway.exception.AccessDeniedBookingException;
 import in.joyway.exception.InsufficientSeatsException;
 import in.joyway.exception.ResourceNotFoundException;
 import in.joyway.mapper.BookingMapper;
 import in.joyway.notification.BookingNotificationService;
+import in.joyway.service.audit.AuditLogService;
 import in.joyway.service.operations.OperationsNotificationService;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.util.BookingReferenceGenerator;
@@ -59,6 +62,8 @@ public class BookingService {
     private final BookingProperties bookingProperties;
     private final OperationsNotificationService operationsNotificationService;
     private final WaitlistService waitlistService;
+    private final PaymentService paymentService;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public BookingReviewDto previewBooking(CreateBookingRequest request) {
@@ -99,84 +104,46 @@ public class BookingService {
         validateBookingRequest(request);
         validateDocuments(request, documents);
 
-        TravelPackage pkg = packageRepository.findByIdForUpdate(request.getPackageId())
-                .orElseThrow(() -> new ResourceNotFoundException("Trip not found or unavailable."));
+        CreatedBooking created = persistNewBooking(request, documents, false, null, null);
+        notifyBookingCreatedSafely(created.booking());
+        return bookingMapper.toResponse(created.booking(), created.travellers());
+    }
 
-        validateBookable(pkg, request.getNumberOfTravellers());
-        String pickupPoint = PickupPoints.requireSelection(pkg.getPickupPoints(), request.getPickupPoint());
+    /**
+     * Creates a booking from the admin panel (phone / WhatsApp / walk-in).
+     * Consent and identity-document files are not required. Seats are still locked
+     * against published, upcoming, in-capacity packages.
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BookingResponse createBookingByAdmin(AdminCreateBookingRequest request) throws IOException {
+        if (request.getPaymentMode() == null) {
+            throw new IllegalArgumentException("Payment mode is required.");
+        }
+        if (request.getPaymentMode() == AdminBookingPaymentMode.PAID_OFFLINE
+                && isBlank(request.getOfflinePaymentReference())) {
+            throw new IllegalArgumentException(
+                    "Enter an offline payment reference (UPI, cash receipt, or bank transfer).");
+        }
+        validateBookingRequest(request);
 
-        if (pkg.getAvailableSeats() < request.getNumberOfTravellers()) {
-            throw new InsufficientSeatsException("No seats are available for this trip.");
+        String notes = isBlank(request.getNotes()) ? null : request.getNotes().trim();
+        String offlineRef = request.getPaymentMode() == AdminBookingPaymentMode.PAID_OFFLINE
+                ? request.getOfflinePaymentReference().trim()
+                : null;
+        CreatedBooking created = persistNewBooking(request, null, true, notes, offlineRef);
+        Booking booking = created.booking();
+        auditManualBooking(booking, request);
+
+        if (request.getPaymentMode() == AdminBookingPaymentMode.PAID_OFFLINE) {
+            paymentService.recordOfflinePayment(
+                    booking,
+                    request.getOfflinePaymentReference().trim(),
+                    request.getNotes());
+        } else {
+            notifyBookingCreatedSafely(booking);
         }
 
-        BigDecimal totalAmount = calculateSubtotal(pkg, request.getNumberOfTravellers());
-
-        Customer customer = Customer.builder()
-                .fullName(request.getCustomer().getFullName())
-                .email(request.getCustomer().getEmail().trim().toLowerCase())
-                .mobile(request.getCustomer().getMobile())
-                .build();
-        customer = customerRepository.save(customer);
-
-        String reference = referenceGenerator.generateNext();
-
-        Booking booking = Booking.builder()
-                .bookingReference(reference)
-                .travelPackage(pkg)
-                .customer(customer)
-                .numberOfTravellers(request.getNumberOfTravellers())
-                .pickupPoint(pickupPoint)
-                .totalAmount(totalAmount)
-                .currency("INR")
-                .status(BookingStatus.PENDING_PAYMENT)
-                .paymentStatus(PaymentStatus.PENDING)
-                .build();
-        booking = bookingRepository.save(booking);
-
-        pkg.setAvailableSeats(pkg.getAvailableSeats() - request.getNumberOfTravellers());
-        packageRepository.save(pkg);
-
-        List<Traveller> savedTravellers = new ArrayList<>();
-        for (int i = 0; i < request.getTravellers().size(); i++) {
-            TravellerRequest tr = request.getTravellers().get(i);
-            String storageKey = null;
-
-            if (documents != null && i < documents.size() && documents.get(i) != null
-                    && !documents.get(i).isEmpty()) {
-                storageKey = documentStorageService.store(documents.get(i), TRAVELLER_DOC_CATEGORY);
-            }
-
-            Traveller traveller = Traveller.builder()
-                    .booking(booking)
-                    .fullName(tr.getFullName())
-                    .dateOfBirth(tr.getDateOfBirth())
-                    .gender(tr.getGender())
-                    .mobile(tr.getMobile())
-                    .email(tr.getEmail().trim().toLowerCase())
-                    .emergencyContact(tr.getEmergencyContact())
-                    .idDocumentType(tr.getIdDocumentType())
-                    .idDocumentReference(tr.getIdDocumentReference())
-                    .privateDocumentStorageKey(storageKey)
-                    .build();
-            savedTravellers.add(travellerRepository.save(traveller));
-        }
-
-        log.info("event=booking.created bookingReference={} packageId={} travellers={}",
-                reference, pkg.getId(), request.getNumberOfTravellers());
-
-        boolean uploadedDocuments = savedTravellers.stream()
-                .anyMatch(t -> t.getPrivateDocumentStorageKey() != null);
-        if (uploadedDocuments) {
-            operationsNotificationService.notifyDocumentUploaded(reference, booking.getId());
-        }
-
-        try {
-            bookingNotificationService.onBookingCreated(booking);
-        } catch (Exception ex) {
-            log.warn("Booking notification failed for reference={}: {}", reference, ex.getClass().getSimpleName());
-        }
-
-        return bookingMapper.toResponse(booking, savedTravellers);
+        return bookingMapper.toResponse(booking, created.travellers());
     }
 
     /**
@@ -354,6 +321,127 @@ public class BookingService {
             log.warn("Cancellation notification failed for reference={}: {}",
                     booking.getBookingReference(), ex.getClass().getSimpleName());
         }
+    }
+
+    private CreatedBooking persistNewBooking(
+            CreateBookingRequest request,
+            List<MultipartFile> documents,
+            boolean createdByAdmin,
+            String adminNotes,
+            String offlinePaymentReference
+    ) throws IOException {
+        TravelPackage pkg = packageRepository.findByIdForUpdate(request.getPackageId())
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found or unavailable."));
+
+        validateBookable(pkg, request.getNumberOfTravellers());
+        String pickupPoint = PickupPoints.requireSelection(pkg.getPickupPoints(), request.getPickupPoint());
+
+        if (pkg.getAvailableSeats() < request.getNumberOfTravellers()) {
+            throw new InsufficientSeatsException("No seats are available for this trip.");
+        }
+
+        BigDecimal totalAmount = calculateSubtotal(pkg, request.getNumberOfTravellers());
+
+        Customer customer = Customer.builder()
+                .fullName(request.getCustomer().getFullName())
+                .email(request.getCustomer().getEmail().trim().toLowerCase())
+                .mobile(request.getCustomer().getMobile())
+                .build();
+        customer = customerRepository.save(customer);
+
+        String reference = referenceGenerator.generateNext();
+
+        Booking booking = Booking.builder()
+                .bookingReference(reference)
+                .travelPackage(pkg)
+                .customer(customer)
+                .numberOfTravellers(request.getNumberOfTravellers())
+                .pickupPoint(pickupPoint)
+                .totalAmount(totalAmount)
+                .currency("INR")
+                .status(BookingStatus.PENDING_PAYMENT)
+                .paymentStatus(PaymentStatus.PENDING)
+                .createdByAdmin(createdByAdmin)
+                .adminNotes(adminNotes)
+                .offlinePaymentReference(offlinePaymentReference)
+                .build();
+        booking = bookingRepository.save(booking);
+
+        pkg.setAvailableSeats(pkg.getAvailableSeats() - request.getNumberOfTravellers());
+        packageRepository.save(pkg);
+
+        List<Traveller> savedTravellers = saveTravellers(booking, request, documents);
+
+        log.info("event=booking.created bookingReference={} packageId={} travellers={}",
+                reference, pkg.getId(), request.getNumberOfTravellers());
+
+        boolean uploadedDocuments = savedTravellers.stream()
+                .anyMatch(t -> t.getPrivateDocumentStorageKey() != null);
+        if (uploadedDocuments) {
+            operationsNotificationService.notifyDocumentUploaded(reference, booking.getId());
+        }
+
+        return new CreatedBooking(booking, savedTravellers);
+    }
+
+    private List<Traveller> saveTravellers(
+            Booking booking,
+            CreateBookingRequest request,
+            List<MultipartFile> documents
+    ) throws IOException {
+        List<Traveller> savedTravellers = new ArrayList<>();
+        for (int i = 0; i < request.getTravellers().size(); i++) {
+            TravellerRequest tr = request.getTravellers().get(i);
+            String storageKey = null;
+
+            if (documents != null && i < documents.size() && documents.get(i) != null
+                    && !documents.get(i).isEmpty()) {
+                storageKey = documentStorageService.store(documents.get(i), TRAVELLER_DOC_CATEGORY);
+            }
+
+            Traveller traveller = Traveller.builder()
+                    .booking(booking)
+                    .fullName(tr.getFullName())
+                    .dateOfBirth(tr.getDateOfBirth())
+                    .gender(tr.getGender())
+                    .mobile(tr.getMobile())
+                    .email(tr.getEmail().trim().toLowerCase())
+                    .emergencyContact(tr.getEmergencyContact())
+                    .idDocumentType(tr.getIdDocumentType())
+                    .idDocumentReference(tr.getIdDocumentReference())
+                    .privateDocumentStorageKey(storageKey)
+                    .build();
+            savedTravellers.add(travellerRepository.save(traveller));
+        }
+        return savedTravellers;
+    }
+
+    private void notifyBookingCreatedSafely(Booking booking) {
+        try {
+            bookingNotificationService.onBookingCreated(booking);
+        } catch (Exception ex) {
+            log.warn("Booking notification failed for reference={}: {}",
+                    booking.getBookingReference(), ex.getClass().getSimpleName());
+        }
+    }
+
+    private void auditManualBooking(Booking booking, AdminCreateBookingRequest request) {
+        StringBuilder summary = new StringBuilder("Manual booking ")
+                .append(booking.getBookingReference())
+                .append(" (")
+                .append(request.getPaymentMode())
+                .append(')');
+        if (!isBlank(request.getNotes())) {
+            summary.append(". ").append(request.getNotes().trim());
+        }
+        auditLogService.log("ADMIN_BOOKING_CREATED", "BOOKING", booking.getId(), summary.toString());
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private record CreatedBooking(Booking booking, List<Traveller> travellers) {
     }
 
     private void validateBookingRequest(CreateBookingRequest request) {

@@ -32,7 +32,7 @@ export function TripSearchBar({ className }: Readonly<TripSearchBarProps>) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search destinations — Nainital, Rishikesh…"
+          placeholder="Search destinations…"
           className="w-full bg-transparent py-2.5 text-sm text-charcoal outline-none placeholder:text-charcoal-muted"
           aria-label="Search trips by destination"
         />

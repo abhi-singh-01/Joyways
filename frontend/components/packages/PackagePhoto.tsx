@@ -35,7 +35,7 @@ export function PackagePhoto({ src, alt, className, sizes, priority }: Readonly<
         priority={priority}
         unoptimized={directApiPhoto}
         loading={priority ? undefined : "lazy"}
-        className={cn("object-cover", className)}
+        className={cn("h-full w-full object-cover", className)}
         sizes={sizes ?? "(max-width: 768px) 100vw, 33vw"}
       />
     );

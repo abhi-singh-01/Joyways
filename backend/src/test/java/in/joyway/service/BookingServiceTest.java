@@ -11,6 +11,8 @@ import in.joyway.domain.repository.BookingRepository;
 import in.joyway.domain.repository.CustomerRepository;
 import in.joyway.domain.repository.TravellerRepository;
 import in.joyway.domain.repository.TravelPackageRepository;
+import in.joyway.dto.admin.AdminBookingPaymentMode;
+import in.joyway.dto.admin.AdminCreateBookingRequest;
 import in.joyway.dto.booking.BookingResponse;
 import in.joyway.dto.booking.CreateBookingRequest;
 import in.joyway.dto.booking.CustomerRequest;
@@ -64,6 +66,8 @@ class BookingServiceTest {
     @Mock private BookingProperties bookingProperties;
     @Mock private OperationsNotificationService operationsNotificationService;
     @Mock private WaitlistService waitlistService;
+    @Mock private PaymentService paymentService;
+    @Mock private in.joyway.service.audit.AuditLogService auditLogService;
 
     @InjectMocks
     private BookingService bookingService;
@@ -555,5 +559,78 @@ class BookingServiceTest {
         booking.setStatus(BookingStatus.COMPLETED);
         assertThatThrownBy(() -> bookingService.cancelBookingByCustomer("JW-2026-00050", "john@example.com"))
                 .hasMessageContaining("Completed bookings");
+    }
+
+    @Test
+    void createBookingByAdmin_pendingOnline_skipsConsentAndDocuments() throws Exception {
+        request.setConsentAccepted(false);
+        AdminCreateBookingRequest admin = adminRequest(AdminBookingPaymentMode.PENDING_ONLINE);
+        stubCreatePath("JW-2026-00200", 200L);
+        BookingResponse response = mock(BookingResponse.class);
+        when(bookingMapper.toResponse(any(), any())).thenReturn(response);
+
+        assertThat(bookingService.createBookingByAdmin(admin)).isSameAs(response);
+        assertThat(pkg.getAvailableSeats()).isEqualTo(1);
+        org.mockito.ArgumentCaptor<Booking> bookingCaptor =
+                org.mockito.ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertThat(bookingCaptor.getValue().isCreatedByAdmin()).isTrue();
+        verify(paymentService, never()).recordOfflinePayment(any(), any(), any());
+        verify(bookingNotificationService).onBookingCreated(any());
+        verify(auditLogService).log(eq("ADMIN_BOOKING_CREATED"), eq("BOOKING"), eq(200L), any());
+        verify(documentStorageService, never()).store(any(), any());
+    }
+
+    @Test
+    void createBookingByAdmin_offlinePaid_recordsPayment() throws Exception {
+        AdminCreateBookingRequest admin = adminRequest(AdminBookingPaymentMode.PAID_OFFLINE);
+        admin.setOfflinePaymentReference("UPI-8899");
+        admin.setNotes("Paid at office");
+        stubCreatePath("JW-2026-00201", 201L);
+        BookingResponse response = mock(BookingResponse.class);
+        when(bookingMapper.toResponse(any(), any())).thenReturn(response);
+
+        assertThat(bookingService.createBookingByAdmin(admin)).isSameAs(response);
+        verify(paymentService).recordOfflinePayment(any(), eq("UPI-8899"), eq("Paid at office"));
+        verify(bookingNotificationService, never()).onBookingCreated(any());
+    }
+
+    @Test
+    void createBookingByAdmin_rejectsMissingOfflineReferenceAndUnpublished() {
+        AdminCreateBookingRequest admin = adminRequest(AdminBookingPaymentMode.PAID_OFFLINE);
+        assertThatThrownBy(() -> bookingService.createBookingByAdmin(admin))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("offline payment reference");
+        verify(packageRepository, never()).findByIdForUpdate(anyLong());
+
+        admin.setOfflinePaymentReference("CASH-1");
+        pkg.setStatus(PackageStatus.DRAFT);
+        when(packageRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pkg));
+        assertThatThrownBy(() -> bookingService.createBookingByAdmin(admin))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not available");
+    }
+
+    private AdminCreateBookingRequest adminRequest(AdminBookingPaymentMode mode) {
+        AdminCreateBookingRequest admin = new AdminCreateBookingRequest();
+        admin.setPackageId(request.getPackageId());
+        admin.setNumberOfTravellers(request.getNumberOfTravellers());
+        admin.setCustomer(request.getCustomer());
+        admin.setTravellers(request.getTravellers());
+        admin.setPickupPoint(request.getPickupPoint());
+        admin.setPaymentMode(mode);
+        return admin;
+    }
+
+    private void stubCreatePath(String reference, long bookingId) {
+        when(packageRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pkg));
+        when(customerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(referenceGenerator.generateNext()).thenReturn(reference);
+        when(bookingRepository.save(any())).thenAnswer(inv -> {
+            Booking booking = inv.getArgument(0);
+            booking.setId(bookingId);
+            return booking;
+        });
+        when(travellerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
 }

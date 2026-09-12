@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PackagePhoto } from "@/components/packages/PackagePhoto";
 import { bookableTrips } from "@/components/cinematic/journeyFromPackages";
+import { CINEMATIC_IMAGES } from "@/components/cinematic/cinematicMedia";
 import { formatDateRange, formatPrice } from "@/lib/format";
 import type { PackageSummary } from "@/lib/api/packagesApi";
 
@@ -49,37 +50,39 @@ export function TripShowcase({ packages }: Readonly<TripShowcaseProps>) {
                 <div className="lg:col-span-7">
                   <div className="relative aspect-[16/10] overflow-hidden bg-forest-dark">
                     <PackagePhoto
-                      src={pkg.heroImageUrl || "/images/mountains-hero.webp"}
+                      src={pkg.heroImageUrl || CINEMATIC_IMAGES.hero}
                       alt={pkg.heroImageAlt || pkg.title}
                       sizes="(max-width: 1024px) 100vw, 58vw"
                     />
                   </div>
                 </div>
                 <div className="flex flex-col justify-end lg:col-span-5 lg:py-6">
-                  <p className="font-display text-5xl font-semibold text-white/20">
+                  <p className="font-display text-4xl font-semibold text-white/20 sm:text-5xl">
                     {String(index + 1).padStart(2, "0")}
                   </p>
                   <p className="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
                     {pkg.destination}
                   </p>
-                  <h3 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">
+                  <h3 className="mt-3 font-display text-2xl font-semibold sm:text-4xl">
                     {pkg.title}
                   </h3>
                   <dl className="mt-6 space-y-2 text-sm text-white/75">
                     <div className="flex justify-between gap-4 border-b border-white/10 py-2">
-                      <dt>Duration</dt>
-                      <dd className="text-white">{pkg.duration}</dd>
+                      <dt className="shrink-0">Duration</dt>
+                      <dd className="min-w-0 text-right text-white">{pkg.duration}</dd>
                     </div>
                     <div className="flex justify-between gap-4 border-b border-white/10 py-2">
-                      <dt>Dates</dt>
-                      <dd className="text-white">{formatDateRange(pkg.startDate, pkg.endDate)}</dd>
+                      <dt className="shrink-0">Dates</dt>
+                      <dd className="min-w-0 text-right text-white">
+                        {formatDateRange(pkg.startDate, pkg.endDate)}
+                      </dd>
                     </div>
                     <div className="flex justify-between gap-4 py-2">
-                      <dt>From</dt>
-                      <dd className="text-white">{formatPrice(pkg.pricePerPerson)}</dd>
+                      <dt className="shrink-0">From</dt>
+                      <dd className="min-w-0 text-right text-white">{formatPrice(pkg.pricePerPerson)}</dd>
                     </div>
                   </dl>
-                  <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                     {pkg.availableSeats > 0 ? (
                       <Link
                         href={`/book/${pkg.id}`}

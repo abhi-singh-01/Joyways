@@ -21,6 +21,7 @@ type TravellerFormProps = {
   documentError?: string;
   onChange: (data: TravellerInput) => void;
   onDocumentChange: (file: File | null) => void;
+  requireDocument?: boolean;
 };
 
 export function TravellerForm({
@@ -31,6 +32,7 @@ export function TravellerForm({
   documentError,
   onChange,
   onDocumentChange,
+  requireDocument = true,
 }: Readonly<TravellerFormProps>) {
   function update(field: keyof TravellerInput, value: string) {
     onChange({ ...data, [field]: value });
@@ -153,6 +155,7 @@ export function TravellerForm({
             onChange={(e) => update("idDocumentReference", e.target.value)}
           />
         </div>
+        {requireDocument ? (
         <div className="sm:col-span-2">
           <Label htmlFor={`docFile-${index}`}>Upload ID Document *</Label>
           <input
@@ -176,6 +179,7 @@ export function TravellerForm({
             JPEG or PDF only — max 2MB.
           </p>
         </div>
+        ) : null}
       </div>
     </div>
   );

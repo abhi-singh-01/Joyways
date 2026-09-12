@@ -117,6 +117,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             SELECT b FROM Booking b
             WHERE b.status = in.joyway.domain.enums.BookingStatus.PENDING_PAYMENT
             AND b.paymentStatus = in.joyway.domain.enums.PaymentStatus.PENDING
+            AND b.createdByAdmin = false
             AND b.createdAt < :cutoff
             ORDER BY b.createdAt ASC
             """)
@@ -128,6 +129,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             JOIN FETCH b.travelPackage
             WHERE b.status = in.joyway.domain.enums.BookingStatus.PENDING_PAYMENT
             AND b.paymentStatus = in.joyway.domain.enums.PaymentStatus.PENDING
+            AND b.createdByAdmin = false
             AND b.createdAt >= :notYetExpiredAfter
             AND b.createdAt < :reminderBefore
             ORDER BY b.createdAt ASC

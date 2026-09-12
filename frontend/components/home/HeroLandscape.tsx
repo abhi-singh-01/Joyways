@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion, useTransform, type MotionValue } from "framer-motion";
+import { CINEMATIC_IMAGES } from "@/components/cinematic/cinematicMedia";
 
 type HeroLandscapeProps = {
   scrollYProgress: MotionValue<number>;
@@ -19,7 +20,7 @@ export function HeroLandscape({ scrollYProgress }: Readonly<HeroLandscapeProps>)
     <div className="absolute inset-0 -z-10 overflow-hidden bg-[#1b3a4a]">
       <motion.div className="absolute inset-0" style={{ scale, y }}>
         <Image
-          src="/images/mountains-hero.webp"
+          src={CINEMATIC_IMAGES.hero}
           alt=""
           fill
           priority

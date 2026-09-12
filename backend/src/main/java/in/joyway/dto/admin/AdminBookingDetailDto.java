@@ -33,5 +33,8 @@ public record AdminBookingDetailDto(
         Instant paymentDate,
         Instant createdAt,
         List<TravellerSummaryDto> travellers,
-        String pickupPoint
+        String pickupPoint,
+        boolean createdByAdmin,
+        String adminNotes,
+        String offlinePaymentReference
 ) {}

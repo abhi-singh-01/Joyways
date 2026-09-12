@@ -132,6 +132,9 @@ public class AdminBookingService {
                                 .build())
                         .toList())
                 .pickupPoint(booking.getPickupPoint())
+                .createdByAdmin(booking.isCreatedByAdmin())
+                .adminNotes(booking.getAdminNotes())
+                .offlinePaymentReference(booking.getOfflinePaymentReference())
                 .build();
     }
 

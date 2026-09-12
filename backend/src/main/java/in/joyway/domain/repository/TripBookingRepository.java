@@ -52,6 +52,8 @@ public interface TripBookingRepository extends JpaRepository<TripBooking, Long> 
 
     void deleteByTripIdAndBookingId(Long tripId, Long bookingId);
 
+    void deleteByBookingId(Long bookingId);
+
     interface TripLoadSummary {
         Long getTripId();
         Long getTravellerCount();

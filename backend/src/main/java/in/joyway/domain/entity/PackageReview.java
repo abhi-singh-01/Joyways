@@ -2,6 +2,8 @@ package in.joyway.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -29,6 +31,7 @@ public class PackageReview {
     @Column(name = "customer_name", nullable = false, length = 120)
     private String customerName;
 
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     @Column(nullable = false)
     private Integer rating;
 

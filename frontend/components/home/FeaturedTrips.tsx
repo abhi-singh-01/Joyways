@@ -55,7 +55,7 @@ export function FeaturedTrips({ packages }: Readonly<FeaturedTripsProps>) {
           {featured.map((pkg, index) => (
             <div
               key={pkg.id}
-              className="w-[85vw] shrink-0 snap-center sm:w-[360px] lg:w-auto"
+              className="w-[min(85vw,20.5rem)] shrink-0 snap-center sm:w-[min(70vw,22.5rem)] lg:w-auto"
             >
               <PackageCard pkg={pkg} index={index} />
             </div>

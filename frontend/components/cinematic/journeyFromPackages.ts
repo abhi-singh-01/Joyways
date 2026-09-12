@@ -1,4 +1,5 @@
 import type { PackageSummary } from "@/lib/api/packagesApi";
+import { CINEMATIC_IMAGES } from "@/components/cinematic/cinematicMedia";
 
 export type LandscapeScene = {
   id: string;
@@ -8,35 +9,35 @@ export type LandscapeScene = {
   alt: string;
 };
 
-/** Mood scenes from existing JOYWAY photography — not invented destinations. */
+/** Mood scenes from JOYWAY cinematic photography — not invented destinations. */
 export const LANDSCAPE_SCENES: LandscapeScene[] = [
   {
     id: "mountains",
     kicker: "MOUNTAINS",
     line: "Find your quiet.",
-    image: "/images/mountains-peaks.webp",
-    alt: "Himalayan mountain peaks",
+    image: CINEMATIC_IMAGES.mountains,
+    alt: "Sunlit mountain ridge above a green valley",
   },
   {
     id: "valleys",
-    kicker: "VALLEYS",
+    kicker: "HIGH PASSES",
     line: "Take the long way.",
-    image: "/images/mountains-lake.webp",
-    alt: "Alpine lake in a mountain valley",
+    image: CINEMATIC_IMAGES.valleys,
+    alt: "Snow slope and high peaks under a blue sky",
   },
   {
     id: "roads",
-    kicker: "ROADS",
+    kicker: "TRAILS",
     line: "Leave the noise behind.",
-    image: "/images/mountains-road.webp",
-    alt: "Highland road through the mountains",
+    image: CINEMATIC_IMAGES.roads,
+    alt: "Walker on a high ridgeline above the clouds",
   },
   {
     id: "heritage",
     kicker: "HERITAGE",
     line: "Walk through stories.",
-    image: "/images/mountains-hero.webp",
-    alt: "Mountain landscape at first light",
+    image: CINEMATIC_IMAGES.heritage,
+    alt: "Hilltop monastery against snow mountains",
   },
 ];
 

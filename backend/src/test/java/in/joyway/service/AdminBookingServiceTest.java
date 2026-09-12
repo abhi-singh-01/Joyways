@@ -152,6 +152,7 @@ class AdminBookingServiceTest {
         assertThat(detail.signatureVerified()).isTrue();
         assertThat(detail.paymentDate()).isEqualTo(Instant.parse("2026-09-09T13:00:00Z"));
         assertThat(detail.travellers()).hasSize(1);
+        assertThat(detail.createdByAdmin()).isFalse();
     }
 
     @Test

@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -75,6 +76,8 @@ class PaymentServiceTest {
     private in.joyway.service.audit.AuditLogService auditLogService;
     @Mock
     private WaitlistService waitlistService;
+    @Mock
+    private in.joyway.domain.repository.TripBookingRepository tripBookingRepository;
 
     private PaymentService paymentService;
 
@@ -100,7 +103,8 @@ class PaymentServiceTest {
                 packageRepository,
                 tripAssignmentService,
                 auditLogService,
-                waitlistService
+                waitlistService,
+                tripBookingRepository
         );
 
         customer = Customer.builder()
@@ -1194,5 +1198,85 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.refundBooking(bookingId, refundRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Completed trips");
+    }
+
+    @Test
+    void recordOfflinePayment_confirmsBookingWithoutRazorpayIds() {
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(bookingRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(booking));
+
+        paymentService.recordOfflinePayment(booking, "UPI-123", "Paid at counter");
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(booking.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
+
+        ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(paymentCaptor.capture());
+        Payment saved = paymentCaptor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(PaymentRecordStatus.CAPTURED);
+        assertThat(saved.getRazorpayOrderId()).isNull();
+        assertThat(saved.getRazorpayPaymentId()).isNull();
+        assertThat(saved.getSignatureVerified()).isFalse();
+
+        verify(auditLogService).log(
+                eq("OFFLINE_PAYMENT_RECORDED"),
+                eq("BOOKING"),
+                eq(100L),
+                contains("UPI-123"));
+        verify(tripAssignmentService).assignIfSingleMatchingTrip(booking);
+        verify(bookingNotificationService).onPaymentSuccess(booking, saved);
+        verify(razorpayGateway, never()).createRefund(any(), anyInt(), any());
+    }
+
+    @Test
+    void recordOfflinePayment_rejectsAlreadyPaidOrInactive() {
+        booking.setPaymentStatus(PaymentStatus.PAID);
+        assertThatThrownBy(() -> paymentService.recordOfflinePayment(booking, "UPI-1", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("already paid");
+
+        booking.setPaymentStatus(PaymentStatus.PENDING);
+        booking.setStatus(BookingStatus.CANCELLED);
+        assertThatThrownBy(() -> paymentService.recordOfflinePayment(booking, "UPI-1", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not eligible");
+
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void refundBooking_voidsOfflineCapturedPaymentWithoutRazorpay() {
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setPaymentStatus(PaymentStatus.PAID);
+        travelPackage.setAvailableSeats(8);
+        Payment payment = Payment.builder()
+                .id(2L)
+                .booking(booking)
+                .amount(new BigDecimal("10000.00"))
+                .currency("INR")
+                .status(PaymentRecordStatus.CAPTURED)
+                .refundedAmount(BigDecimal.ZERO)
+                .build();
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByBookingReferenceForUpdate("JW-2026-00001"))
+                .thenReturn(Optional.of(booking));
+        when(paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(100L))
+                .thenReturn(Optional.of(payment));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(packageRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(travelPackage));
+        when(bookingRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(booking));
+
+        var response = paymentService.refundBooking(100L, new in.joyway.dto.admin.AdminRefundRequest());
+
+        assertThat(response.refundState()).isEqualTo("PROCESSED");
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.REFUNDED);
+        assertThat(booking.getPaymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(payment.getStatus()).isEqualTo(PaymentRecordStatus.REFUNDED);
+        assertThat(travelPackage.getAvailableSeats()).isEqualTo(10);
+        verify(tripBookingRepository).deleteByBookingId(100L);
+        verify(razorpayGateway, never()).createRefund(any(), anyInt(), any());
+        verify(auditLogService).log(eq("OFFLINE_PAYMENT_VOIDED"), eq("BOOKING"), eq(100L), any());
     }
 }

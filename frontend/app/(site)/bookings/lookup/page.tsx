@@ -88,7 +88,7 @@ function BookingLookupContent({ initialReference }: Readonly<{ initialReference:
   }
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="mx-auto max-w-xl px-4 py-10 sm:px-6 sm:py-14">
       <h1 className="font-display text-3xl font-semibold text-charcoal">Find Your Booking</h1>
       <p className="mt-2 text-charcoal-muted">
         Enter your booking reference and the email used at checkout. For your privacy, we never
@@ -272,7 +272,7 @@ function BookingLookupPageInner() {
 
 export default function BookingLookupPage() {
   return (
-    <Suspense fallback={<p className="text-charcoal-muted">Loading...</p>}>
+    <Suspense fallback={<p className="px-4 py-10 text-charcoal-muted">Loading...</p>}>
       <BookingLookupPageInner />
     </Suspense>
   );

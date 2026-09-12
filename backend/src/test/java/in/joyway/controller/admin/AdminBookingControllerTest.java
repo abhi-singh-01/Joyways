@@ -12,11 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -73,5 +75,44 @@ class AdminBookingControllerTest {
         mockMvc.perform(post("/api/admin/bookings/8/cancel"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Booking cancelled."));
+    }
+
+    @Test
+    void createBooking_delegatesToBookingService() throws Exception {
+        when(bookingService.createBookingByAdmin(any())).thenReturn(
+                BookingResponse.builder()
+                        .bookingId(9L)
+                        .bookingReference("JW-2026-00019")
+                        .status("PENDING_PAYMENT")
+                        .paymentStatus("PENDING")
+                        .build());
+
+        mockMvc.perform(post("/api/admin/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "packageId": 1,
+                                  "numberOfTravellers": 1,
+                                  "paymentMode": "PENDING_ONLINE",
+                                  "customer": {
+                                    "fullName": "Asha Rao",
+                                    "email": "asha@example.com",
+                                    "mobile": "9876543210"
+                                  },
+                                  "travellers": [{
+                                    "fullName": "Asha Rao",
+                                    "dateOfBirth": "1990-01-01",
+                                    "gender": "Female",
+                                    "mobile": "9876543210",
+                                    "email": "asha@example.com",
+                                    "emergencyContact": "9999999999",
+                                    "idDocumentType": "AADHAAR",
+                                    "idDocumentReference": "1234"
+                                  }]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Booking created."))
+                .andExpect(jsonPath("$.data.bookingReference").value("JW-2026-00019"));
     }
 }

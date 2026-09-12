@@ -55,6 +55,16 @@ public class Booking {
     @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
+    @Column(name = "created_by_admin", nullable = false)
+    @Builder.Default
+    private boolean createdByAdmin = false;
+
+    @Column(name = "admin_notes", length = 500)
+    private String adminNotes;
+
+    @Column(name = "offline_payment_reference", length = 100)
+    private String offlinePaymentReference;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

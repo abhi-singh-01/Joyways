@@ -1,5 +1,6 @@
 import { adminFetch } from "./client";
 import type { PageResponse } from "./adminVehiclesApi";
+import type { BookingResult, CustomerInput, TravellerInput } from "./bookingApi";
 
 export type AdminBookingSummary = {
   bookingId: number;
@@ -29,6 +30,9 @@ export type AdminBookingDetail = AdminBookingSummary & {
   refundedAmount: number;
   travellers: { fullName: string; idDocumentType: string }[];
   pickupPoint?: string | null;
+  createdByAdmin?: boolean;
+  adminNotes?: string | null;
+  offlinePaymentReference?: string | null;
 };
 
 export type AdminRefundResult = {
@@ -88,5 +92,29 @@ export async function refundAdminBooking(
     body: JSON.stringify(amount != null ? { amount } : {}),
   });
   if (!response.data) throw new Error("Refund failed");
+  return response.data;
+}
+
+export type AdminBookingPaymentMode = "PENDING_ONLINE" | "PAID_OFFLINE";
+
+export type AdminCreateBookingPayload = {
+  packageId: number;
+  numberOfTravellers: number;
+  customer: CustomerInput;
+  travellers: TravellerInput[];
+  pickupPoint?: string;
+  paymentMode: AdminBookingPaymentMode;
+  offlinePaymentReference?: string;
+  notes?: string;
+};
+
+export async function createAdminBooking(
+  payload: AdminCreateBookingPayload
+): Promise<BookingResult> {
+  const response = await adminFetch<BookingResult>("/api/admin/bookings", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (!response.data) throw new Error("Failed to create booking");
   return response.data;
 }

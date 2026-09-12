@@ -17,13 +17,19 @@ function canCancelUnpaid(booking: AdminBookingDetail) {
   return booking.bookingStatus === "PENDING_PAYMENT";
 }
 
+function isOfflinePaid(booking: AdminBookingDetail) {
+  return booking.paymentStatus === "PAID" && !booking.razorpayPaymentId;
+}
+
 function canRefund(booking: AdminBookingDetail) {
-  if (!booking.razorpayPaymentId) return false;
   if (booking.bookingStatus === "COMPLETED" || booking.bookingStatus === "REFUNDED") {
     return false;
   }
   const record = booking.paymentRecordStatus;
-  return record === "CAPTURED" || record === "PARTIALLY_REFUNDED";
+  if (record !== "CAPTURED" && record !== "PARTIALLY_REFUNDED") {
+    return false;
+  }
+  return Boolean(booking.razorpayPaymentId) || isOfflinePaid(booking);
 }
 
 export default function AdminBookingDetailPage() {
@@ -81,9 +87,12 @@ export default function AdminBookingDetailPage() {
   async function handleRefund() {
     if (!booking) return;
     const remaining = Math.max(0, booking.totalAmount - (booking.refundedAmount ?? 0));
+    const offline = isOfflinePaid(booking);
     if (
       !window.confirm(
-        `Refund ₹${remaining.toLocaleString("en-IN")} to the original payment method for ${booking.bookingReference}?`
+        offline
+          ? `Void the offline payment for ${booking.bookingReference} and restore seats?`
+          : `Refund ₹${remaining.toLocaleString("en-IN")} to the original payment method for ${booking.bookingReference}?`
       )
     ) {
       return;
@@ -126,6 +135,39 @@ export default function AdminBookingDetailPage() {
         <p className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert">
           {error}
         </p>
+      )}
+      {booking.bookingStatus === "PENDING_PAYMENT" && (
+        <p className="mt-4 rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          Payment is pending. Share booking reference {booking.bookingReference} and{" "}
+          {booking.customerEmail} so the customer can pay on the booking lookup page.
+          {booking.createdByAdmin
+            ? " Seats stay held until they pay or you cancel. This booking does not auto-expire."
+            : " Unpaid website bookings expire after the payment hold window."}
+        </p>
+      )}
+      {isOfflinePaid(booking) && (
+        <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Marked as paid offline
+          {booking.offlinePaymentReference
+            ? ` (ref ${booking.offlinePaymentReference})`
+            : ""}.
+          Use Void offline payment to restore seats if this was created by mistake.
+        </p>
+      )}
+      {(booking.adminNotes || booking.offlinePaymentReference) && (
+        <div className="mt-4 rounded-lg border border-border bg-white px-4 py-3 text-sm">
+          {booking.offlinePaymentReference && (
+            <p>
+              <span className="text-charcoal-muted">Offline payment ref:</span>{" "}
+              {booking.offlinePaymentReference}
+            </p>
+          )}
+          {booking.adminNotes && (
+            <p className={booking.offlinePaymentReference ? "mt-1" : undefined}>
+              <span className="text-charcoal-muted">Admin notes:</span> {booking.adminNotes}
+            </p>
+          )}
+        </div>
       )}
 
       <div className="mt-8 grid gap-6 md:grid-cols-2">
@@ -191,7 +233,13 @@ export default function AdminBookingDetailPage() {
               disabled={refunding}
               onClick={() => void handleRefund()}
             >
-              {refunding ? "Refunding..." : "Refund payment"}
+              {refunding
+                ? isOfflinePaid(booking)
+                  ? "Voiding..."
+                  : "Refunding..."
+                : isOfflinePaid(booking)
+                  ? "Void offline payment"
+                  : "Refund payment"}
             </Button>
           )}
         </div>

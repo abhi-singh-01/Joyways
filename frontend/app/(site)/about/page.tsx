@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { PageHero } from "@/components/layout/PageHero";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { CINEMATIC_IMAGES } from "@/components/cinematic/cinematicMedia";
 
 export const metadata: Metadata = {
   title: "About | JOYWAY",
@@ -66,13 +67,13 @@ export default function AboutPage() {
       </section>
 
       <section className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
-        <div className="relative min-h-[22rem] overflow-hidden sm:min-h-[28rem]">
+        <div className="relative w-full min-h-[16rem] overflow-hidden sm:min-h-[22rem] md:min-h-[28rem]">
           <Image
-            src="/images/mountains-road.webp"
-            alt="A highland road through the mountains"
+            src={CINEMATIC_IMAGES.roads}
+            alt="Walker on a high ridgeline above the clouds"
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
+            className="object-cover object-center"
           />
         </div>
         <div>
@@ -121,11 +122,11 @@ export default function AboutPage() {
 
       <section className="relative min-h-[70svh] overflow-hidden bg-forest-dark text-white">
         <Image
-          src="/images/mountains-peaks.webp"
-          alt="Himalayan peaks under open sky"
+          src={CINEMATIC_IMAGES.closing}
+          alt="Travellers looking toward snow mountains from a hillside shrine"
           fill
           sizes="100vw"
-          className="object-cover"
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/25" />
         <div className="relative z-10 mx-auto flex min-h-[70svh] max-w-7xl flex-col justify-end px-4 py-16 sm:px-6 lg:px-8">

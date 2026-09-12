@@ -22,6 +22,8 @@ type JoywayLogoProps = {
   layout?: "compact" | "full";
   /** Show tagline under wordmark in compact layout */
   showTagline?: boolean;
+  /** Extra classes for the compact tagline (e.g. hide on small navbars). */
+  taglineClassName?: string;
 };
 
 function wordmarkTitleClass(iconSize: number): string {
@@ -35,10 +37,12 @@ function JoywayWordmark({
   variant,
   iconSize,
   showTagline,
+  taglineClassName,
 }: Readonly<{
   variant: "default" | "onDark";
   iconSize: number;
   showTagline: boolean;
+  taglineClassName?: string;
 }>) {
   const onDark = variant === "onDark";
 
@@ -72,7 +76,8 @@ function JoywayWordmark({
             className={cn(
               "mt-0.5 block font-medium uppercase tracking-[0.22em]",
               iconSize >= 64 ? "text-xs" : "text-[10px]",
-              onDark ? "text-white/55" : "text-charcoal-muted"
+              onDark ? "text-white/55" : "text-charcoal-muted",
+              taglineClassName
             )}
           >
             Explore the world
@@ -91,16 +96,18 @@ export function JoywayLogo({
   variant = "default",
   layout = "full",
   showTagline = false,
+  taglineClassName,
 }: Readonly<JoywayLogoProps>) {
   const content =
     layout === "compact" ? (
       <span
-        className={cn("inline-flex max-w-full items-center gap-2.5", className)}
+        className={cn("inline-flex max-w-full items-center gap-2 sm:gap-2.5", className)}
       >
         <JoywayWordmark
           variant={variant}
           iconSize={height}
           showTagline={showTagline}
+          taglineClassName={taglineClassName}
         />
       </span>
     ) : (
@@ -114,7 +121,7 @@ export function JoywayLogo({
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
         className={cn(
-          "block h-auto max-w-none object-contain",
+          "block h-auto max-w-full object-contain",
           variant === "default" && "mix-blend-multiply",
           variant === "onDark" && "rounded-lg bg-white px-3 py-1.5",
           className

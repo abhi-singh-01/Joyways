@@ -59,7 +59,7 @@ export function PackageGallery({ images, destination, className }: Readonly<Pack
               <button
                 type="button"
                 onClick={goPrev}
-                className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-charcoal shadow-md opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-charcoal shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                 aria-label="Previous image"
               >
                 <ChevronLeft size={20} />
@@ -67,7 +67,7 @@ export function PackageGallery({ images, destination, className }: Readonly<Pack
               <button
                 type="button"
                 onClick={goNext}
-                className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-charcoal shadow-md opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-charcoal shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                 aria-label="Next image"
               >
                 <ChevronRight size={20} />

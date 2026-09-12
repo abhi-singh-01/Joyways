@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { CINEMATIC_IMAGES } from "@/components/cinematic/cinematicMedia";
 import { InViewReveal } from "@/components/motion/InViewReveal";
 import { MotionHoverLift } from "@/components/motion/MotionHoverLift";
 
@@ -14,19 +15,19 @@ const scenes: JourneyScene[] = [
   {
     title: "Mountain trails",
     subtitle: "Himalayan escapes from Delhi",
-    image: "/images/mountains-peaks.webp",
+    image: CINEMATIC_IMAGES.mountains,
     theme: "forest",
   },
   {
     title: "Lakes & valleys",
     subtitle: "Rishikesh & hill-station routes",
-    image: "/images/mountains-lake.webp",
+    image: CINEMATIC_IMAGES.valleys,
     theme: "river",
   },
   {
     title: "Open roads",
     subtitle: "Group travel, shared memories",
-    image: "/images/mountains-road.webp",
+    image: CINEMATIC_IMAGES.roads,
     theme: "road",
   },
 ];

@@ -4,12 +4,14 @@ import in.joyway.dto.ApiResponse;
 import in.joyway.dto.PageResponse;
 import in.joyway.dto.admin.AdminBookingDetailDto;
 import in.joyway.dto.admin.AdminBookingSummaryDto;
+import in.joyway.dto.admin.AdminCreateBookingRequest;
 import in.joyway.dto.admin.AdminRefundRequest;
 import in.joyway.dto.admin.AdminRefundResponse;
 import in.joyway.dto.booking.BookingResponse;
 import in.joyway.service.AdminBookingService;
 import in.joyway.service.BookingService;
 import in.joyway.service.PaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/admin/bookings")
@@ -39,6 +43,13 @@ public class AdminBookingController {
     ) {
         return ApiResponse.success(adminBookingService.listBookings(
                 query, bookingStatus, paymentStatus, destination, page, size));
+    }
+
+    @PostMapping
+    public ApiResponse<BookingResponse> createBooking(@Valid @RequestBody AdminCreateBookingRequest request)
+            throws IOException {
+        BookingResponse response = bookingService.createBookingByAdmin(request);
+        return ApiResponse.success(response, "Booking created.");
     }
 
     @GetMapping("/{id}")
