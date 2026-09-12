@@ -2,55 +2,76 @@
 
 **Find Joy in Every Journey.**
 
-Production group travel booking platform for trips from Delhi and North India.
+Production group-travel booking platform for curated trips from Delhi and North India.
 
 | | |
 |---|---|
-| **Website** | [joyway.in](https://joyway.in) |
-| **API** | [api.joyway.in](https://api.joyway.in) |
+| **Live site** | [joyway.in](https://joyway.in) |
+| **API** | [api.joyway.in](https://api.joyway.in) · [`/api/health/ready`](https://api.joyway.in/api/health/ready) |
+| **Admin** | [joyway.in/admin](https://joyway.in/admin) |
 | **Operator** | JOYWAY |
 
 ---
 
-## Overview
+## What this product does
 
-JOYWAY is a full-stack travel booking product:
+Guests book without creating an account. They pick a trip, enter travellers, pay with Razorpay (or complete payment later via booking lookup), and get email confirmation plus a PDF-ready receipt path.
 
-- **Public site** — browse trips, book seats, pay via Razorpay, manage bookings
-- **Admin panel** — packages, bookings, drivers, vehicles, trips, notifications
-- **API-first backend** — all business rules enforced server-side
+Operators run the business from the admin panel: packages, seats, drivers, vehicles, trip assignments, refunds, offline/manual bookings, waitlist, and ops notifications.
 
 ```
+Browse trips → Book seats → Pay (Razorpay / offline) → Email + lookup → Admin ops
+```
+
+---
+
+## Repository layout
+
+```text
 joyway/
-├── frontend/     Next.js 16 (TypeScript, Tailwind)
-├── backend/      Spring Boot 3.4 (Java 21, PostgreSQL, Flyway)
-├── docs/         Production runbooks and Azure guides
-└── scripts/      Deployment helpers
+├── frontend/          Next.js 16 · React 19 · TypeScript · Tailwind · GSAP
+├── backend/           Spring Boot 3.4 · Java 21 · PostgreSQL · Flyway
+├── docs/              Production runbooks, Azure, monitoring, DR
+├── scripts/           Deployment helpers
+└── docker-compose*.yml
 ```
 
 | Layer | Stack |
 |-------|--------|
-| Frontend | Next.js App Router, TypeScript, Tailwind CSS |
-| Backend | Spring Boot, Spring Security, JPA, Flyway |
-| Database | PostgreSQL |
-| Storage | Azure Blob Storage (production) |
-| Payments | Razorpay (live in production) |
-| Hosting | Azure Container Apps + Azure PostgreSQL |
+| Frontend | Next.js App Router, TypeScript, Tailwind CSS, Vitest |
+| Backend | Spring Boot, Spring Security, JPA, Flyway, Maven |
+| Database | PostgreSQL 15+ |
+| Files | Azure Blob Storage (production) · local disk (dev) |
+| Payments | Razorpay orders, verify, signed webhooks |
+| Hosting | Azure Container Apps · Azure PostgreSQL · ACR |
 
 ---
 
-## Security & secrets
+## Product features
 
-**Never commit secrets to Git.** The repository only contains `.env.example` templates.
+**Public**
+- Cinematic homepage wired to live published packages
+- Trip browse / detail, seat availability, pickup-point selection
+- Guest checkout (no customer login)
+- Razorpay payment + booking lookup / resume unpaid holds
+- Waitlist when a trip is sold out
+- Post-trip reviews after completion
+- WhatsApp deep-link + contact enquiry
+- Privacy, Terms, Cancellation pages
 
-| Location | What goes there |
-|----------|-----------------|
-| **Git** | Source code, `.env.example` placeholders only |
-| **Docker images** | Application binaries only — `.dockerignore` blocks all `.env*` files |
-| **GitHub Actions** | Public build args only (`NEXT_PUBLIC_*`, CI placeholders) |
-| **Azure Container Apps** | All runtime secrets (`JWT_SECRET`, DB, Razorpay, SMTP, storage) |
+**Admin** (`/admin`)
+- Packages, images, publish status
+- Bookings list + detail; cancel unpaid; refund / void offline
+- **Manual booking** — create holds or mark paid offline
+- Drivers, vehicles, trips, calendar, auto-assign on confirm
+- Notifications, audit log, email log
 
-Production backend validates configuration at startup (`ProductionSecurityValidator`) and refuses to run with missing or insecure settings.
+**Platform**
+- Server-side pricing, capacity locks, payment verification
+- Webhook idempotency and amount checks
+- Admin JWT in HttpOnly cookies + CSRF
+- Rate limiting, CORS lockdown, `ProductionSecurityValidator`
+- Flyway versioned migrations (never edit applied scripts)
 
 ---
 
@@ -58,16 +79,17 @@ Production backend validates configuration at startup (`ProductionSecurityValida
 
 | Tool | Version |
 |------|---------|
-| Node.js | 24 LTS |
+| Node.js | 24 LTS (`>=24 <25`) |
 | Java | 21+ |
 | Maven | 3.9+ |
-| PostgreSQL | 15+ (local dev) |
+| PostgreSQL | 15+ (local) |
+| Docker | Optional (images / Sonar) |
 
-For Azure deployment: [Azure CLI](https://learn.microsoft.com/cli/azure/) and access to `rg-joyway-prod`.
+Azure deploy also needs Azure CLI and access to resource group `rg-joyway-prod`.
 
 ---
 
-## Local development
+## Quick start (local)
 
 ### 1. Database
 
@@ -82,100 +104,121 @@ GRANT ALL PRIVILEGES ON DATABASE joyway TO joyway;
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env — set DATABASE_*, JWT_SECRET, optional ADMIN_BOOTSTRAP_* for first admin
+# Set DATABASE_*, JWT_SECRET (32+ chars). Optional ADMIN_BOOTSTRAP_* for first admin.
 
 mvn spring-boot:run
 ```
 
-Runs at **http://localhost:8080**. Flyway applies migrations on startup.
+API: **http://localhost:8080** (or the `SERVER_PORT` you set). Flyway migrates on startup.
 
 ### 3. Frontend
 
 ```bash
 cd frontend
 cp .env.example .env.local
+# NEXT_PUBLIC_API_BASE_URL must match the backend (e.g. http://localhost:8080)
+
 npm ci
 npm run dev
 ```
 
-Runs at **http://localhost:3000**.
+Site: **http://localhost:3000**
+
+> If the backend runs on another port (e.g. `8082`), set `NEXT_PUBLIC_API_BASE_URL` accordingly.
 
 ---
 
-## Environment variables
+## Environment & secrets
 
-### Frontend (`.env.local` / build args)
+**Never commit real `.env` files or credentials.** Only `.env.example` / templates are in Git.
 
-See [`frontend/.env.example`](frontend/.env.example). Only `NEXT_PUBLIC_*` values are embedded in the client bundle.
+| Where | What belongs there |
+|-------|--------------------|
+| Git | Source + placeholder examples |
+| Docker images | App binaries only (`.dockerignore` excludes `.env*`) |
+| Local `.env` / `.env.local` | Your machine only |
+| Azure Container Apps | All runtime secrets (JWT, DB, Razorpay secret, SMTP, storage) |
 
-### Backend (`.env` or process env)
-
-See [`backend/.env.example`](backend/.env.example). All payment, database, JWT, SMTP, and storage secrets stay server-side.
-
-**Production:** inject variables in Azure Container Apps — not in GitHub or Dockerfiles.
+- Frontend: [`frontend/.env.example`](frontend/.env.example) — only `NEXT_PUBLIC_*` is safe in the browser.
+- Backend: [`backend/.env.example`](backend/.env.example) — payments, JWT, DB, SMTP, storage stay server-side.
+- Production refuses unsafe config via `ProductionSecurityValidator` (e.g. localhost CORS in `prod`).
 
 ---
 
-## Build & test
+## Common commands
 
 ```bash
 # Backend
-cd backend && mvn test && mvn package
+cd backend
+mvn test
+mvn -q verify
+mvn package
 
 # Frontend
-cd frontend && npm run typecheck && npm run build
+cd frontend
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+
+# SonarQube (local Docker on :9000; export SONAR_TOKEN in your shell)
+docker start sonarqube   # if stopped
+cd backend  && mvn verify sonar:sonar
+cd frontend && npm run sonar
 ```
 
-CI runs on every push to `main` (tests, typecheck, production build, Docker build, secret pattern scan).
+CI on `main`: tests, typecheck, production build, Docker build, secret-pattern scan.
 
 ---
 
-## Production deployment (Azure)
+## Production (Azure)
 
-Images are built in **Azure Container Registry** and deployed to **Container Apps**:
+| Resource | Role |
+|----------|------|
+| `joyway-frontend-prod` | [joyway.in](https://joyway.in) |
+| `joyway-backend-prod` | [api.joyway.in](https://api.joyway.in) |
+| `joywayprodacr` | Azure Container Registry |
+| `joyway-pg-prod` | Azure Database for PostgreSQL |
 
-| Service | Resource |
-|---------|----------|
-| Frontend | `joyway-frontend-prod` → joyway.in |
-| Backend | `joyway-backend-prod` → api.joyway.in |
-| Registry | `joywayprodacr.azurecr.io` |
-| Database | `joyway-pg-prod` |
+Images are tagged like `prod-YYYYMMDD-HHMM` and also `latest` in ACR.
 
-```powershell
-# From repo root (requires Azure CLI login)
-.\scripts\deploy-azure-prod.ps1
+```bash
+# Example: build in ACR (Azure CLI logged in)
+az acr build -r joywayprodacr -t joyway-backend:TAG -f backend/Dockerfile backend
+az acr build -r joywayprodacr -t joyway-frontend:TAG \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.joyway.in \
+  --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$RAZORPAY_KEY_ID" \
+  -f frontend/Dockerfile frontend
+
+# Roll Container Apps to the new tag
+az containerapp update -g rg-joyway-prod -n joyway-backend-prod \
+  --image joywayprodacr.azurecr.io/joyway-backend:TAG
+az containerapp update -g rg-joyway-prod -n joyway-frontend-prod \
+  --image joywayprodacr.azurecr.io/joyway-frontend:TAG
 ```
 
-Or trigger **Deploy Production** in GitHub Actions (pushes images to ACR; update Container Apps revision in Azure).
+Helpers: `scripts/deploy-azure-prod.ps1`, GitHub Action **Deploy Production**.
 
-Detailed checklists: [`docs/PRODUCTION_CHECKLIST.md`](docs/PRODUCTION_CHECKLIST.md), [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md).
-
----
-
-## Key features
-
-- Server-side pricing, seat locking, and payment verification
-- Razorpay checkout + signed webhooks with idempotency
-- Traveller ID documents in private Azure Blob storage
-- Admin JWT in HttpOnly cookies with CSRF protection
-- Rate limiting, CORS lockdown, and production security validator
-- Privacy, Terms, and Cancellation policy pages
+**Frontend note:** `NEXT_PUBLIC_*` values are baked in at **image build time**. Changing the API URL or Razorpay public key requires a rebuild, not only a runtime env edit.
 
 ---
 
-## Admin access
+## Admin bootstrap
 
-There is no public admin registration. Create the first admin locally or in Azure with bootstrap env vars, then set `ADMIN_BOOTSTRAP_ENABLED=false`.
+There is no public admin signup.
 
-Admin panel: **https://joyway.in/admin**
+1. Enable one-time bootstrap env vars (`ADMIN_BOOTSTRAP_*`) on the backend.
+2. Start the app once so the admin user is created.
+3. Set `ADMIN_BOOTSTRAP_ENABLED=false` immediately after.
+
+Panel: **https://joyway.in/admin**
 
 ---
 
-## API
+## API shape
 
-Public endpoints include `/api/health`, `/api/packages`, `/api/bookings`, and `/api/payments`. Admin routes under `/api/admin/**` require `ROLE_ADMIN`.
-
-Standard response format:
+Public routes include `/api/health`, `/api/packages`, `/api/bookings`, `/api/payments`.  
+Admin routes live under `/api/admin/**` and require `ROLE_ADMIN`.
 
 ```json
 { "success": true, "data": {}, "message": "..." }
@@ -183,14 +226,29 @@ Standard response format:
 
 ---
 
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/PRODUCTION_CHECKLIST.md`](docs/PRODUCTION_CHECKLIST.md) | Pre-go-live checks |
+| [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md) | Day-to-day ops |
+| [`docs/MONITORING.md`](docs/MONITORING.md) | Health, alerts, metrics |
+| [`docs/DISASTER_RECOVERY.md`](docs/DISASTER_RECOVERY.md) | Recovery procedures |
+| [`docs/AZURE_BLOB_STORAGE.md`](docs/AZURE_BLOB_STORAGE.md) | Package / ID document storage |
+| [`docs/AZURE_STORAGE_SETUP.md`](docs/AZURE_STORAGE_SETUP.md) | Storage setup |
+
+---
+
 ## Troubleshooting
 
-| Issue | Check |
-|-------|--------|
-| Backend won't start | PostgreSQL running; `DATABASE_*` and `JWT_SECRET` set |
-| Frontend can't reach API | `NEXT_PUBLIC_API_BASE_URL` matches backend URL |
-| Production startup fails | Azure env vars — see `docs/PRODUCTION_CHECKLIST.md` |
-| Flyway errors on prod | Do not edit applied migrations; add new versioned scripts |
+| Problem | What to check |
+|---------|----------------|
+| Backend won't start | Postgres up; `DATABASE_*` + `JWT_SECRET` set |
+| Frontend can't reach API | `NEXT_PUBLIC_API_BASE_URL` matches backend host/port |
+| Sonar `ECONNREFUSED :9000` | `docker start sonarqube`, wait until UI is up |
+| Prod startup refused | Azure env / CORS — see production checklist |
+| Flyway conflict on prod | Do not change applied migrations; add a new `Vnn__*.sql` |
+| Payment hold expired | Guest unpaid holds expire; admin-created holds do not auto-expire |
 
 ---
 
