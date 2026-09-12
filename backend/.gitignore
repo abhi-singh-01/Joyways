@@ -1,7 +1,13 @@
 target/
 !.mvn/wrapper/maven-wrapper.jar
+
+# Runtime uploads / local blob mirror — never commit
 /storage/
 /uploads/
+/data/
+/tmp-data/
+
+# Real env files only. Keep .env.example in Git (placeholders, no secrets).
 .env
 .env.*
 .envrc
@@ -11,6 +17,27 @@ target/
 !.env.example
 !.env.template
 !.env.production.example
+
+# Local Spring overrides (do not commit machine-specific config)
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-local.properties
+*.local.properties
+*.local.yml
+*.local.yaml
+
+# DB dumps / local databases
+*.dump
+*.sql.gz
+*.sql.bak
+*.sqlite
+*.sqlite3
+*.db
+*.h2.db
+*.mv.db
+backup/
+backups/
+
 *.log
 *.class
 *.pem
@@ -19,3 +46,5 @@ target/
 *.jks
 credentials.json
 secrets.json
+service-account*.json
+*.keystore

@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — never commit secrets (keep only *.example / *.template)
+# Real env files only. Keep .env.example in Git (placeholder names, no secrets).
 .env
 .env.*
 .envrc
@@ -40,6 +40,16 @@ yarn-error.log*
 !.env.example
 !.env.template
 !.env.production.example
+
+# Local overrides / scratch data
+*.local.properties
+*.local.yml
+*.local.yaml
+/data/
+/tmp-data/
+*.dump
+*.sqlite
+*.db
 
 # vercel
 .vercel

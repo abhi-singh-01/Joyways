@@ -130,7 +130,14 @@ Site: **http://localhost:3000**
 
 ## Environment & secrets
 
-**Never commit real `.env` files or credentials.** Only `.env.example` / templates are in Git.
+**Never commit real secrets.** Copy the examples locally; Git only keeps the templates.
+
+| File | On GitHub? | Why |
+|------|------------|-----|
+| `backend/.env`, `frontend/.env.local` | **No** (gitignored) | Real passwords, JWT, Razorpay secret |
+| `backend/.env.example`, `frontend/.env.example` | **Yes** | Variable *names* + empty/safe placeholders so others know what to set |
+| `application.yml` / `application-*.yml` | **Yes** | Spring config using `${ENV_VAR}` — no hard-coded secrets |
+| Local `application-local.*`, DB dumps, `/storage` | **No** (gitignored) | Machine-specific data |
 
 | Where | What belongs there |
 |-------|--------------------|
@@ -138,6 +145,11 @@ Site: **http://localhost:3000**
 | Docker images | App binaries only (`.dockerignore` excludes `.env*`) |
 | Local `.env` / `.env.local` | Your machine only |
 | Azure Container Apps | All runtime secrets (JWT, DB, Razorpay secret, SMTP, storage) |
+
+```bash
+cd backend  && cp .env.example .env          # then fill real values
+cd frontend && cp .env.example .env.local    # then fill real values
+```
 
 - Frontend: [`frontend/.env.example`](frontend/.env.example) — only `NEXT_PUBLIC_*` is safe in the browser.
 - Backend: [`backend/.env.example`](backend/.env.example) — payments, JWT, DB, SMTP, storage stay server-side.
