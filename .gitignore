@@ -121,3 +121,6 @@ lighthouse*.json
 
 # Machine-local Compose overrides (ports, host networking) — never commit
 docker-compose.override.yml
+
+.cursor/rules.md
+.vscode/
