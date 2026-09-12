@@ -3,8 +3,6 @@
 import { useRef } from "react";
 import Image from "next/image";
 import { useGSAP } from "@gsap/react";
-import { JourneyCanvasScene } from "@/components/cinematic/JourneyCanvasScene";
-import { JOURNEY_FRAME_SEQUENCE } from "@/components/cinematic/journeyFromPackages";
 import { CINEMATIC_IMAGES, CINEMATIC_IMAGE_SIZES } from "@/components/cinematic/cinematicMedia";
 import { usePrefersReducedMotion } from "@/components/cinematic/usePrefersReducedMotion";
 import { gsap, registerCinematicGsap } from "@/components/cinematic/gsapSetup";
@@ -22,7 +20,6 @@ export function LandscapeChapter() {
   const pinRef = useRef<HTMLDivElement>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef<Array<HTMLParagraphElement | null>>([]);
-  const hasFrames = JOURNEY_FRAME_SEQUENCE.length > 0;
 
   useGSAP(
     () => {
@@ -91,7 +88,6 @@ export function LandscapeChapter() {
               className="h-full w-full object-cover object-[center_45%] md:object-center"
             />
           </div>
-          <JourneyCanvasScene progress={0} enabled={!reducedMotion && hasFrames} />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/15" />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-[calc(env(safe-area-inset-bottom,0px)+6.5rem)] pt-20 sm:px-6 sm:py-16 md:pb-[calc(env(safe-area-inset-bottom,0px)+9rem)] lg:px-8">

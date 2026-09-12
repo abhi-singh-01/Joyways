@@ -41,12 +41,6 @@ export const LANDSCAPE_SCENES: LandscapeScene[] = [
   },
 ];
 
-/**
- * Frame-sequence slot for a future canvas scrub.
- * Empty until real WebP/AVIF frames are produced.
- */
-export const JOURNEY_FRAME_SEQUENCE: readonly string[] = [];
-
 export function uniqueDestinations(packages: PackageSummary[]): string[] {
   const seen = new Set<string>();
   const list: string[] = [];

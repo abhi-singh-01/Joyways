@@ -39,6 +39,16 @@ function emptyTraveller(): TravellerInput {
   };
 }
 
+type TravellerDraft = TravellerInput & { clientKey: string };
+
+function newTravellerDraft(): TravellerDraft {
+  return { ...emptyTraveller(), clientKey: crypto.randomUUID() };
+}
+
+function toTravellerInput({ clientKey: _clientKey, ...traveller }: TravellerDraft): TravellerInput {
+  return traveller;
+}
+
 function emptyCustomer(): CustomerInput {
   return { fullName: "", email: "", mobile: "" };
 }
@@ -56,7 +66,7 @@ export function ManualBookingForm() {
   const [packageId, setPackageId] = useState("");
   const [count, setCount] = useState(1);
   const [customer, setCustomer] = useState<CustomerInput>(emptyCustomer);
-  const [travellers, setTravellers] = useState<TravellerInput[]>([emptyTraveller()]);
+  const [travellers, setTravellers] = useState<TravellerDraft[]>([newTravellerDraft()]);
   const [customerErrors, setCustomerErrors] = useState<FieldErrors<CustomerInput>>({});
   const [travellerErrors, setTravellerErrors] = useState<FieldErrors<TravellerInput>[]>([{}]);
   const [pickupPoint, setPickupPoint] = useState("");
@@ -122,7 +132,7 @@ export function ManualBookingForm() {
     setCount(clamped);
     setTravellers((prev) => {
       const copy = [...prev];
-      while (copy.length < clamped) copy.push(emptyTraveller());
+      while (copy.length < clamped) copy.push(newTravellerDraft());
       return copy.slice(0, clamped);
     });
     setTravellerErrors((prev) => {
@@ -156,7 +166,7 @@ export function ManualBookingForm() {
     let valid = customerResult.success;
 
     for (let i = 0; i < count; i++) {
-      const traveller = travellers[i] ?? emptyTraveller();
+      const traveller = travellers[i] ? toTravellerInput(travellers[i]) : emptyTraveller();
       const travellerResult = validateTraveller(traveller);
       const fieldErrors = travellerResult.success
         ? {}
@@ -217,7 +227,7 @@ export function ManualBookingForm() {
         packageId: Number(packageId),
         numberOfTravellers: count,
         customer,
-        travellers: travellers.slice(0, count),
+        travellers: travellers.slice(0, count).map(toTravellerInput),
         pickupPoint: pickupPoint.trim() || undefined,
         paymentMode,
         offlinePaymentReference:
@@ -383,14 +393,20 @@ export function ManualBookingForm() {
         </p>
         {travellers.slice(0, count).map((traveller, index) => (
           <TravellerForm
-            key={`admin-traveller-${index}`}
+            key={traveller.clientKey}
             index={index}
-            data={traveller}
+            data={toTravellerInput(traveller)}
             documentFile={null}
             errors={travellerErrors[index]}
             requireDocument={false}
             onChange={(data) => {
-              setTravellers((prev) => prev.map((item, i) => (i === index ? data : item)));
+              setTravellers((prev) =>
+                prev.map((item) =>
+                  item.clientKey === traveller.clientKey
+                    ? { ...data, clientKey: item.clientKey }
+                    : item
+                )
+              );
             }}
             onDocumentChange={() => undefined}
           />
@@ -401,36 +417,38 @@ export function ManualBookingForm() {
         <h2 className="font-display text-xl font-semibold text-charcoal">Payment</h2>
         <fieldset className="space-y-3">
           <legend className="sr-only">Payment mode</legend>
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-white p-4">
+          <div className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-white p-4">
             <input
+              id="payment-mode-online"
               type="radio"
               name="paymentMode"
               className="mt-1"
               checked={paymentMode === "PENDING_ONLINE"}
               onChange={() => setPaymentMode("PENDING_ONLINE")}
             />
-            <span>
+            <label htmlFor="payment-mode-online" className="cursor-pointer">
               <span className="block font-medium text-charcoal">Customer will pay online</span>
               <span className="mt-1 block text-sm text-charcoal-muted">
                 Seats are held. Share the booking reference and email so they can pay via booking lookup.
               </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-white p-4">
+            </label>
+          </div>
+          <div className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-white p-4">
             <input
+              id="payment-mode-offline"
               type="radio"
               name="paymentMode"
               className="mt-1"
               checked={paymentMode === "PAID_OFFLINE"}
               onChange={() => setPaymentMode("PAID_OFFLINE")}
             />
-            <span>
+            <label htmlFor="payment-mode-offline" className="cursor-pointer">
               <span className="block font-medium text-charcoal">Already paid offline</span>
               <span className="mt-1 block text-sm text-charcoal-muted">
                 Cash, UPI, or bank transfer collected by staff. Confirms the booking immediately.
               </span>
-            </span>
-          </label>
+            </label>
+          </div>
         </fieldset>
         {paymentMode === "PAID_OFFLINE" && (
           <div>
