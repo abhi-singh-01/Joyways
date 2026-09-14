@@ -8,6 +8,7 @@ import {
   type CreateDriverPayload,
   type DriverDetail,
 } from "@/lib/api/adminDriversApi";
+import { withSuccess } from "@/lib/adminSuccess";
 
 function driverSubmitLabel(saving: boolean, isUpdate: boolean): string {
   if (saving) return "Saving...";
@@ -40,7 +41,12 @@ export function DriverForm({ initial }: Readonly<DriverFormProps>) {
       const result = initial
         ? await updateDriver(initial.id, form)
         : await createDriver(form);
-      router.push(`/admin/drivers/${result.id}`);
+      router.push(
+        withSuccess(
+          `/admin/drivers/${result.id}`,
+          initial ? "driver-updated" : "driver-created"
+        )
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save driver");

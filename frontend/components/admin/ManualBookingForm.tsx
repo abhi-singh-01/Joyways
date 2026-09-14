@@ -25,6 +25,7 @@ import {
   validateTraveller,
 } from "@/lib/formValidation";
 import { formatDate, formatPrice, parsePickupPoints } from "@/lib/format";
+import { withSuccess } from "@/lib/adminSuccess";
 
 function emptyTraveller(): TravellerInput {
   return {
@@ -234,7 +235,7 @@ export function ManualBookingForm() {
           paymentMode === "PAID_OFFLINE" ? offlinePaymentReference.trim() : undefined,
         notes: notes.trim() || undefined,
       });
-      router.push(`/admin/bookings/${booking.bookingId}`);
+      router.push(withSuccess(`/admin/bookings/${booking.bookingId}`, "booking-created"));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create booking");

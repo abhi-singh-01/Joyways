@@ -15,6 +15,7 @@ import {
   type PackageStatus,
 } from "@/lib/api/adminPackagesApi";
 import { AdminAuthError } from "@/lib/api/client";
+import { withSuccess } from "@/lib/adminSuccess";
 import { toSlug } from "@/lib/slug";
 import { PackageImageManager } from "@/components/admin/PackageImageManager";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -111,9 +112,10 @@ export function PackageForm({ initial, mode }: Readonly<PackageFormProps>) {
     try {
       if (mode === "create") {
         const created = await createAdminPackage(form);
-        router.push(`/admin/packages/${created.id}/edit`);
+        router.push(withSuccess(`/admin/packages/${created.id}/edit`, "package-created"));
       } else if (initial) {
         await updateAdminPackage(initial.id, form);
+        router.replace(withSuccess(`/admin/packages/${initial.id}/edit`, "package-updated"));
         router.refresh();
       }
     } catch (err) {
@@ -133,6 +135,7 @@ export function PackageForm({ initial, mode }: Readonly<PackageFormProps>) {
     try {
       await updatePackageStatus(initial.id, newStatus);
       setStatus(newStatus);
+      router.replace(withSuccess(`/admin/packages/${initial.id}/edit`, "package-status"));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Status update failed");

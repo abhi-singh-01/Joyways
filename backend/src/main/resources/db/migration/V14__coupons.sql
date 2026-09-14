@@ -1,7 +1,7 @@
 CREATE TABLE coupons (
     id              BIGSERIAL PRIMARY KEY,
     code            VARCHAR(40)  NOT NULL,
-    package_id      BIGINT       NOT NULL REFERENCES travel_packages (id),
+    package_id      BIGINT       NOT NULL REFERENCES packages (id),
     discount_type   VARCHAR(20)  NOT NULL,
     discount_value  NUMERIC(12, 2) NOT NULL,
     expires_on      DATE         NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE coupon_redemptions (
     id               BIGSERIAL PRIMARY KEY,
     coupon_id        BIGINT       NOT NULL REFERENCES coupons (id),
     booking_id       BIGINT       NOT NULL REFERENCES bookings (id),
-    package_id       BIGINT       NOT NULL REFERENCES travel_packages (id),
+    package_id       BIGINT       NOT NULL REFERENCES packages (id),
     customer_email   VARCHAR(255) NOT NULL,
     customer_mobile  VARCHAR(15)  NOT NULL,
     discount_amount  NUMERIC(12, 2) NOT NULL,

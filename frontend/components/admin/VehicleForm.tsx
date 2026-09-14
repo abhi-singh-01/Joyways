@@ -9,6 +9,7 @@ import {
   type VehicleDetail,
   type VehicleOwnershipType,
 } from "@/lib/api/adminVehiclesApi";
+import { withSuccess } from "@/lib/adminSuccess";
 
 function vehicleSubmitLabel(saving: boolean, isUpdate: boolean): string {
   if (saving) return "Saving...";
@@ -41,7 +42,12 @@ export function VehicleForm({ initial }: Readonly<VehicleFormProps>) {
       const result = initial
         ? await updateVehicle(initial.id, form)
         : await createVehicle(form);
-      router.push(`/admin/vehicles/${result.id}`);
+      router.push(
+        withSuccess(
+          `/admin/vehicles/${result.id}`,
+          initial ? "vehicle-updated" : "vehicle-created"
+        )
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save vehicle");

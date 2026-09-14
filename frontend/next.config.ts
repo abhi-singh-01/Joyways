@@ -23,8 +23,8 @@ const nextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
-    // Cap generated widths below 3840 — full-bleed hero rarely needs larger delivery.
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    // Cap generated widths — full-bleed hero sources are ~1280px.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1280],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {

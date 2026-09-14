@@ -6,10 +6,10 @@ const publicDir = path.join(process.cwd(), "public");
 const imagesDir = path.join(publicDir, "images");
 
 const targets = [
-  { input: path.join(imagesDir, "mountains-hero.png"), maxWidth: 1920, quality: 78 },
-  { input: path.join(imagesDir, "mountains-peaks.png"), maxWidth: 960, quality: 78 },
-  { input: path.join(imagesDir, "mountains-lake.png"), maxWidth: 960, quality: 78 },
-  { input: path.join(imagesDir, "mountains-road.png"), maxWidth: 960, quality: 78 },
+  { input: path.join(imagesDir, "mountains-hero.png"), maxWidth: 1280, quality: 68 },
+  { input: path.join(imagesDir, "mountains-peaks.png"), maxWidth: 720, quality: 68 },
+  { input: path.join(imagesDir, "mountains-lake.png"), maxWidth: 720, quality: 68 },
+  { input: path.join(imagesDir, "mountains-road.png"), maxWidth: 720, quality: 68 },
   { input: path.join(publicDir, "web-log.png"), maxWidth: 128, quality: 82 },
   { input: path.join(publicDir, "logo.png"), maxWidth: 480, quality: 82 },
   // Homepage cinematic frames (full-bleed)
@@ -23,8 +23,8 @@ const targets = [
     "valley-buddha",
   ].map((name) => ({
     input: path.join(imagesDir, "cinematic", `${name}.png`),
-    maxWidth: 1600,
-    quality: 72,
+    maxWidth: 1280,
+    quality: 64,
   })),
 ];
 

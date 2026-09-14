@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { listAdminPackages, type AdminPackageSummary } from "@/lib/api/adminPackagesApi";
 import { createTrip, type CreateTripPayload } from "@/lib/api/adminTripsApi";
+import { withSuccess } from "@/lib/adminSuccess";
 
 function kolkataToday(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -59,7 +60,7 @@ export function TripForm() {
 
     try {
       const trip = await createTrip(payload);
-      router.push(`/admin/trips/${trip.id}`);
+      router.push(withSuccess(`/admin/trips/${trip.id}`, "trip-created"));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create trip");

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { AdminFlashBanner } from "@/components/admin/AdminFlashBanner";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { cn } from "@/lib/utils";
@@ -73,7 +74,12 @@ export function AdminShell({ children }: Readonly<AdminShellProps>) {
 
       <div className="flex flex-1 flex-col md:ml-64">
         <AdminHeader onOpenMenu={() => setMobileOpen(true)} />
-        <main className="flex-1 p-6 sm:p-8">{children}</main>
+        <main className="flex-1 p-6 sm:p-8">
+          <Suspense fallback={null}>
+            <AdminFlashBanner />
+          </Suspense>
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -8,9 +8,9 @@ export const CINEMATIC_IMAGES = {
   closing: "/images/cinematic/valley-buddha.webp",
 } as const;
 
-/** Prefer smaller decoded widths on phones; desktop caps at source width. */
+/** Prefer smaller decoded widths on phones; desktop caps near source width. */
 export const CINEMATIC_IMAGE_SIZES =
-  "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1600px";
+  "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1280px";
 
 /** Delivery quality for Next/Image (source files are already compressed WebP). */
-export const CINEMATIC_IMAGE_QUALITY = 72;
+export const CINEMATIC_IMAGE_QUALITY = 65;

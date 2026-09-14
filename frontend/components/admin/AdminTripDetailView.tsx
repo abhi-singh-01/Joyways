@@ -33,6 +33,7 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
   const [vehicleId, setVehicleId] = useState("");
   const [driverId, setDriverId] = useState("");
   const [bookingId, setBookingId] = useState("");
@@ -87,11 +88,13 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
       .finally(() => setLoading(false));
   }, [tripId]);
 
-  async function runAction(action: () => Promise<unknown>) {
+  async function runAction(action: () => Promise<unknown>, successMessage = "Updated successfully") {
     setActionError("");
+    setActionSuccess("");
     try {
       await action();
       await reload();
+      setActionSuccess(successMessage);
       router.refresh();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Action failed");
@@ -124,6 +127,14 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
       {actionError && (
         <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {actionError}
+        </p>
+      )}
+      {actionSuccess && (
+        <p
+          role="status"
+          className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
+        >
+          {actionSuccess}
         </p>
       )}
 
@@ -166,7 +177,10 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
                     <button
                       type="button"
                       onClick={() =>
-                        runAction(() => removeBookingFromTrip(tripId, booking.bookingId))
+                        runAction(
+                          () => removeBookingFromTrip(tripId, booking.bookingId),
+                          "Booking removed successfully"
+                        )
                       }
                       className="text-sm text-red-600 hover:underline"
                     >
@@ -196,7 +210,10 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
                 type="button"
                 disabled={!bookingId}
                 onClick={() =>
-                  runAction(() => addBookingToTrip(tripId, Number(bookingId)))
+                  runAction(
+                    () => addBookingToTrip(tripId, Number(bookingId)),
+                    "Booking assigned successfully"
+                  )
                 }
                 className="rounded-xl bg-forest px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
               >
@@ -229,7 +246,10 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
                   type="button"
                   disabled={!vehicleId || ["COMPLETED", "CANCELLED"].includes(trip.status)}
                   onClick={() =>
-                    runAction(() => assignVehicleToTrip(tripId, Number(vehicleId)))
+                    runAction(
+                      () => assignVehicleToTrip(tripId, Number(vehicleId)),
+                      "Vehicle assigned successfully"
+                    )
                   }
                   className="rounded-xl border border-border px-4 py-2 text-sm disabled:opacity-50"
                 >
@@ -257,7 +277,10 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
                   type="button"
                   disabled={!driverId || ["COMPLETED", "CANCELLED"].includes(trip.status)}
                   onClick={() =>
-                    runAction(() => assignDriverToTrip(tripId, Number(driverId)))
+                    runAction(
+                      () => assignDriverToTrip(tripId, Number(driverId)),
+                      "Driver assigned successfully"
+                    )
                   }
                   className="rounded-xl border border-border px-4 py-2 text-sm disabled:opacity-50"
                 >
@@ -273,7 +296,12 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
         {nextStatus && (
           <button
             type="button"
-            onClick={() => runAction(() => updateTripStatus(tripId, nextStatus))}
+            onClick={() =>
+              runAction(
+                () => updateTripStatus(tripId, nextStatus),
+                "Trip status updated successfully"
+              )
+            }
             className="rounded-xl bg-forest px-4 py-2.5 text-sm font-medium text-white"
           >
             Mark {nextStatus.replaceAll("_", " ")}
@@ -282,7 +310,12 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
         {!["COMPLETED", "CANCELLED", "IN_PROGRESS"].includes(trip.status) && (
           <button
             type="button"
-            onClick={() => runAction(() => updateTripStatus(tripId, "CANCELLED"))}
+            onClick={() =>
+              runAction(
+                () => updateTripStatus(tripId, "CANCELLED"),
+                "Trip cancelled successfully"
+              )
+            }
             className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-700"
           >
             Cancel Trip

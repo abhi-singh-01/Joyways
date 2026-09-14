@@ -9,6 +9,7 @@ import {
   type CreateCouponPayload,
 } from "@/lib/api/adminCouponsApi";
 import { listAdminPackages, type AdminPackageSummary } from "@/lib/api/adminPackagesApi";
+import { withSuccess } from "@/lib/adminSuccess";
 
 type CouponFormProps = {
   initial?: CouponDetail;
@@ -53,7 +54,7 @@ export function CouponForm({ initial }: Readonly<CouponFormProps>) {
           expiresOn: form.expiresOn,
           active: form.active,
         });
-        router.push(`/admin/coupons/${result.id}`);
+        router.push(withSuccess(`/admin/coupons/${result.id}`, "coupon-updated"));
       } else {
         const payload: CreateCouponPayload = {
           code: form.code.trim().toUpperCase(),
@@ -63,7 +64,7 @@ export function CouponForm({ initial }: Readonly<CouponFormProps>) {
           expiresOn: form.expiresOn,
         };
         const result = await createCoupon(payload);
-        router.push(`/admin/coupons/${result.id}`);
+        router.push(withSuccess(`/admin/coupons/${result.id}`, "coupon-created"));
       }
       router.refresh();
     } catch (err) {
