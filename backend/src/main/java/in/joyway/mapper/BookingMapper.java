@@ -9,6 +9,7 @@ import in.joyway.dto.booking.TravellerSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -28,6 +29,8 @@ public class BookingMapper {
                 .endDate(booking.getTravelPackage().getEndDate())
                 .numberOfTravellers(booking.getNumberOfTravellers())
                 .totalAmount(booking.getTotalAmount())
+                .discountAmount(booking.getDiscountAmount() != null ? booking.getDiscountAmount() : BigDecimal.ZERO)
+                .couponCode(booking.getCouponCode())
                 .currency(booking.getCurrency())
                 .status(booking.getStatus().name())
                 .paymentStatus(booking.getPaymentStatus().name())

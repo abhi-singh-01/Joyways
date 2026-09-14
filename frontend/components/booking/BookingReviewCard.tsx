@@ -63,6 +63,14 @@ export function BookingReviewCard({ pkg, review, customerName, pickupPoint }: Re
             <span className="text-charcoal">{formatPrice(review.taxesAndFees)}</span>
           </div>
         )}
+        {(review.discountAmount ?? 0) > 0 && (
+          <div className="flex justify-between">
+            <span className="text-charcoal-muted">
+              Coupon{review.couponCode ? ` (${review.couponCode})` : ""}
+            </span>
+            <span className="text-forest">−{formatPrice(review.discountAmount ?? 0)}</span>
+          </div>
+        )}
         <div className="flex justify-between border-t border-border pt-3 text-base font-semibold">
           <span className="text-charcoal">Total</span>
           <span className="text-forest">{formatPrice(review.totalAmount)}</span>
@@ -70,7 +78,9 @@ export function BookingReviewCard({ pkg, review, customerName, pickupPoint }: Re
       </div>
 
       <p className="text-xs text-charcoal-muted">
-        Price calculated on our servers. Payment will be collected in the next step.
+        {(review.totalAmount ?? 0) <= 0
+          ? "This booking is fully covered by the coupon. No payment is required."
+          : "Price calculated on our servers. Payment will be collected in the next step."}
       </p>
     </div>
   );

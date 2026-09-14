@@ -17,6 +17,8 @@ public record BookingReviewDto(
         BigDecimal pricePerPerson,
         BigDecimal subtotal,
         BigDecimal taxesAndFees,
+        BigDecimal discountAmount,
+        String couponCode,
         BigDecimal totalAmount,
         String currency,
         int availableSeats,

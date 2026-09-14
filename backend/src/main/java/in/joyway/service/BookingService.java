@@ -64,6 +64,7 @@ public class BookingService {
     private final WaitlistService waitlistService;
     private final PaymentService paymentService;
     private final AuditLogService auditLogService;
+    private final CouponService couponService;
 
     @Transactional(readOnly = true)
     public BookingReviewDto previewBooking(CreateBookingRequest request) {
@@ -74,6 +75,15 @@ public class BookingService {
 
         BigDecimal subtotal = calculateSubtotal(pkg, request.getNumberOfTravellers());
         BigDecimal taxes = BigDecimal.ZERO;
+        CouponService.AppliedCoupon applied = couponService.applyForBooking(
+                request.getCouponCode(),
+                pkg,
+                subtotal,
+                request.getCustomer().getEmail(),
+                request.getCustomer().getMobile()
+        );
+        BigDecimal discount = applied != null ? applied.discountAmount() : BigDecimal.ZERO;
+        BigDecimal total = applied != null ? applied.totalAmount() : subtotal.add(taxes);
 
         return BookingReviewDto.builder()
                 .packageId(pkg.getId())
@@ -86,7 +96,9 @@ public class BookingService {
                 .pricePerPerson(pkg.getPricePerPerson())
                 .subtotal(subtotal)
                 .taxesAndFees(taxes)
-                .totalAmount(subtotal.add(taxes))
+                .discountAmount(discount)
+                .couponCode(applied != null ? applied.coupon().getCode() : null)
+                .totalAmount(total)
                 .currency("INR")
                 .availableSeats(pkg.getAvailableSeats())
                 .bookable(true)
@@ -340,7 +352,16 @@ public class BookingService {
             throw new InsufficientSeatsException("No seats are available for this trip.");
         }
 
-        BigDecimal totalAmount = calculateSubtotal(pkg, request.getNumberOfTravellers());
+        BigDecimal subtotal = calculateSubtotal(pkg, request.getNumberOfTravellers());
+        CouponService.AppliedCoupon applied = couponService.applyForBooking(
+                request.getCouponCode(),
+                pkg,
+                subtotal,
+                request.getCustomer().getEmail(),
+                request.getCustomer().getMobile()
+        );
+        BigDecimal discount = applied != null ? applied.discountAmount() : BigDecimal.ZERO;
+        BigDecimal totalAmount = applied != null ? applied.totalAmount() : subtotal;
 
         Customer customer = Customer.builder()
                 .fullName(request.getCustomer().getFullName())
@@ -351,6 +372,7 @@ public class BookingService {
 
         String reference = referenceGenerator.generateNext();
 
+        boolean fullyCoveredByCoupon = totalAmount.compareTo(BigDecimal.ZERO) <= 0;
         Booking booking = Booking.builder()
                 .bookingReference(reference)
                 .travelPackage(pkg)
@@ -358,14 +380,21 @@ public class BookingService {
                 .numberOfTravellers(request.getNumberOfTravellers())
                 .pickupPoint(pickupPoint)
                 .totalAmount(totalAmount)
+                .discountAmount(discount)
+                .coupon(applied != null ? applied.coupon() : null)
+                .couponCode(applied != null ? applied.coupon().getCode() : null)
                 .currency("INR")
-                .status(BookingStatus.PENDING_PAYMENT)
-                .paymentStatus(PaymentStatus.PENDING)
+                .status(fullyCoveredByCoupon ? BookingStatus.CONFIRMED : BookingStatus.PENDING_PAYMENT)
+                .paymentStatus(fullyCoveredByCoupon ? PaymentStatus.PAID : PaymentStatus.PENDING)
                 .createdByAdmin(createdByAdmin)
                 .adminNotes(adminNotes)
                 .offlinePaymentReference(offlinePaymentReference)
                 .build();
         booking = bookingRepository.save(booking);
+
+        if (applied != null) {
+            couponService.redeem(applied, booking, customer.getEmail(), customer.getMobile());
+        }
 
         pkg.setAvailableSeats(pkg.getAvailableSeats() - request.getNumberOfTravellers());
         packageRepository.save(pkg);

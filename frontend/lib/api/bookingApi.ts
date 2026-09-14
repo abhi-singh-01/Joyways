@@ -25,6 +25,7 @@ export type CreateBookingPayload = {
   travellers: TravellerInput[];
   consentAccepted: boolean;
   pickupPoint?: string;
+  couponCode?: string;
 };
 
 export type BookingAccessInput = {
@@ -43,6 +44,8 @@ export type BookingReview = {
   pricePerPerson: number;
   subtotal: number;
   taxesAndFees: number;
+  discountAmount?: number;
+  couponCode?: string | null;
   totalAmount: number;
   currency: string;
   availableSeats: number;
@@ -59,6 +62,8 @@ export type BookingResult = {
   endDate: string;
   numberOfTravellers: number;
   totalAmount: number;
+  discountAmount?: number;
+  couponCode?: string | null;
   currency: string;
   status: string;
   paymentStatus: string;

@@ -31,4 +31,7 @@ public class CreateBookingRequest {
 
     @Size(max = 200, message = "Pickup point is too long")
     private String pickupPoint;
+
+    @Size(max = 40, message = "Coupon code is too long")
+    private String couponCode;
 }

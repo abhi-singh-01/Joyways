@@ -65,6 +65,17 @@ public class Booking {
     @Column(name = "offline_payment_reference", length = 100)
     private String offlinePaymentReference;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private Coupon coupon;
+
+    @Column(name = "coupon_code", length = 40)
+    private String couponCode;
+
+    @Column(name = "discount_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

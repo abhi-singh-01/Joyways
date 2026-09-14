@@ -13,6 +13,7 @@ import {
   Route,
   ScrollText,
   Mail,
+  TicketPercent,
 } from "lucide-react";
 import { JoywayLogo } from "@/components/layout/JoywayLogo";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/packages", label: "Packages", icon: Package },
   { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
+  { href: "/admin/coupons", label: "Coupons", icon: TicketPercent },
   { href: "/admin/trips", label: "Trips", icon: Route },
   { href: "/admin/vehicles", label: "Vehicles", icon: Bus },
   { href: "/admin/drivers", label: "Drivers", icon: UserCircle },

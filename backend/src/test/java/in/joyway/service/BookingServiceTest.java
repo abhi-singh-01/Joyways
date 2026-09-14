@@ -68,6 +68,7 @@ class BookingServiceTest {
     @Mock private WaitlistService waitlistService;
     @Mock private PaymentService paymentService;
     @Mock private in.joyway.service.audit.AuditLogService auditLogService;
+    @Mock private CouponService couponService;
 
     @InjectMocks
     private BookingService bookingService;
@@ -77,6 +78,7 @@ class BookingServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(couponService.applyForBooking(any(), any(), any(), any(), any())).thenReturn(null);
         pkg = TravelPackage.builder()
                 .id(1L)
                 .title("Test Trip")

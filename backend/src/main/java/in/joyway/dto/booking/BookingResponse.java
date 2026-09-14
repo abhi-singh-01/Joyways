@@ -17,6 +17,8 @@ public record BookingResponse(
         LocalDate endDate,
         int numberOfTravellers,
         BigDecimal totalAmount,
+        BigDecimal discountAmount,
+        String couponCode,
         String currency,
         String status,
         String paymentStatus,

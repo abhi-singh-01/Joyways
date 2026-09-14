@@ -71,6 +71,7 @@ export function BookingFlow({ pkg }: Readonly<BookingFlowProps>) {
   const [consentError, setConsentError] = useState("");
   const [pickupPoint, setPickupPoint] = useState("");
   const [pickupError, setPickupError] = useState("");
+  const [couponCode, setCouponCode] = useState("");
   const pickupOptions = parsePickupPoints(pkg.pickupPoints);
 
   if (!pkg.bookable) {
@@ -128,6 +129,7 @@ export function BookingFlow({ pkg }: Readonly<BookingFlowProps>) {
       travellers: travellers.slice(0, count),
       consentAccepted,
       pickupPoint: pickupPoint || undefined,
+      couponCode: couponCode.trim() || undefined,
     };
   }
 
@@ -428,6 +430,30 @@ export function BookingFlow({ pkg }: Readonly<BookingFlowProps>) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
+            <div className="rounded-2xl border border-border bg-white p-5 sm:p-6">
+              <h2 className="font-display text-lg font-semibold text-charcoal">Coupon code</h2>
+              <p className="mt-1 text-sm text-charcoal-muted">
+                Optional. Valid only for this trip, one use per customer.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="couponCode"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Enter code"
+                  className="uppercase"
+                  maxLength={40}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={() => void handlePreview()}
+                >
+                  {loading ? "Checking..." : "Apply"}
+                </Button>
+              </div>
+            </div>
             <BookingReviewCard
               pkg={pkg}
               review={review}
