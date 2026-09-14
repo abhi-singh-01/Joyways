@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import { useGSAP } from "@gsap/react";
-import { CINEMATIC_IMAGES, CINEMATIC_IMAGE_SIZES } from "@/components/cinematic/cinematicMedia";
+import { CINEMATIC_IMAGES, CINEMATIC_IMAGE_QUALITY, CINEMATIC_IMAGE_SIZES } from "@/components/cinematic/cinematicMedia";
 import { usePrefersReducedMotion } from "@/components/cinematic/usePrefersReducedMotion";
 import { gsap, registerCinematicGsap } from "@/components/cinematic/gsapSetup";
 import { cn } from "@/lib/utils";
@@ -84,6 +84,7 @@ export function LandscapeChapter() {
               alt="Sunlit cliffs rising through cloud at sunrise"
               fill
               loading="lazy"
+              quality={CINEMATIC_IMAGE_QUALITY}
               sizes={CINEMATIC_IMAGE_SIZES}
               className="h-full w-full object-cover object-[center_45%] md:object-center"
             />

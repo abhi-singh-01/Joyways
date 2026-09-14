@@ -6,7 +6,7 @@ import { useGSAP } from "@gsap/react";
 import { cn } from "@/lib/utils";
 import { usePrefersReducedMotion } from "@/components/cinematic/usePrefersReducedMotion";
 import { gsap, registerCinematicGsap } from "@/components/cinematic/gsapSetup";
-import { CINEMATIC_IMAGE_SIZES } from "@/components/cinematic/cinematicMedia";
+import { CINEMATIC_IMAGE_QUALITY, CINEMATIC_IMAGE_SIZES } from "@/components/cinematic/cinematicMedia";
 
 type ParallaxFrameProps = {
   src: string;
@@ -97,6 +97,7 @@ export function ParallaxFrame({
           fill
           priority={priority}
           loading={priority ? "eager" : "lazy"}
+          quality={CINEMATIC_IMAGE_QUALITY}
           sizes={sizes}
           className={cn("h-full w-full object-cover object-center", imageClassName)}
         />

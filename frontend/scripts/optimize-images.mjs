@@ -12,6 +12,20 @@ const targets = [
   { input: path.join(imagesDir, "mountains-road.png"), maxWidth: 960, quality: 78 },
   { input: path.join(publicDir, "web-log.png"), maxWidth: 128, quality: 82 },
   { input: path.join(publicDir, "logo.png"), maxWidth: 480, quality: 82 },
+  // Homepage cinematic frames (full-bleed)
+  ...[
+    "cliff-sunrise",
+    "green-peaks",
+    "monastery-day",
+    "monastery-dusk",
+    "ridge-walker",
+    "snow-pass",
+    "valley-buddha",
+  ].map((name) => ({
+    input: path.join(imagesDir, "cinematic", `${name}.png`),
+    maxWidth: 1600,
+    quality: 72,
+  })),
 ];
 
 await mkdir(imagesDir, { recursive: true });
