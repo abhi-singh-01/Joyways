@@ -34,6 +34,11 @@ export type PageResponse<T> = {
   totalPages: number;
 };
 
+/** Normalize paginated API payloads so callers never hit undefined `.content`. */
+export function pageContent<T>(page: PageResponse<T> | null | undefined): T[] {
+  return Array.isArray(page?.content) ? page.content : [];
+}
+
 export type CreateVehiclePayload = {
   registrationNumber: string;
   vehicleType: string;

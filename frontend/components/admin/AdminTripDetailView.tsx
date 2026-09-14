@@ -13,7 +13,7 @@ import {
   type TripDetail,
   type TripStatus,
 } from "@/lib/api/adminTripsApi";
-import { listVehicles } from "@/lib/api/adminVehiclesApi";
+import { listVehicles, pageContent } from "@/lib/api/adminVehiclesApi";
 import { listDrivers } from "@/lib/api/adminDriversApi";
 import { listAdminBookings } from "@/lib/api/adminBookingsApi";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -60,21 +60,24 @@ export function AdminTripDetailView({ tripId }: Readonly<{ tripId: number }>) {
       listDrivers({ status: "AVAILABLE", size: 100 }),
     ])
       .then(([{ detail, bookingPage }, vehiclePage, driverPage]) => {
-        setTrip(detail);
+        setTrip({
+          ...detail,
+          bookings: Array.isArray(detail.bookings) ? detail.bookings : [],
+        });
         setVehicles(
-          vehiclePage.content.map((v) => ({
+          pageContent(vehiclePage).map((v) => ({
             id: v.id,
             label: `${v.registrationNumber} (${v.seatingCapacity} seats)`,
           }))
         );
         setDrivers(
-          driverPage.content.map((d) => ({
+          pageContent(driverPage).map((d) => ({
             id: d.id,
             label: `${d.name} · ${d.licenseStatus}`,
           }))
         );
         setBookings(
-          bookingPage.content.map((b) => ({
+          pageContent(bookingPage).map((b) => ({
             id: b.bookingId,
             label: `${b.bookingReference} · ${b.numberOfTravellers} travellers`,
           }))

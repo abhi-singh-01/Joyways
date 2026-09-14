@@ -132,6 +132,7 @@ public class AdminTripService {
                 .build();
 
         trip = tripRepository.save(trip);
+        alignPackageScheduleToTrip(travelPackage, request.getTravelDate());
         auditLogService.log("TRIP_CREATED", "TRIP", trip.getId(),
                 TRIP_LABEL + trip.getTripReference() + " created for " + trip.getDestination() + ".");
         operationsNotificationService.notifyTripCreated(
@@ -160,6 +161,7 @@ public class AdminTripService {
         trip.setNotes(trimToNull(request.getNotes()));
 
         trip = tripRepository.save(trip);
+        alignPackageScheduleToTrip(travelPackage, request.getTravelDate());
         auditLogService.log("TRIP_UPDATED", "TRIP", trip.getId(),
                 TRIP_LABEL + trip.getTripReference() + " updated.");
         return toDetail(findTripWithDetails(trip.getId()));
@@ -585,6 +587,41 @@ public class AdminTripService {
         if (!endAt.isAfter(startAt)) {
             throw new IllegalArgumentException("End time must be after start time.");
         }
+    }
+
+    /**
+     * Public booking uses package startDate, not the ops trip travelDate.
+     * When an admin schedules a trip, keep the sellable package dates aligned
+     * so guests are not blocked while seats remain.
+     */
+    private void alignPackageScheduleToTrip(TravelPackage travelPackage, LocalDate travelDate) {
+        if (travelDate == null) {
+            throw new IllegalArgumentException("Travel date is required.");
+        }
+        LocalDate today = LicenseStatusHelper.businessToday();
+        if (travelDate.isBefore(today)) {
+            throw new IllegalArgumentException("Travel date cannot be in the past.");
+        }
+
+        LocalDate oldStart = travelPackage.getStartDate();
+        LocalDate oldEnd = travelPackage.getEndDate() != null ? travelPackage.getEndDate() : oldStart;
+        long spanDays = Math.max(0, oldEnd.toEpochDay() - oldStart.toEpochDay());
+        LocalDate newEnd = travelDate.plusDays(spanDays);
+
+        if (oldStart.equals(travelDate) && oldEnd.equals(newEnd)) {
+            return;
+        }
+
+        travelPackage.setStartDate(travelDate);
+        travelPackage.setEndDate(newEnd);
+        travelPackageRepository.save(travelPackage);
+        auditLogService.log(
+                "PACKAGE_DATES_ALIGNED",
+                "PACKAGE",
+                travelPackage.getId(),
+                "Package dates set to " + travelDate + " – " + newEnd
+                        + " to match trip schedule."
+        );
     }
 
     private static String blankToEmpty(String value) {

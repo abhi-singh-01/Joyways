@@ -7,6 +7,7 @@ import {
   type TripSummary,
   type TripStatus,
 } from "@/lib/api/adminTripsApi";
+import { pageContent } from "@/lib/api/adminVehiclesApi";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -26,8 +27,8 @@ export function AdminTripsView() {
     listTrips({ query, status, page, size: 20 })
       .then((result) => {
         if (cancelled) return;
-        setTrips(result.content);
-        setTotalPages(result.totalPages);
+        setTrips(pageContent(result));
+        setTotalPages(result.totalPages ?? 0);
         setError("");
       })
       .catch((err) => {

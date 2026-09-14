@@ -13,8 +13,9 @@ public record PageResponse<T>(
         int totalPages
 ) {
     public static <T> PageResponse<T> of(org.springframework.data.domain.Page<T> page) {
+        List<T> content = page.getContent() != null ? page.getContent() : List.of();
         return PageResponse.<T>builder()
-                .content(page.getContent())
+                .content(content)
                 .page(page.getNumber())
                 .size(page.getSize())
                 .totalElements(page.getTotalElements())

@@ -2,12 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listAdminPackages } from "@/lib/api/adminPackagesApi";
+import { listAdminPackages, type AdminPackageSummary } from "@/lib/api/adminPackagesApi";
 import { createTrip, type CreateTripPayload } from "@/lib/api/adminTripsApi";
+
+function kolkataToday(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+function defaultTravelDate(pkg: AdminPackageSummary | undefined): string {
+  const today = kolkataToday();
+  if (!pkg?.startDate) return today;
+  return pkg.startDate >= today ? pkg.startDate : today;
+}
 
 export function TripForm() {
   const router = useRouter();
-  const [packages, setPackages] = useState<{ id: number; label: string }[]>([]);
+  const [packages, setPackages] = useState<AdminPackageSummary[]>([]);
   const [form, setForm] = useState({
     packageId: "",
     travelDate: "",
@@ -21,14 +31,12 @@ export function TripForm() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    listAdminPackages().then((items) =>
-      setPackages(
-        items.map((p) => ({
-          id: p.id,
-          label: `${p.title} · ${p.destination}`,
-        }))
-      )
-    );
+    listAdminPackages()
+      .then((items) => setPackages(Array.isArray(items) ? items : []))
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Failed to load packages");
+        setPackages([]);
+      });
   }, []);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
@@ -67,13 +75,21 @@ export function TripForm() {
         <select
           required
           value={form.packageId}
-          onChange={(e) => setForm({ ...form, packageId: e.target.value })}
+          onChange={(e) => {
+            const packageId = e.target.value;
+            const selected = packages.find((p) => String(p.id) === packageId);
+            setForm({
+              ...form,
+              packageId,
+              travelDate: defaultTravelDate(selected),
+            });
+          }}
           className="w-full rounded-xl border border-border px-4 py-2.5 text-sm"
         >
           <option value="">Select package</option>
           {packages.map((pkg) => (
             <option key={pkg.id} value={pkg.id}>
-              {pkg.label}
+              {pkg.title} · {pkg.destination} · {pkg.startDate}
             </option>
           ))}
         </select>
@@ -82,6 +98,7 @@ export function TripForm() {
         <input
           required
           type="date"
+          min={kolkataToday()}
           value={form.travelDate}
           onChange={(e) => setForm({ ...form, travelDate: e.target.value })}
           className="w-full rounded-xl border border-border px-4 py-2.5 text-sm"

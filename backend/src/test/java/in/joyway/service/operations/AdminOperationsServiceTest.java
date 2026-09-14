@@ -286,6 +286,34 @@ class AdminOperationsServiceTest {
                 .hasMessageContaining("assigned to an active trip");
     }
 
+    @Test
+    void createTrip_alignsPastPackageDatesToTravelDate() {
+        travelPackage.setStartDate(LocalDate.now(IST).minusDays(2));
+        travelPackage.setEndDate(LocalDate.now(IST).minusDays(2));
+        packageRepository.save(travelPackage);
+
+        LocalDate travelDate = LocalDate.now(IST).plusDays(5);
+        TripDetailDto trip = createTripAt(travelDate, 8, 20);
+
+        TravelPackage refreshed = packageRepository.findById(travelPackage.getId()).orElseThrow();
+        assertThat(trip.travelDate()).isEqualTo(travelDate);
+        assertThat(refreshed.getStartDate()).isEqualTo(travelDate);
+        assertThat(refreshed.getEndDate()).isEqualTo(travelDate);
+    }
+
+    @Test
+    void createTrip_rejectsPastTravelDate() {
+        CreateTripRequest request = new CreateTripRequest();
+        request.setPackageId(travelPackage.getId());
+        request.setTravelDate(LocalDate.now(IST).minusDays(1));
+        request.setStartAt(LocalDate.now(IST).minusDays(1).atTime(8, 0).atZone(IST).toInstant());
+        request.setEndAt(LocalDate.now(IST).minusDays(1).atTime(20, 0).atZone(IST).toInstant());
+
+        assertThatThrownBy(() -> tripService.createTrip(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("past");
+    }
+
     private TripDetailDto createTrip() {
         return createTripAt(LocalDate.now(IST).plusDays(15), 8, 20);
     }

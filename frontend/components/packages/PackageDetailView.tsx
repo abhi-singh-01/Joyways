@@ -99,6 +99,13 @@ function unavailabilityReasonFor(pkg: PackageDetail): string | null {
   if (pkg.availableSeats === 0) {
     return "No seats are available for this trip.";
   }
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  if (pkg.startDate && pkg.startDate < today) {
+    return "This trip date has passed. Update the package dates or create a new departure in Admin → Trips.";
+  }
+  if (pkg.status && pkg.status !== "PUBLISHED") {
+    return "This trip is not published yet.";
+  }
   return "This trip is not available for booking.";
 }
 
