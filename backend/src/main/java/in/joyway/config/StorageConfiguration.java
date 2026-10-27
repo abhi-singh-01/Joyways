@@ -3,6 +3,7 @@ package in.joyway.config;
 import in.joyway.service.storage.AzureBlobStorageService;
 import in.joyway.service.storage.DocumentStorageService;
 import in.joyway.service.storage.LocalDocumentStorageService;
+import in.joyway.service.storage.S3CompatibleStorageService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,5 +21,11 @@ public class StorageConfiguration {
     @ConditionalOnProperty(name = "storage.provider", havingValue = "azure")
     DocumentStorageService azureDocumentStorageService(StorageProperties properties) {
         return new AzureBlobStorageService(properties);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "storage.provider", havingValue = "s3")
+    DocumentStorageService s3CompatibleStorageService(StorageProperties properties) {
+        return new S3CompatibleStorageService(properties);
     }
 }

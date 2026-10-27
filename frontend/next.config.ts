@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === "production";
 
+// Public base URL for Cloudflare R2 (or other S3-compatible) storage.
+// Set NEXT_PUBLIC_STORAGE_BASE_URL in Vercel env vars, e.g. https://pub-<hash>.r2.dev
+const storageBaseUrl = process.env.NEXT_PUBLIC_STORAGE_BASE_URL ?? "";
+
 const connectSrc = isProd
   ? "'self' https://api.joyway.in https://api.razorpay.com https://lumberjack.razorpay.com"
   : "'self' http://localhost:8080 https://api.joyway.in https://api.razorpay.com https://lumberjack.razorpay.com";
@@ -9,8 +13,15 @@ const scriptSrc = isProd
   ? "'self' 'unsafe-inline' https://checkout.razorpay.com"
   : "'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com";
 
+// img-src: always allow api.joyway.in; conditionally allow the R2 public URL domain.
+const r2ImgSrc = storageBaseUrl
+  ? ` ${new URL(storageBaseUrl).origin}`
+  : "";
+
 const nextConfig = {
-  output: "standalone",
+  // Vercel deploys Next.js natively — no standalone output needed.
+  // Keep `output: "standalone"` only if you also run Docker (e.g. local docker-compose).
+  // output: "standalone",
   async redirects() {
     return [
       {
@@ -31,14 +42,15 @@ const nextConfig = {
         protocol: "https",
         hostname: "api.joyway.in",
       },
-      {
-        protocol: "https",
-        hostname: "*.azurefd.net",
-      },
-      {
-        protocol: "https",
-        hostname: "joyway-images-prod-gye6a8dff4dgfub3.z03.azurefd.net",
-      },
+      // Cloudflare R2 public bucket URL (set NEXT_PUBLIC_STORAGE_BASE_URL in Vercel).
+      ...(storageBaseUrl
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: new URL(storageBaseUrl).hostname,
+            },
+          ]
+        : []),
     ],
   },
   async headers() {
@@ -65,7 +77,7 @@ const nextConfig = {
               "default-src 'self'",
               `script-src ${scriptSrc}`,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://api.joyway.in https://*.azurefd.net https://*.blob.core.windows.net",
+              `img-src 'self' data: blob: https://api.joyway.in${r2ImgSrc}`,
               `connect-src ${connectSrc}`,
               "frame-src https://api.razorpay.com https://checkout.razorpay.com",
               "font-src 'self'",

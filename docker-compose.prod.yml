@@ -1,4 +1,4 @@
-# Production compose — supply secrets via environment or a secure secret manager.
+﻿# Production compose â€” supply secrets via environment or a secure secret manager.
 # Do NOT commit real values. Use platform-specific secret injection in Azure/VPS.
 services:
   backend:
@@ -38,11 +38,13 @@ services:
       MAIL_ENABLED: ${MAIL_ENABLED:-true}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       APP_VERSION: ${APP_VERSION:-0.0.1-SNAPSHOT}
-      STORAGE_PROVIDER: azure
+      # Storage: STORAGE_PROVIDER=s3 for Cloudflare R2/Backblaze B2, azure for Azure Blob.
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
       STORAGE_CONTAINER: ${STORAGE_CONTAINER:-joyway-documents}
       STORAGE_BUCKET: ${STORAGE_BUCKET:-joyway-documents}
-      STORAGE_USE_MANAGED_IDENTITY: ${STORAGE_USE_MANAGED_IDENTITY:-true}
+      # Azure-only — leave false when using S3-compatible storage.
+      STORAGE_USE_MANAGED_IDENTITY: ${STORAGE_USE_MANAGED_IDENTITY:-false}
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-}
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-}
       STORAGE_SAS_EXPIRY_MINUTES: ${STORAGE_SAS_EXPIRY_MINUTES:-15}
@@ -104,3 +106,4 @@ services:
 
 # volumes:
 #   backend-storage:
+

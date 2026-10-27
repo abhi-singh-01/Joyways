@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -22,6 +22,7 @@
         <testcontainers.version>1.21.4</testcontainers.version>
         <azure-storage-blob.version>12.29.0</azure-storage-blob.version>
         <azure-identity.version>1.14.2</azure-identity.version>
+        <aws-sdk.version>2.29.51</aws-sdk.version>
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.coverage.exclusions>**/controller/dev/**</sonar.coverage.exclusions>
         <sonar.host.url>http://localhost:9000</sonar.host.url>
@@ -32,6 +33,17 @@
         <sonar.issue.ignore.multicriteria.e1.resourceKey>**/JwtTokenProvider.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws-sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -141,7 +153,14 @@
             <artifactId>azure-identity</artifactId>
             <version>${azure-identity.version}</version>
         </dependency>
-    </dependencies>
+                <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3-presigner</artifactId>
+        </dependency>    </dependencies>
 
     <build>
         <plugins>
@@ -176,3 +195,4 @@
         </plugins>
     </build>
 </project>
+

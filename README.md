@@ -31,7 +31,7 @@ Browse trips → Book seats → Pay (Razorpay / offline) → Email + lookup → 
 joyway/
 ├── frontend/          Next.js 16 · React 19 · TypeScript · Tailwind · GSAP
 ├── backend/           Spring Boot 3.4 · Java 21 · PostgreSQL · Flyway
-├── docs/              Production runbooks, Azure, monitoring, DR
+├── docs/              Production runbooks, monitoring, DR
 ├── scripts/           Deployment helpers
 └── docker-compose*.yml
 ```
@@ -41,9 +41,9 @@ joyway/
 | Frontend | Next.js App Router, TypeScript, Tailwind CSS, Vitest |
 | Backend | Spring Boot, Spring Security, JPA, Flyway, Maven |
 | Database | PostgreSQL 15+ |
-| Files | Azure Blob Storage (production) · local disk (dev) |
+| Files | Cloudflare R2 (production) · local disk (dev) |
 | Payments | Razorpay orders, verify, signed webhooks |
-| Hosting | Azure Container Apps · Azure PostgreSQL · ACR |
+| Hosting | Vercel (frontend) · Render Docker (backend) · Supabase/Neon (DB) |
 
 ---
 
@@ -83,9 +83,7 @@ joyway/
 | Java | 21+ |
 | Maven | 3.9+ |
 | PostgreSQL | 15+ (local) |
-| Docker | Optional (images / Sonar) |
-
-Azure deploy also needs Azure CLI and access to resource group `rg-joyway-prod`.
+| Docker | Optional (local compose / Sonar) |
 
 ---
 
@@ -109,7 +107,7 @@ cp .env.example .env
 mvn spring-boot:run
 ```
 
-API: **http://localhost:8080** (or the `SERVER_PORT` you set). Flyway migrates on startup.
+API: **http://localhost:8080**. Flyway runs all migrations on first startup.
 
 ### 3. Frontend
 
@@ -135,25 +133,25 @@ Site: **http://localhost:3000**
 | File | On GitHub? | Why |
 |------|------------|-----|
 | `backend/.env`, `frontend/.env.local` | **No** (gitignored) | Real passwords, JWT, Razorpay secret |
-| `backend/.env.example`, `frontend/.env.example` | **Yes** | Variable *names* + empty/safe placeholders so others know what to set |
+| `backend/.env.example`, `frontend/.env.example` | **Yes** | Variable *names* + safe placeholders |
 | `application.yml` / `application-*.yml` | **Yes** | Spring config using `${ENV_VAR}` — no hard-coded secrets |
-| Local `application-local.*`, DB dumps, `/storage` | **No** (gitignored) | Machine-specific data |
 
 | Where | What belongs there |
-|-------|--------------------|
+|-------|-------------------|
 | Git | Source + placeholder examples |
 | Docker images | App binaries only (`.dockerignore` excludes `.env*`) |
 | Local `.env` / `.env.local` | Your machine only |
-| Azure Container Apps | All runtime secrets (JWT, DB, Razorpay secret, SMTP, storage) |
+| Vercel | All frontend `NEXT_PUBLIC_*` env vars |
+| Render | All backend runtime secrets (JWT, DB, Razorpay, SMTP, R2) |
 
 ```bash
-cd backend  && cp .env.example .env          # then fill real values
-cd frontend && cp .env.example .env.local    # then fill real values
+cd backend  && cp .env.example .env        # then fill real values
+cd frontend && cp .env.example .env.local  # then fill real values
 ```
 
 - Frontend: [`frontend/.env.example`](frontend/.env.example) — only `NEXT_PUBLIC_*` is safe in the browser.
 - Backend: [`backend/.env.example`](backend/.env.example) — payments, JWT, DB, SMTP, storage stay server-side.
-- Production refuses unsafe config via `ProductionSecurityValidator` (e.g. localhost CORS in `prod`).
+- Production refuses unsafe config via `ProductionSecurityValidator` (e.g. localhost CORS in `prod` profile).
 
 ---
 
@@ -179,39 +177,63 @@ cd backend  && mvn verify sonar:sonar
 cd frontend && npm run sonar
 ```
 
-CI on `main`: tests, typecheck, production build, Docker build, secret-pattern scan.
+CI on `main`: tests, typecheck, production build, Docker build smoke-test, secret-pattern scan.
 
 ---
 
-## Production (Azure)
+## Production
 
-| Resource | Role |
-|----------|------|
-| `joyway-frontend-prod` | [joyway.in](https://joyway.in) |
-| `joyway-backend-prod` | [api.joyway.in](https://api.joyway.in) |
-| `joywayprodacr` | Azure Container Registry |
-| `joyway-pg-prod` | Azure Database for PostgreSQL |
+| Service | Provider | URL |
+|---------|----------|-----|
+| Frontend | **Vercel** | [joyway.in](https://joyway.in) |
+| Backend (Docker) | **Render** | [api.joyway.in](https://api.joyway.in) |
+| Database | **Supabase / Neon** | PostgreSQL 15+ |
+| File storage | **Cloudflare R2** | S3-compatible, `joyway-documents` bucket |
 
-Images are tagged like `prod-YYYYMMDD-HHMM` and also `latest` in ACR.
+### How deploys work
 
-```bash
-# Example: build in ACR (Azure CLI logged in)
-az acr build -r joywayprodacr -t joyway-backend:TAG -f backend/Dockerfile backend
-az acr build -r joywayprodacr -t joyway-frontend:TAG \
-  --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.joyway.in \
-  --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$RAZORPAY_KEY_ID" \
-  -f frontend/Dockerfile frontend
+| What | How |
+|------|-----|
+| **Frontend** | Vercel auto-deploys on every push to `main` — no manual step needed |
+| **Backend** | Render auto-deploys on every push to `main` via GitHub integration |
+| **Manual redeploy** | GitHub Actions → **Deploy Production** (workflow_dispatch) — triggers Render deploy hook |
 
-# Roll Container Apps to the new tag
-az containerapp update -g rg-joyway-prod -n joyway-backend-prod \
-  --image joywayprodacr.azurecr.io/joyway-backend:TAG
-az containerapp update -g rg-joyway-prod -n joyway-frontend-prod \
-  --image joywayprodacr.azurecr.io/joyway-frontend:TAG
-```
+### Key environment variables
 
-Helpers: `scripts/deploy-azure-prod.ps1`, GitHub Action **Deploy Production**.
+**Frontend** (set in Vercel dashboard):
 
-**Frontend note:** `NEXT_PUBLIC_*` values are baked in at **image build time**. Changing the API URL or Razorpay public key requires a rebuild, not only a runtime env edit.
+| Variable | Example |
+|----------|---------|
+| `NEXT_PUBLIC_API_BASE_URL` | `https://api.joyway.in` |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | `rzp_live_…` |
+| `NEXT_PUBLIC_STORAGE_BASE_URL` | `https://pub-abc123.r2.dev` |
+
+> `NEXT_PUBLIC_*` values are baked in at **build time** by Vercel. Changing them triggers an automatic rebuild.
+
+**Backend** (set in Render dashboard):
+
+| Variable | Notes |
+|----------|-------|
+| `SPRING_PROFILES_ACTIVE` | `prod` |
+| `DATABASE_URL` | `jdbc:postgresql://…` (Supabase/Neon) |
+| `JWT_SECRET` | 64+ random chars |
+| `JWT_COOKIE_DOMAIN` | `.joyway.in` |
+| `CORS_ALLOWED_ORIGINS` | `https://joyway.in,https://www.joyway.in` |
+| `STORAGE_PROVIDER` | `s3` |
+| `STORAGE_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
+| `STORAGE_ACCESS_KEY` | R2 access key ID |
+| `STORAGE_SECRET_KEY` | R2 secret access key |
+| `STORAGE_PUBLIC_BASE_URL` | `https://pub-abc123.r2.dev` |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Server-side only |
+| `SMTP_*` | Email delivery credentials |
+
+> **Render free tier** spins down after 15 min of inactivity (~30–60 s cold start). Set up an [UptimeRobot](https://uptimerobot.com) monitor on `/api/health/ready` every 5 minutes to keep it warm.
+
+### GitHub secrets required
+
+| Secret | Where to get it |
+|--------|----------------|
+| `RENDER_DEPLOY_HOOK_URL` | Render → service → Settings → Deploy Hook |
 
 ---
 
@@ -246,21 +268,21 @@ Admin routes live under `/api/admin/**` and require `ROLE_ADMIN`.
 | [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md) | Day-to-day ops |
 | [`docs/MONITORING.md`](docs/MONITORING.md) | Health, alerts, metrics |
 | [`docs/DISASTER_RECOVERY.md`](docs/DISASTER_RECOVERY.md) | Recovery procedures |
-| [`docs/AZURE_BLOB_STORAGE.md`](docs/AZURE_BLOB_STORAGE.md) | Package / ID document storage |
-| [`docs/AZURE_STORAGE_SETUP.md`](docs/AZURE_STORAGE_SETUP.md) | Storage setup |
 
 ---
 
 ## Troubleshooting
 
 | Problem | What to check |
-|---------|----------------|
-| Backend won't start | Postgres up; `DATABASE_*` + `JWT_SECRET` set |
-| Frontend can't reach API | `NEXT_PUBLIC_API_BASE_URL` matches backend host/port |
+|---------|--------------|
+| Backend won't start | Postgres reachable; `DATABASE_*` + `JWT_SECRET` set in Render env |
+| Frontend can't reach API | `NEXT_PUBLIC_API_BASE_URL` in Vercel env matches Render backend URL |
+| Images not loading | `NEXT_PUBLIC_STORAGE_BASE_URL` set; R2 bucket has public access enabled |
 | Sonar `ECONNREFUSED :9000` | `docker start sonarqube`, wait until UI is up |
-| Prod startup refused | Azure env / CORS — see production checklist |
-| Flyway conflict on prod | Do not change applied migrations; add a new `Vnn__*.sql` |
-| Payment hold expired | Guest unpaid holds expire; admin-created holds do not auto-expire |
+| Prod startup refused | CORS origins — must not contain `localhost` in `prod` profile |
+| Flyway conflict on prod | Do not edit applied migrations; add a new `Vnn__*.sql` |
+| Payment hold expired | Guest unpaid holds auto-expire; admin-created holds do not |
+| Render cold start slow | Add UptimeRobot monitor on `/api/health/ready` every 5 minutes |
 
 ---
 
@@ -269,5 +291,3 @@ Admin routes live under `/api/admin/**` and require `ROLE_ADMIN`.
 Proprietary — JOYWAY © 2026. All rights reserved.
 
 Developed by [ajswork.space](https://www.ajswork.space/).
-#   J o y w a y s 
- 
