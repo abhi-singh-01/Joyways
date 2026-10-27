@@ -269,5 +269,5 @@ Admin routes live under `/api/admin/**` and require `ROLE_ADMIN`.
 Proprietary — JOYWAY © 2026. All rights reserved.
 
 Developed by [ajswork.space](https://www.ajswork.space/).
-#   J o y w a y s  
+#   J o y w a y s 
  
