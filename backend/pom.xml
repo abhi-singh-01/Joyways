@@ -42,13 +42,9 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <dependency>
-  <groupId>software.amazon.awssdk</groupId>
-  <artifactId>s3-presigner</artifactId>
-  <version>2.29.52</version>
-</dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -158,14 +154,12 @@
             <artifactId>azure-identity</artifactId>
             <version>${azure-identity.version}</version>
         </dependency>
-                <dependency>
+        <!-- AWS S3 (includes S3Presigner); version comes from the BOM -->
+        <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
         </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3-presigner</artifactId>
-        </dependency>    </dependencies>
+    </dependencies>
 
     <build>
         <plugins>
@@ -181,6 +175,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
@@ -200,4 +195,3 @@
         </plugins>
     </build>
 </project>
-
