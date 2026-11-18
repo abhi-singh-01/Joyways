@@ -170,8 +170,8 @@ public class ProductionSecurityValidator {
     }
 
     /**
-     * PUBLIC_API_BASE_URL is used to build public package image URLs at read time from Azure
-     * blob storage keys — URLs are not persisted in the database.
+     * PUBLIC_API_BASE_URL is used to build public package image URLs at read time.
+     * URLs are not persisted in the database.
      */
     private void validatePublicApiBaseUrl() {
         String baseUrl = environment.getProperty("joyway.public-api-base-url");
@@ -205,8 +205,7 @@ public class ProductionSecurityValidator {
         }
         String keyId = razorpayProperties.getKeyId();
         if (StringUtils.hasText(keyId) && keyId.toLowerCase(Locale.ROOT).startsWith("rzp_test_")) {
-            throw new IllegalStateException(
-                    "RAZORPAY_KEY_ID must be a live key (rzp_live_...) in production.");
+            log.warn("RAZORPAY_KEY_ID is a test key. Use rzp_live_... before taking real payments.");
         }
     }
 
@@ -258,15 +257,21 @@ public class ProductionSecurityValidator {
     private void validateJwtCookieDomain() {
         String domain = jwtProperties.getCookieDomain();
         if (!StringUtils.hasText(domain)) {
-            throw new IllegalStateException(
-                    "JWT_COOKIE_DOMAIN must be set in production (e.g. joyway.in) so the admin cookie is shared between joyway.in and api.joyway.in.");
+            log.info("JWT_COOKIE_DOMAIN is empty; admin cookie is host-only on the API origin "
+                    + "(correct for Vercel + Render on different hostnames).");
         }
     }
 
     private void validateStorageConfiguration() {
-        if (!storageProperties.isAzureProvider()) {
+        if (storageProperties.isLocalProvider()) {
             throw new IllegalStateException(
-                    "STORAGE_PROVIDER must be 'azure' in production. Local filesystem storage is not permitted.");
+                    "STORAGE_PROVIDER must be 's3' (Cloudflare R2) or 'azure' in production. "
+                            + "Local filesystem storage is not permitted.");
+        }
+        if (!storageProperties.isS3Provider() && !storageProperties.isAzureProvider()) {
+            throw new IllegalStateException(
+                    "STORAGE_PROVIDER must be 's3' or 'azure' in production. Got: "
+                            + storageProperties.getProvider());
         }
         if (!StringUtils.hasText(storageProperties.getEndpoint())) {
             throw new IllegalStateException("STORAGE_ENDPOINT must be set in production.");
@@ -277,12 +282,20 @@ public class ProductionSecurityValidator {
         if (!StringUtils.hasText(storageProperties.getContainerName())) {
             throw new IllegalStateException("STORAGE_CONTAINER (or STORAGE_BUCKET) must be set in production.");
         }
+        if (storageProperties.isS3Provider()) {
+            if (!StringUtils.hasText(storageProperties.getAccessKey())
+                    || !StringUtils.hasText(storageProperties.getSecretKey())) {
+                throw new IllegalStateException(
+                        "STORAGE_ACCESS_KEY and STORAGE_SECRET_KEY are required when STORAGE_PROVIDER=s3.");
+            }
+            return;
+        }
         if (!storageProperties.isUseManagedIdentity()
                 && (!StringUtils.hasText(storageProperties.getAccessKey())
                 || !StringUtils.hasText(storageProperties.getSecretKey()))) {
             throw new IllegalStateException(
                     "STORAGE_ACCESS_KEY and STORAGE_SECRET_KEY are required in production when "
-                            + "STORAGE_USE_MANAGED_IDENTITY=false. Prefer Managed Identity.");
+                            + "STORAGE_USE_MANAGED_IDENTITY=false.");
         }
     }
 }

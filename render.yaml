@@ -1,0 +1,54 @@
+# Render Blueprint — backend only. Secrets stay in the Render dashboard, not in this file.
+# Create the web service from this repo (Docker) with:
+#   Dockerfile path: backend/Dockerfile
+#   Docker build context: backend
+#   Health check path: /api/health/ready
+
+services:
+  - type: web
+    name: joyway-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health/ready
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JWT_COOKIE_SECURE
+        value: "true"
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: RATE_LIMIT_BACKEND
+        value: memory
+      - key: STORAGE_PROVIDER
+        value: s3
+      - key: ADMIN_BOOTSTRAP_ENABLED
+        value: "false"
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: PUBLIC_API_BASE_URL
+        sync: false
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: STORAGE_ACCESS_KEY
+        sync: false
+      - key: STORAGE_SECRET_KEY
+        sync: false
+      - key: STORAGE_BUCKET
+        value: joyway-documents
+      - key: STORAGE_CONTAINER
+        value: joyway-documents

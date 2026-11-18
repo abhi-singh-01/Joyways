@@ -16,18 +16,20 @@ RUN apk add --no-cache wget \
 
 COPY --from=build /app/target/*.jar app.jar
 
-# /app/storage supports local dev (STORAGE_PROVIDER=local) or one-off migration runs.
-# Production uses Azure Blob (STORAGE_PROVIDER=azure); credentials are injected at runtime, never baked in.
+# Ephemeral local disk (STORAGE_PROVIDER=local only). Production on Render uses R2 (s3).
 RUN mkdir -p /app/storage && chown -R joyway:joyway /app
 
 USER joyway
 
 ENV SPRING_PROFILES_ACTIVE=prod
+ENV PORT=8080
+# Render free instances are ~512MB. Leave headroom for the OS.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
 EXPOSE 8080
 
 # Readiness (not liveness) so an instance that cannot reach the database is
 # reported unhealthy instead of silently serving failing requests.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:8080/api/health/ready || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=5 \
+  CMD wget -qO- http://127.0.0.1:${PORT}/api/health/ready || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

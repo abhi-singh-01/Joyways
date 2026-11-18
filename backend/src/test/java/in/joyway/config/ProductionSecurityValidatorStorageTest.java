@@ -60,6 +60,17 @@ class ProductionSecurityValidatorStorageTest {
     }
 
     @Test
+    void validateStorageConfiguration_acceptsS3CompatibleR2Setup() {
+        storageProperties.setProvider("s3");
+        storageProperties.setEndpoint("https://accountid.r2.cloudflarestorage.com");
+        storageProperties.setContainer("joyway-documents");
+        storageProperties.setAccessKey("r2-access-key");
+        storageProperties.setSecretKey("r2-secret-key");
+
+        assertDoesNotThrow(this::invokeStorageValidation);
+    }
+
+    @Test
     void validateStorageConfiguration_rejectsLocalProvider() {
         storageProperties.setProvider("local");
         storageProperties.setLocalPath("./storage");

@@ -10,9 +10,11 @@ management:
 
 spring:
   datasource:
+    # DATABASE_URL may be jdbc:postgresql://... or postgres://... (Render/Neon/Supabase).
+    # postgres:// is converted by DatabaseUrlEnvironmentPostProcessor.
     url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    username: ${DATABASE_USERNAME:}
+    password: ${DATABASE_PASSWORD:}
   jpa:
     show-sql: false
   flyway:

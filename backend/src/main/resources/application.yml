@@ -52,7 +52,8 @@ management:
       enabled: false
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Render sets PORT. Keep SERVER_PORT as a local override.
+  port: ${PORT:${SERVER_PORT:8080}}
   # Let in-flight requests finish before the container exits during a rolling deploy.
   shutdown: graceful
   error:
@@ -150,3 +151,5 @@ storage:
   local-path: ${STORAGE_LOCAL_PATH:./storage}
   use-managed-identity: ${STORAGE_USE_MANAGED_IDENTITY:false}
   sas-expiry-minutes: ${STORAGE_SAS_EXPIRY_MINUTES:15}
+  s3-region: ${STORAGE_S3_REGION:auto}
+  public-base-url: ${STORAGE_PUBLIC_BASE_URL:}

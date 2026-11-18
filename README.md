@@ -215,9 +215,9 @@ CI on `main`: tests, typecheck, production build, Docker build smoke-test, secre
 | Variable | Notes |
 |----------|-------|
 | `SPRING_PROFILES_ACTIVE` | `prod` |
-| `DATABASE_URL` | `jdbc:postgresql://…` (Supabase/Neon) |
+| `DATABASE_URL` | Render/Neon/Supabase URI (`postgresql://…`) or `jdbc:postgresql://…` |
 | `JWT_SECRET` | 64+ random chars |
-| `JWT_COOKIE_DOMAIN` | `.joyway.in` |
+| `JWT_COOKIE_DOMAIN` | Leave empty on Render unless API and site share a parent domain |
 | `CORS_ALLOWED_ORIGINS` | `https://joyway.in,https://www.joyway.in` |
 | `STORAGE_PROVIDER` | `s3` |
 | `STORAGE_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
