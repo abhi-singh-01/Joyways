@@ -22,16 +22,8 @@ const nextConfig = {
   // Vercel deploys Next.js natively — no standalone output needed.
   // Keep `output: "standalone"` only if you also run Docker (e.g. local docker-compose).
   // output: "standalone",
-  async redirects() {
-    return [
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.joyway.in" }],
-        destination: "https://joyway.in/:path*",
-        permanent: true,
-      },
-    ];
-  },
+  // Apex vs www is handled only in the Vercel dashboard (joyway.in → www.joyway.in).
+  // Do not add host redirects here — they loop with that dashboard rule.
   images: {
     formats: ["image/avif", "image/webp"],
     // Cap generated widths — full-bleed hero sources are ~1280px.
